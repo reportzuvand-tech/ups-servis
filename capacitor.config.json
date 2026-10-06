@@ -1,0 +1,8 @@
+{
+  "appId": "az.upsservis.app",
+  "appName": "UPS Servis",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

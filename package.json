@@ -1,0 +1,25 @@
+{
+  "name": "ups-servis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UPS Servis Jurnalı — Android tətbiqi (Capacitor)",
+  "scripts": {
+    "copy-libs": "node scripts/copy-libs.js",
+    "add-android": "npx cap add android",
+    "sync": "npm run copy-libs && npx cap sync android",
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.1",
+    "@capacitor/local-notifications": "^6.1.0",
+    "@capacitor/share": "^6.0.2",
+    "html2pdf.js": "0.10.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}

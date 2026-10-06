@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>UPS Servis Jurnalı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Roboto+Condensed:wght@500;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* Layout: field-instrument app — sticky header, horizontal section tabs, one column of form cards; report renders as a white A4 sheet */
+:root{
+  --bg:#EDF1EF; --surface:#FFFFFF; --surface2:#E2E8E5; --ink:#15201D; --muted:#5A6964; --line:#C9D3CF;
+  --accent:#0E6A5B; --accent-ink:#FFFFFF; --accent-soft:#D4EAE5;
+  --ok:#23704A; --ok-bg:#DAF0E2; --warn:#7F5A00; --warn-bg:#FAEDC4; --bad:#AE2014; --bad-bg:#FADDD8; --idle:#8A9893;
+  --paper:#FFFFFF; --paper-ink:#1B1F1E; --paper-line:#B9C2BF; --paper-head:#123B35; --paper-soft:#E6EEEB;
+  --f-body:"Noto Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-disp:"Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-num:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1513; --surface:#18201D; --surface2:#222C29; --ink:#E3EBE7; --muted:#93A29D; --line:#303C38;
+  --accent:#43B9A2; --accent-ink:#04201A; --accent-soft:#173A33;
+  --ok:#74D39C; --ok-bg:#173327; --warn:#F0C45E; --warn-bg:#3A2F12; --bad:#FF8E7E; --bad-bg:#3E1D19; --idle:#6F7E79;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#18201D; --surface2:#222C29; --ink:#E3EBE7; --muted:#93A29D; --line:#303C38;
+  --accent:#43B9A2; --accent-ink:#04201A; --accent-soft:#173A33;
+  --ok:#74D39C; --ok-bg:#173327; --warn:#F0C45E; --warn-bg:#3A2F12; --bad:#FF8E7E; --bad-bg:#3E1D19; --idle:#6F7E79;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+.cols2{display:grid;gap:0 16px}
+.col{min-width:0}
+@media (min-width:1000px){.wrap,header.top .bar,header.top .tabs{max-width:1120px}.cols2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cols2 .col>.card:first-child{margin-top:0}}
+.drop{display:grid;place-items:center;border:2px dashed var(--line);border-radius:var(--r);padding:20px 12px;text-align:center;cursor:pointer;background:var(--bg);color:var(--muted)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop b{color:var(--accent)}
+.maptbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.maptbl table{border-collapse:collapse;width:100%;font-size:12px}
+.maptbl th,.maptbl td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums}
+.maptbl th{background:var(--surface2);position:sticky;top:0}
+.maptbl td.num{font-family:var(--f-num)}
+.fsum{display:flex;gap:8px;flex-wrap:wrap}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .bar{max-width:760px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.brand{font:700 20px/1 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{display:block;font:500 12px/1.3 var(--f-body);letter-spacing:0;text-transform:none;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis}
+.save{font-size:12px;color:var(--muted);white-space:nowrap}
+.sync{font-size:12px;font-weight:600;white-space:nowrap;color:var(--muted)}.sync.ok{color:var(--ok)}.sync.warn{color:var(--warn)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;min-height:42px}
+.btn:focus-visible,.tab:focus-visible,.seg button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-visible,.rcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px}
+.btn[disabled]{opacity:.5}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:0 12px 8px;max-width:760px;margin:0 auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;background:transparent;padding:8px 12px;border-radius:20px;font:600 14px/1 var(--f-disp);letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px}
+.tab .n{font:500 11px var(--f-num);opacity:.7}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+h2.sec{font:700 22px/1.15 var(--f-disp);text-transform:uppercase;letter-spacing:.02em;margin:22px 0 4px;text-wrap:balance}
+p.hint{color:var(--muted);font-size:13px;margin:0 0 14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px;margin-bottom:12px}
+.card h3{margin:0;font:700 15px/1.2 var(--f-disp);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (max-width:440px){.grid2{grid-template-columns:1fr}}
+label.f{display:grid;gap:4px;min-width:0}
+label.f>span{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+input,select,textarea{width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 11px;min-height:44px}
+textarea{min-height:84px;resize:vertical}
+input.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--surface2);color:var(--muted)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)} .chip.warn{background:var(--warn-bg);color:var(--warn)} .chip.bad{background:var(--bad-bg);color:var(--bad)}
+.chip:empty{display:none}
+/* measurement rows */
+.mrow{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.mrow:first-of-type{border-top:0;padding-top:0}
+.mhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mhead b{flex:1;min-width:0;font-weight:600}
+.mhead .norm{font:500 12px var(--f-num);color:var(--muted)}
+.lim{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.lim input{min-height:34px;padding:5px 8px;width:84px}
+details.more summary{cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+/* checklist */
+.citem{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.citem:first-of-type{border-top:0;padding-top:0}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 6px;font-size:13px;font-weight:600;cursor:pointer;min-height:40px}
+.seg button[aria-pressed="true"].s-ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+.seg button[aria-pressed="true"].s-warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.seg button[aria-pressed="true"].s-bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.seg button[aria-pressed="true"].s-idle{background:var(--surface2);color:var(--ink);border-color:var(--ink)}
+/* battery fast entry */
+.probe{background:var(--ink);color:var(--bg);border-radius:var(--r);padding:14px;display:grid;gap:12px}
+.probe .lbl{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.probe .tag{font:700 34px/1 var(--f-disp);letter-spacing:.02em}
+.probe .pos{font:500 13px var(--f-num);opacity:.75}
+.probe input{background:var(--bg);color:var(--ink);border-color:transparent;font:500 22px var(--f-num);text-align:center;min-height:54px}
+.probe label.f>span{color:var(--bg);opacity:.75}
+.probe .row{display:flex;gap:8px}
+.probe .row .btn{flex:1}
+.probe .btn{background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 40%,transparent)}
+.probe .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.strings{display:grid;gap:10px}
+.sline{display:grid;gap:6px}
+.sline .sl{font:700 12px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:4px}
+.cell{border:0;border-radius:6px;min-height:34px;font:500 11px var(--f-num);background:var(--surface2);color:var(--muted);cursor:pointer;padding:0}
+.cell.ok{background:var(--ok-bg);color:var(--ok)} .cell.warn{background:var(--warn-bg);color:var(--warn)} .cell.bad{background:var(--bad-bg);color:var(--bad);font-weight:700}
+.cell.cur{outline:2px solid var(--ink);outline-offset:1px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface2);border-radius:8px;padding:10px}
+.stat b{display:block;font:500 20px var(--f-num);font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted);font-weight:600}
+.stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)} .stat.bad b{color:var(--bad)}
+/* home list */
+.rlist{display:grid;gap:10px}
+.rcard{display:grid;grid-template-columns:1fr auto;gap:4px 10px;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;cursor:pointer}
+.rcard .t{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcard .m{grid-column:1/-1;color:var(--muted);font-size:13px;display:flex;gap:10px;flex-wrap:wrap}
+.rcard .no{font-family:var(--f-num);font-size:12px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:22px;display:grid;gap:12px;justify-items:start}
+.empty h3{margin:0;font:700 20px var(--f-disp);text-transform:uppercase}
+.verdict{border-radius:var(--r);padding:14px;font:700 18px/1.2 var(--f-disp);letter-spacing:.03em;text-transform:uppercase}
+.verdict.ok{background:var(--ok-bg);color:var(--ok)} .verdict.warn{background:var(--warn-bg);color:var(--warn)} .verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.verdict small{display:block;font:500 13px/1.4 var(--f-body);text-transform:none;letter-spacing:0;margin-top:6px;color:var(--ink)}
+ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.nextbar{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+.note{font-size:12px;color:var(--muted)}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:12px}
+.prow{display:grid;grid-template-columns:2fr 1.2fr .7fr auto;gap:6px;align-items:end}
+@media (max-width:440px){.prow{grid-template-columns:1fr 1fr}.prow .wide{grid-column:1/-1}}
+/* report paper — deliberately fixed light document look */
+.paperwrap{overflow:hidden;border-radius:6px;border:1px solid var(--line);background:var(--paper)}
+.paperscale{transform-origin:0 0}
+.paper{width:733px;background:var(--paper);color:var(--paper-ink);font:11px/1.4 var(--f-body);padding:4px 2px}
+.paper .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--paper-head);padding-bottom:6px}
+.paper .logo{height:52px;width:auto;display:block;margin-bottom:2px}
+.paper .co{font:700 18px var(--f-disp);color:var(--paper-head);text-transform:uppercase}
+.paper .coi{font-size:9.5px;color:#55605C}
+.paper .meta{text-align:right;font-size:10.5px}
+.paper h1{font:700 19px var(--f-disp);text-align:center;margin:14px 0 2px;color:var(--paper-head);letter-spacing:.04em}
+.paper .sub{text-align:center;color:#55605C;font-style:italic;margin-bottom:10px}
+.paper .ov{display:flex;justify-content:center;align-items:center;gap:10px;margin:6px 0 10px}
+.paper .ov b{padding:5px 14px;border-radius:3px;font:700 13px var(--f-disp);letter-spacing:.04em}
+.paper h4{background:var(--paper-head);color:#fff;margin:12px 0 0;padding:4px 7px;font:700 11.5px var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.paper table{width:100%;border-collapse:collapse}
+.paper td,.paper th{border:1px solid var(--paper-line);padding:3px 5px;vertical-align:top}
+.paper th{background:var(--paper-soft);font-weight:700;text-align:center}
+.paper td.k{background:var(--paper-soft);font-weight:700;width:17%}
+.paper td.c{text-align:center}
+.paper .num{font-family:var(--f-num);font-size:10px}
+.paper .p-ok{background:#D7EFDF;color:#1D6A43} .paper .p-warn{background:#FAEDC4;color:#7A5600} .paper .p-bad{background:#F8D3CD;color:#A01E12;font-weight:700}
+.paper ul{margin:6px 0;padding-left:16px}
+.paper li{margin-bottom:3px}
+.paper .sigwrap{break-inside:avoid;page-break-inside:avoid;margin-top:14px}
+.paper .sig{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:22px}
+.paper .sig div{display:grid;gap:14px}
+.paper .small{font-size:9px;color:#55605C}
+.paper .bt td{font-size:8.5px;padding:2px 3px;text-align:center;font-family:var(--f-num)}
+.langseg{flex:0 0 auto}.langseg button{flex:0 0 auto;min-width:46px}
+.paper .rchart-legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:4px 0 2px;font-size:10px}
+.paper .rchart-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.paper .rchart-box{border:1px solid var(--paper-line);padding:4px 6px 0;margin-top:6px;break-inside:avoid;page-break-inside:avoid}
+.paper .rchart-title{display:flex;justify-content:space-between;gap:10px;font-size:10px}
+.paper .rchart{display:block;max-width:100%;height:auto}
+.remind{border-color:var(--warn);background:var(--warn-bg)}
+.remind h3{color:var(--warn)}
+.rrow{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.pb{break-before:page;page-break-before:always}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand" id="hTitle">UPS Servis Jurnalı<small id="hSub">Servis hesabatları</small></div>
+    <span class="save" id="saveState"></span><span class="sync" id="syncState"></span>
+    <button class="btn sm ghost" id="hBack" hidden>← Siyahı</button>
+    <button class="btn sm ghost" id="hSettings">Ayarlar</button>
+  </div>
+  <nav class="tabs" id="tabs" hidden role="tablist"></nav>
+</header>
+<main class="wrap" id="main"></main>
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js"></script>
+<script src="lib/html2pdf.bundle.min.js"></script>
+<script src="lib/xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ---------------- constants ---------------- */
+const MEAS=[
+ ["Giriş gərginliyi (F–N)","V",207,253,3],["Giriş gərginliyi (F–F)","V",360,440,3],["Giriş cərəyanı","A",null,null,3],
+ ["Giriş tezliyi","Hz",49.5,50.5,1],["Bypass gərginliyi (F–N)","V",207,253,3],["Çıxış gərginliyi (F–N)","V",225,235,3],
+ ["Çıxış cərəyanı","A",null,null,3],["Çıxış tezliyi","Hz",49.9,50.1,1],["Yük səviyyəsi","%",0,80,3],
+ ["Çıxış aktiv gücü","kW",null,null,1],["DC şin gərginliyi","V",null,null,1],["Akkumulyator ümumi gərginliyi","V",null,null,1],
+ ["Akkumulyator şarj cərəyanı","A",null,null,1],["Neytral–Yer gərginliyi (N–PE)","V",0,3,1],["Otaq temperaturu","°C",15,25,1],
+ ["UPS daxili temperatur","°C",null,40,1]];
+const IDX_LOAD=8, IDX_ROOM=14;
+const CHK=["UPS-in ümumi vizual vəziyyəti","Ekran / panel göstəriciləri və alarmlar","Hadisə jurnalı (event log)","Soyutma ventilyatorları","Hava filtrləri","Güc kabelləri və klemmələr (bərkidilmə)","Termal yoxlama (termokamera)","DC kondensatorlar (şişmə / axma)","AC filtr kondensatorları","Rektifikator / şarj bloku","İnvertor bloku","Statik bypass","Bypass-a keçid və geri qayıdış testi","Akkumulyator kabineti / rəfi və bağlantılar","Akkumulyator açarı / qoruyucular","EPO (təcili söndürmə) funksiyası","Rabitə (SNMP / Modbus / quru kontaktlar)","Otaq şəraiti (temperatur, toz, havalandırma)"];
+const CHK_OPTS=[["Yaxşı","s-ok"],["Qeyd var","s-warn"],["Nasaz","s-bad"],["Yoxlanılmadı","s-idle"],["Tətbiq olunmur","s-idle"]];
+const WORKS=["Daxili və xarici təmizlik (tozun təmizlənməsi)","Ventilyatorların yoxlanılması / dəyişdirilməsi","Güc klemmələrinin bərkidilməsi","Parametrlərin və kalibrovkanın yoxlanılması","Proqram təminatının (firmware) yenilənməsi","Hadisə jurnalının oxunması və təhlili","Akkumulyatorların gərginlik və daxili müqavimət ölçümü","Akkumulyator boşalma (avtonomluq) testi","Bypass keçid testi","Hava filtrlərinin təmizlənməsi / dəyişdirilməsi"];
+const SVC_TYPES=["Planlı profilaktik servis","Qəza çağırışı","Quraşdırma / işə salma","Akkumulyator testi","Təmir"];
+const TOPO=["Online (ikiqat çevirmə)","Line-interactive","Offline / Standby","Modul tipli online"];
+const PHASE=["3/3","3/1","1/1"];
+const BTYPE=["VRLA AGM","VRLA Gel","Açıq tip (flooded)","Li-ion","NiCd"];
+const DIS=["Uğurlu","Uğursuz","Aparılmadı"];
+const MAXB=480;
+const TABS=[["svc","Servis"],["ups","UPS"],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],["bat","Akkum."],["blk","Bloklar"],["rep","Hesabat"]];
+
+/* ---------------- helpers ---------------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=x=>{if(x===null||x===undefined||x==="")return null;const n=parseFloat(String(x).replace(",","."));return Number.isFinite(n)?n:null};
+const fmt=(n,d=2)=>n===null||n===undefined||!Number.isFinite(n)?"—":n.toFixed(d);
+const todayISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fmtDate=iso=>{if(!iso)return "";const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);return m?`${m[3]}.${m[2]}.${m[1]}`:iso};
+function addMonths(iso,n){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");if(!m||!Number.isFinite(n))return "";const y=+m[1],mo=+m[2]-1+n,d=+m[3];
+  const last=new Date(y,mo+1,0).getDate();const dt=new Date(y,mo,Math.min(d,last));
+  return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0")}
+function yearsBetween(a,b){const pa=Date.parse(a),pb=Date.parse(b);if(!Number.isFinite(pa)||!Number.isFinite(pb))return null;return Math.round((pb-pa)/864e5/365.25*10)/10}
+function getP(o,p){return p.split(".").reduce((a,k)=>a==null?a:a[k],o)}
+function setP(o,p,v){const ks=p.split(".");let a=o;for(let i=0;i<ks.length-1;i++){if(a[ks[i]]==null)a[ks[i]]={};a=a[ks[i]]}a[ks[ks.length-1]]=v}
+function median(a){if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),h=s.length>>1;return s.length%2?s[h]:(s[h-1]+s[h])/2}
+let toastT;function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+const newId=()=>"r-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
+
+/* ---------------- model ---------------- */
+const DEFAULT_SETTINGS={notify:"",co:"",coaddr:"",cotel:"",eng:"",interval:6,warn:25,fail:50,vwarn:13.2,vfail:12.6,vhigh:14.0,life:5};
+function blankReport(S){
+  return {kind:"report",id:newId(),createdAt:Date.now(),updatedAt:Date.now(),
+    svc:{repno:"",date:todayISO(),type:SVC_TYPES[0],eng:S.eng||"",interval:String(S.interval??6)},
+    cl:{name:"",obj:"",addr:"",person:"",tel:"",sign:""},
+    ups:{brand:"",model:"",sn:"",kva:"",kw:"",topo:TOPO[0],phase:"3/3",fw:"",inst:"",hours:""},
+    meas:MEAS.map(m=>({v:["","",""],min:m[2]==null?"":String(m[2]),max:m[3]==null?"":String(m[3])})),
+    chk:CHK.map(()=>({s:"",n:""})),works:WORKS.map(()=>""),wExtra:"",parts:[],
+    bat:{brand:"",type:BTYPE[0],nom:"12",ah:"",per:"",str:"",inst:"",life:String(S.life),dev:"",ref:"",
+      warn:String(S.warn),fail:String(S.fail),vwarn:String(S.vwarn),vfail:String(S.vfail),vhigh:String(S.vhigh),blocks:[]},
+    dis:{res:"",load:"",time:"",v0:"",v1:""},notes:"",recs:""};
+}
+function normalize(r){const b=blankReport(state.settings);
+  const out=Object.assign(b,r);["svc","cl","ups","bat","dis"].forEach(k=>out[k]=Object.assign(blankReport(state.settings)[k],r[k]||{}));
+  if(!Array.isArray(out.meas)||out.meas.length!==MEAS.length)out.meas=b.meas;
+  if(!Array.isArray(out.chk)||out.chk.length!==CHK.length)out.chk=CHK.map((_,i)=>(r.chk&&r.chk[i])||{s:"",n:""});
+  if(!Array.isArray(out.works))out.works=WORKS.map(()=>"");
+  if(!Array.isArray(out.parts))out.parts=[];
+  if(!Array.isArray(out.bat.blocks))out.bat.blocks=[];
+  return out}
+function sampleReport(S){
+  const r=blankReport(S);
+  r.svc.repno="NÜMUNƏ-001";r.svc.eng=S.eng||"M. Məmmədov";
+  Object.assign(r.cl,{name:"NÜMUNƏ — Test xəstəxanası",obj:"Bina A, UPS otağı -1",addr:"Bakı ş.",person:"E. Əliyev",tel:"+994 50 000 00 00",sign:"E. Əliyev"});
+  Object.assign(r.ups,{brand:"Nümunə",model:"XYZ-500",sn:"SN123456789",kva:"500",kw:"500",fw:"v2.14",inst:"2021-03-15"});
+  const ex=[[229,231,228],[398,400,397],[402,395,410],[50.02],[229,231,228],[230,230.4,229.8],[380,365,391],[50],[52,50,54],[258],[545],[545],[2.1],[1.2],[27],[34]];
+  r.meas.forEach((m,i)=>m.v=[0,1,2].map(j=>ex[i][j]!==undefined?String(ex[i][j]):""));
+  r.chk.forEach(c=>c.s="Yaxşı");r.chk[3]={s:"Qeyd var",n:"Ventilyator #3 səs-küylüdür"};r.chk[17]={s:"Qeyd var",n:"Otaq temperaturu 27 °C"};
+  r.works=WORKS.map((_,i)=>i===4?"Xeyr":"Bəli");
+  r.parts=[{name:"Hava filtri",code:"FLT-500",qty:"2",note:"Planlı dəyişdirmə"}];
+  Object.assign(r.bat,{brand:"Nümunə 12V 200Ah",ah:"200",per:"40",str:"4",inst:"2021-03-15",dev:"Hioki BT3554",ref:"4.2"});
+  let seed=7;const rnd=(a,b)=>{seed=(seed*16807)%2147483647;return a+(b-a)*(seed/2147483647)};
+  const bad={6:[12.4,8.9],61:[13.05,5.6],82:[13.4,7.1],150:[13.1,5.5]};
+  r.bat.blocks=Array.from({length:160},(_,i)=>{const b=bad[i];return {v:(b?b[0]:rnd(13.45,13.7)).toFixed(2),r:(b?b[1]:rnd(3.9,4.8)).toFixed(2),t:rnd(25,28).toFixed(1)}});
+  Object.assign(r.dis,{res:"Uğurlu",load:"250",time:"12",v0:"545",v1:"468"});
+  r.notes="Hadisə jurnalında son 6 ayda 3 dəfə şəbəkə kəsintisi və uğurlu batareya rejiminə keçid qeydə alınıb.";
+  r.recs="UPS otağında kondisionerin texniki baxışı tövsiyə olunur.";
+  return r}
+
+/* ---------------- report languages (AZ / EN / RU) ---------------- */
+const LANGS=[["az","AZ"],["en","EN"],["ru","RU"]];
+const DICT={
+en:{"[Şirkət adı]":"[Company name]","Hesabat №":"Report No.","Tarix:":"Date:","UPS TEXNİKİ SERVİS HESABATI":"UPS TECHNICAL SERVICE REPORT","ÜMUMİ QİYMƏTLƏNDİRMƏ:":"OVERALL ASSESSMENT:",
+ "QƏNAƏTBƏXŞ":"SATISFACTORY","DİQQƏT TƏLƏB OLUNUR":"ATTENTION REQUIRED","TƏCİLİ MÜDAXİLƏ TƏLƏB OLUNUR":"URGENT ACTION REQUIRED",
+ "1. Müştəri və servis məlumatları":"1. Customer and service details","Müştəri":"Customer","Əlaqədar şəxs":"Contact person","Obyekt":"Site","Telefon":"Phone","Ünvan":"Address","Servis mühəndisi":"Service engineer","Servis tarixi":"Service date","Növbəti servis":"Next service",
+ "2. UPS cihazı":"2. UPS unit","Marka":"Brand","Model":"Model","Seriya №":"Serial No.","Firmware":"Firmware","Güc":"Power","Faza (giriş/çıxış)":"Phases (in/out)","Topologiya":"Topology","Quraşdırma tarixi":"Installation date",
+ "3. Ölçmə nəticələri":"3. Measurement results","Parametr":"Parameter","Vahid":"Unit","Norma":"Limits","Nəticə":"Result",
+ "Giriş gərginliyi (F–N)":"Input voltage (L–N)","Giriş gərginliyi (F–F)":"Input voltage (L–L)","Giriş cərəyanı":"Input current","Giriş tezliyi":"Input frequency","Bypass gərginliyi (F–N)":"Bypass voltage (L–N)","Çıxış gərginliyi (F–N)":"Output voltage (L–N)","Çıxış cərəyanı":"Output current","Çıxış tezliyi":"Output frequency","Yük səviyyəsi":"Load level","Çıxış aktiv gücü":"Output active power","DC şin gərginliyi":"DC bus voltage","Akkumulyator ümumi gərginliyi":"Total battery voltage","Akkumulyator şarj cərəyanı":"Battery charging current","Neytral–Yer gərginliyi (N–PE)":"Neutral–Earth voltage (N–PE)","Otaq temperaturu":"Room temperature","UPS daxili temperatur":"UPS internal temperature",
+ "Normal":"Normal","Norma xaricində":"Out of range","Qeydə alındı":"Recorded","Diqqət":"Attention","Dəyişdirilməli":"Replace","Yaxşı":"Good","Qeyd var":"Remark","Nasaz":"Faulty","Yoxlanılmadı":"Not checked","Tətbiq olunmur":"N/A","Bəli":"Yes","Xeyr":"No",
+ "4. Vizual və funksional yoxlama":"4. Visual and functional inspection","Yoxlanılan bənd":"Inspection item","Qeyd":"Note",
+ "UPS-in ümumi vizual vəziyyəti":"General visual condition of the UPS","Ekran / panel göstəriciləri və alarmlar":"Display / panel indicators and alarms","Hadisə jurnalı (event log)":"Event log","Soyutma ventilyatorları":"Cooling fans","Hava filtrləri":"Air filters","Güc kabelləri və klemmələr (bərkidilmə)":"Power cables and terminals (tightening)","Termal yoxlama (termokamera)":"Thermal inspection (thermal camera)","DC kondensatorlar (şişmə / axma)":"DC capacitors (bulging / leakage)","AC filtr kondensatorları":"AC filter capacitors","Rektifikator / şarj bloku":"Rectifier / charger","İnvertor bloku":"Inverter","Statik bypass":"Static bypass","Bypass-a keçid və geri qayıdış testi":"Transfer to bypass and return test","Akkumulyator kabineti / rəfi və bağlantılar":"Battery cabinet / rack and connections","Akkumulyator açarı / qoruyucular":"Battery breaker / fuses","EPO (təcili söndürmə) funksiyası":"EPO (emergency power off) function","Rabitə (SNMP / Modbus / quru kontaktlar)":"Communication (SNMP / Modbus / dry contacts)","Otaq şəraiti (temperatur, toz, havalandırma)":"Room conditions (temperature, dust, ventilation)",
+ "5. Görülən işlər":"5. Work performed","Daxili və xarici təmizlik (tozun təmizlənməsi)":"Internal and external cleaning (dust removal)","Ventilyatorların yoxlanılması / dəyişdirilməsi":"Fan check / replacement","Güc klemmələrinin bərkidilməsi":"Tightening of power terminals","Parametrlərin və kalibrovkanın yoxlanılması":"Parameter and calibration check","Proqram təminatının (firmware) yenilənməsi":"Firmware update","Hadisə jurnalının oxunması və təhlili":"Event log download and analysis","Akkumulyatorların gərginlik və daxili müqavimət ölçümü":"Battery voltage and internal resistance measurement","Akkumulyator boşalma (avtonomluq) testi":"Battery discharge (autonomy) test","Bypass keçid testi":"Bypass transfer test","Hava filtrlərinin təmizlənməsi / dəyişdirilməsi":"Air filter cleaning / replacement","Əlavə:":"Additional:",
+ "6. Akkumulyatorlar":"6. Batteries","Marka / model":"Brand / model","Tip":"Type","Konfiqurasiya":"Configuration","Tutum":"Capacity","Yaşı":"Age","il":"years","Ölçü cihazı":"Measuring instrument","Referans R":"Reference R",
+ "Ölçülmüş blok":"Blocks measured","Orta R, mΩ":"Average R, mΩ","Min / maks R":"Min / max R","Orta blok V":"Average block V","Min / maks V":"Min / max V","Normal / Diqqət / Dəyiş.":"Normal / Attention / Replace",
+ "Qrup":"Group","Blok sayı":"Blocks","Cəmi V":"Total V","Maks R":"Max R","yoxdur":"none","Boşalma testi":"Discharge test","Uğurlu":"Passed","Uğursuz":"Failed","Aparılmadı":"Not performed","dəq":"min","kW yük":"kW load",
+ "7. Dəyişdirilən / quraşdırılan hissələr":"7. Replaced / installed parts","Hissə":"Part","Kod / Part №":"Code / Part No.","Say":"Qty","Hissə dəyişdirilməyib.":"No parts were replaced.",
+ "8. Nəticə və tövsiyələr":"8. Conclusions and recommendations","Texniki qeydlər:":"Technical notes:","9. Təsdiq":"9. Approval","Servis mühəndisi:":"Service engineer:","Müştəri nümayəndəsi:":"Customer representative:","Ad, soyad:":"Name:","İmza:":"Signature:",
+ "Əlavə: Akkumulyator ölçmə cədvəli (V / mΩ)":"Appendix: Battery measurement table (V / mΩ)","Blok":"Block",
+ "Daxili müqavimət — qruplar üzrə diaqram":"Internal resistance by group","Hər sütun bir blokun daxili müqavimətidir, mΩ":"Each bar is the internal resistance of one block, mΩ","Referans":"Reference","diqqət":"attention","dəyiş.":"replace","orta":"avg","maks":"max","dəyişdirilməli":"to replace",
+ "Planlı profilaktik servis":"Scheduled preventive maintenance","Qəza çağırışı":"Emergency call-out","Quraşdırma / işə salma":"Installation / commissioning","Akkumulyator testi":"Battery test","Təmir":"Repair",
+ "Online (ikiqat çevirmə)":"Online (double conversion)","Modul tipli online":"Modular online","Açıq tip (flooded)":"Flooded (vented)"},
+ru:{"[Şirkət adı]":"[Название компании]","Hesabat №":"Отчёт №","Tarix:":"Дата:","UPS TEXNİKİ SERVİS HESABATI":"ОТЧЁТ О ТЕХНИЧЕСКОМ ОБСЛУЖИВАНИИ ИБП","ÜMUMİ QİYMƏTLƏNDİRMƏ:":"ОБЩАЯ ОЦЕНКА:",
+ "QƏNAƏTBƏXŞ":"УДОВЛЕТВОРИТЕЛЬНО","DİQQƏT TƏLƏB OLUNUR":"ТРЕБУЕТСЯ ВНИМАНИЕ","TƏCİLİ MÜDAXİLƏ TƏLƏB OLUNUR":"ТРЕБУЕТСЯ СРОЧНОЕ ВМЕШАТЕЛЬСТВО",
+ "1. Müştəri və servis məlumatları":"1. Данные клиента и обслуживания","Müştəri":"Клиент","Əlaqədar şəxs":"Контактное лицо","Obyekt":"Объект","Telefon":"Телефон","Ünvan":"Адрес","Servis mühəndisi":"Сервисный инженер","Servis tarixi":"Дата обслуживания","Növbəti servis":"Следующее обслуживание",
+ "2. UPS cihazı":"2. ИБП","Marka":"Марка","Model":"Модель","Seriya №":"Серийный №","Firmware":"Прошивка","Güc":"Мощность","Faza (giriş/çıxış)":"Фазы (вход/выход)","Topologiya":"Топология","Quraşdırma tarixi":"Дата установки",
+ "3. Ölçmə nəticələri":"3. Результаты измерений","Parametr":"Параметр","Vahid":"Ед.","Norma":"Норма","Nəticə":"Результат",
+ "Giriş gərginliyi (F–N)":"Входное напряжение (Ф–N)","Giriş gərginliyi (F–F)":"Входное напряжение (Ф–Ф)","Giriş cərəyanı":"Входной ток","Giriş tezliyi":"Входная частота","Bypass gərginliyi (F–N)":"Напряжение байпаса (Ф–N)","Çıxış gərginliyi (F–N)":"Выходное напряжение (Ф–N)","Çıxış cərəyanı":"Выходной ток","Çıxış tezliyi":"Выходная частота","Yük səviyyəsi":"Уровень нагрузки","Çıxış aktiv gücü":"Выходная активная мощность","DC şin gərginliyi":"Напряжение шины DC","Akkumulyator ümumi gərginliyi":"Общее напряжение батареи","Akkumulyator şarj cərəyanı":"Ток заряда батареи","Neytral–Yer gərginliyi (N–PE)":"Напряжение нейтраль–земля (N–PE)","Otaq temperaturu":"Температура в помещении","UPS daxili temperatur":"Внутренняя температура ИБП",
+ "Normal":"Норма","Norma xaricində":"Вне нормы","Qeydə alındı":"Зафиксировано","Diqqət":"Внимание","Dəyişdirilməli":"Требует замены","Yaxşı":"Хорошо","Qeyd var":"Есть замечание","Nasaz":"Неисправно","Yoxlanılmadı":"Не проверено","Tətbiq olunmur":"Не применимо","Bəli":"Да","Xeyr":"Нет",
+ "4. Vizual və funksional yoxlama":"4. Визуальный и функциональный осмотр","Yoxlanılan bənd":"Проверяемый пункт","Qeyd":"Примечание",
+ "UPS-in ümumi vizual vəziyyəti":"Общее визуальное состояние ИБП","Ekran / panel göstəriciləri və alarmlar":"Индикация дисплея / панели и аварии","Hadisə jurnalı (event log)":"Журнал событий","Soyutma ventilyatorları":"Вентиляторы охлаждения","Hava filtrləri":"Воздушные фильтры","Güc kabelləri və klemmələr (bərkidilmə)":"Силовые кабели и клеммы (затяжка)","Termal yoxlama (termokamera)":"Тепловизионный контроль","DC kondensatorlar (şişmə / axma)":"Конденсаторы DC (вздутие / утечка)","AC filtr kondensatorları":"Конденсаторы AC-фильтра","Rektifikator / şarj bloku":"Выпрямитель / зарядное устройство","İnvertor bloku":"Инвертор","Statik bypass":"Статический байпас","Bypass-a keçid və geri qayıdış testi":"Тест перехода на байпас и обратно","Akkumulyator kabineti / rəfi və bağlantılar":"Батарейный шкаф / стеллаж и соединения","Akkumulyator açarı / qoruyucular":"Батарейный автомат / предохранители","EPO (təcili söndürmə) funksiyası":"Функция EPO (аварийное отключение)","Rabitə (SNMP / Modbus / quru kontaktlar)":"Связь (SNMP / Modbus / сухие контакты)","Otaq şəraiti (temperatur, toz, havalandırma)":"Условия в помещении (температура, пыль, вентиляция)",
+ "5. Görülən işlər":"5. Выполненные работы","Daxili və xarici təmizlik (tozun təmizlənməsi)":"Внутренняя и внешняя чистка (удаление пыли)","Ventilyatorların yoxlanılması / dəyişdirilməsi":"Проверка / замена вентиляторов","Güc klemmələrinin bərkidilməsi":"Подтяжка силовых клемм","Parametrlərin və kalibrovkanın yoxlanılması":"Проверка параметров и калибровки","Proqram təminatının (firmware) yenilənməsi":"Обновление прошивки","Hadisə jurnalının oxunması və təhlili":"Считывание и анализ журнала событий","Akkumulyatorların gərginlik və daxili müqavimət ölçümü":"Измерение напряжения и внутреннего сопротивления батарей","Akkumulyator boşalma (avtonomluq) testi":"Разрядный тест батарей (автономия)","Bypass keçid testi":"Тест перехода на байпас","Hava filtrlərinin təmizlənməsi / dəyişdirilməsi":"Чистка / замена воздушных фильтров","Əlavə:":"Дополнительно:",
+ "6. Akkumulyatorlar":"6. Аккумуляторные батареи","Marka / model":"Марка / модель","Tip":"Тип","Konfiqurasiya":"Конфигурация","Tutum":"Ёмкость","Yaşı":"Возраст","il":"лет","Ölçü cihazı":"Измерительный прибор","Referans R":"Опорное R",
+ "Ölçülmüş blok":"Измерено блоков","Orta R, mΩ":"Среднее R, mΩ","Min / maks R":"Мин / макс R","Orta blok V":"Среднее V блока","Min / maks V":"Мин / макс V","Normal / Diqqət / Dəyiş.":"Норма / Внимание / Замена",
+ "Qrup":"Группа","Blok sayı":"Кол-во блоков","Cəmi V":"Сумма V","Maks R":"Макс R","yoxdur":"нет","Boşalma testi":"Разрядный тест","Uğurlu":"Успешно","Uğursuz":"Не пройден","Aparılmadı":"Не проводился","dəq":"мин","kW yük":"kW нагрузка",
+ "7. Dəyişdirilən / quraşdırılan hissələr":"7. Заменённые / установленные детали","Hissə":"Деталь","Kod / Part №":"Код / Арт. №","Say":"Кол-во","Hissə dəyişdirilməyib.":"Детали не заменялись.",
+ "8. Nəticə və tövsiyələr":"8. Заключение и рекомендации","Texniki qeydlər:":"Технические примечания:","9. Təsdiq":"9. Подтверждение","Servis mühəndisi:":"Сервисный инженер:","Müştəri nümayəndəsi:":"Представитель клиента:","Ad, soyad:":"ФИО:","İmza:":"Подпись:",
+ "Əlavə: Akkumulyator ölçmə cədvəli (V / mΩ)":"Приложение: Таблица измерений батарей (V / mΩ)","Blok":"Блок",
+ "Daxili müqavimət — qruplar üzrə diaqram":"Внутреннее сопротивление по группам","Hər sütun bir blokun daxili müqavimətidir, mΩ":"Каждый столбец — внутреннее сопротивление одного блока, mΩ","Referans":"Опорное","diqqət":"внимание","dəyiş.":"замена","orta":"сред.","maks":"макс","dəyişdirilməli":"замена",
+ "Planlı profilaktik servis":"Плановое профилактическое обслуживание","Qəza çağırışı":"Аварийный вызов","Quraşdırma / işə salma":"Монтаж / пусконаладка","Akkumulyator testi":"Тестирование батарей","Təmir":"Ремонт",
+ "Online (ikiqat çevirmə)":"Онлайн (двойное преобразование)","Line-interactive":"Линейно-интерактивный","Offline / Standby":"Офлайн / резервный","Modul tipli online":"Модульный онлайн","Açıq tip (flooded)":"Открытого типа (заливные)"}};
+let PL="az";
+const tl=(L,s)=>L==="az"?s:((DICT[L]||{})[s]??s);
+const t=s=>tl(PL,s);
+/* free text typed by the engineer: machine translation cached inside the report */
+const ftl=(L,r,s)=>{if(!s||L==="az")return s;const c=r&&r.tr&&r.tr[L];return (c&&c[s])||s};
+const ft=s=>ftl(PL,state.cur,s);
+const CT={
+ az:{measOut:l=>"Norma xaricində olan parametrlər: "+l+".",measOk:"Ölçülən bütün elektrik parametrləri norma daxilindədir.",nasaz:l=>"Nasaz komponent(lər) aşkarlandı: "+l+". Təcili təmir / dəyişdirmə tələb olunur.",chkOk:"Vizual və funksional yoxlamada nasazlıq aşkarlanmayıb.",qeyd:l=>"Qeyd olunan bəndlər: "+l+" — izlənilməsi tövsiyə olunur.",
+  tested:(n,ok,at,rp)=>`${n} akkumulyator bloku yoxlanıldı: ${ok} normal, ${at} diqqət, ${rp} dəyişdirilməli.`,repMany:p=>`Dəyişdirilməli blokların sayı çox olduğundan (${p}%) bütün akkumulyator dəstinin dəyişdirilməsi tövsiyə olunur.`,repFew:l=>`Dəyişdirilməli bloklar (${l}) ən qısa müddətdə eyni tip yeni bloklarla əvəz olunmalıdır.`,att:l=>`Diqqət statuslu bloklar (${l}) 1–3 ay ərzində təkrar ölçülməlidir.`,
+  ageOver:(a,l)=>`Akkumulyatorların yaşı (${a} il) tövsiyə olunan istismar müddətinə (${l} il) çatıb — tam dəyişdirmə planlaşdırılmalıdır.`,ageNear:"Akkumulyatorların istismar müddətinin sonuna 1 ildən az qalıb — növbəti ilin büdcəsinə dəyişdirmə daxil edilməlidir.",disFail:"Boşalma testi uğursuz oldu — avtonomluq tələb olunan səviyyədə deyil.",
+  room:x=>`Otaq temperaturu (${x} °C) 25 °C-dən yüksəkdir; bu, akkumulyator ömrünü qısaldır — kondisioner sisteminin yoxlanılması tövsiyə olunur.`,load:"UPS yük səviyyəsi 80%-dən yüksəkdir — yükün paylanması və ya güc ehtiyatının artırılması nəzərdən keçirilməlidir.",next:d=>"Növbəti planlı servis: "+d+".",
+  cfg:(s,p,n)=>`${s} qrup × ${p} blok = ${n} blok`,rule:(w,f,vw,vf)=>`Qiymətləndirmə: referansdan +${w}% artım — Diqqət, +${f}% — Dəyişdirilməli; blok gərginliyi < ${vw} V — Diqqət, < ${vf} V — Dəyişdirilməli. Etiket: Q = qrup, B = blok.`},
+ en:{measOut:l=>"Parameters out of range: "+l+".",measOk:"All measured electrical parameters are within limits.",nasaz:l=>"Faulty component(s) found: "+l+". Urgent repair / replacement is required.",chkOk:"No faults were found during the visual and functional inspection.",qeyd:l=>"Items with remarks: "+l+" — monitoring is recommended.",
+  tested:(n,ok,at,rp)=>`${n} battery blocks were tested: ${ok} normal, ${at} attention, ${rp} to be replaced.`,repMany:p=>`Due to the high number of blocks to be replaced (${p}%), replacement of the entire battery set is recommended.`,repFew:l=>`The blocks to be replaced (${l}) should be replaced as soon as possible with new blocks of the same type.`,att:l=>`Blocks with attention status (${l}) should be re-measured within 1–3 months.`,
+  ageOver:(a,l)=>`The battery age (${a} years) has reached the recommended service life (${l} years) — full replacement should be planned.`,ageNear:"Less than 1 year remains until the end of the battery service life — replacement should be included in next year's budget.",disFail:"The discharge test failed — autonomy is below the required level.",
+  room:x=>`Room temperature (${x} °C) is above 25 °C; this shortens battery life — inspection of the air-conditioning system is recommended.`,load:"UPS load level is above 80% — load redistribution or an increase of the power reserve should be considered.",next:d=>"Next scheduled service: "+d+".",
+  cfg:(s,p,n)=>`${s} groups × ${p} blocks = ${n} blocks`,rule:(w,f,vw,vf)=>`Assessment: +${w}% increase over reference — Attention, +${f}% — Replace; block voltage < ${vw} V — Attention, < ${vf} V — Replace. Label: Q = group, B = block.`},
+ ru:{measOut:l=>"Параметры вне нормы: "+l+".",measOk:"Все измеренные электрические параметры в пределах нормы.",nasaz:l=>"Обнаружены неисправные компоненты: "+l+". Требуется срочный ремонт / замена.",chkOk:"При визуальном и функциональном осмотре неисправностей не выявлено.",qeyd:l=>"Пункты с замечаниями: "+l+" — рекомендуется наблюдение.",
+  tested:(n,ok,at,rp)=>`Проверено аккумуляторных блоков: ${n} (в норме — ${ok}, внимание — ${at}, требуют замены — ${rp}).`,repMany:p=>`Из-за большого количества блоков, требующих замены (${p}%), рекомендуется замена всего комплекта батарей.`,repFew:l=>`Блоки, требующие замены (${l}), следует как можно скорее заменить новыми блоками того же типа.`,att:l=>`Блоки со статусом «Внимание» (${l}) необходимо повторно измерить в течение 1–3 месяцев.`,
+  ageOver:(a,l)=>`Возраст батарей (${a} лет) достиг рекомендуемого срока службы (${l} лет) — необходимо запланировать полную замену.`,ageNear:"До окончания срока службы батарей осталось менее 1 года — замену следует включить в бюджет следующего года.",disFail:"Разрядный тест не пройден — автономия ниже требуемого уровня.",
+  room:x=>`Температура в помещении (${x} °C) выше 25 °C; это сокращает срок службы батарей — рекомендуется проверить систему кондиционирования.`,load:"Нагрузка ИБП превышает 80% — следует рассмотреть перераспределение нагрузки или увеличение резерва мощности.",next:d=>"Следующее плановое обслуживание: "+d+".",
+  cfg:(s,p,n)=>`${s} групп × ${p} блоков = ${n} блоков`,rule:(w,f,vw,vf)=>`Оценка: рост на +${w}% относительно опорного — Внимание, +${f}% — Замена; напряжение блока < ${vw} V — Внимание, < ${vf} V — Замена. Метка: Q = группа, B = блок.`}};
+function concl(r,a,L){const T=CT[L]||CT.az,n=x=>tl(L,x),C=[];
+  const anyMeas=r.meas.some(m=>m.v.some(x=>num(x)!==null));
+  if(anyMeas)C.push(a.out.length?T.measOut(a.out.map(n).join("; ")):T.measOk);
+  if(a.nasaz.length)C.push(T.nasaz(a.nasaz.map(n).join("; ")));else if(r.chk.some(c=>c.s))C.push(T.chkOk);
+  if(a.qeyd.length)C.push(T.qeyd(a.qeyd.map(n).join("; ")));
+  const tested=a.tested.length,rp=a.rep.length,at=a.att.length;
+  if(tested)C.push(T.tested(tested,tested-at-rp,at,rp));
+  if(rp){const p=rp/Math.max(1,tested);C.push(p>=0.2?T.repMany(Math.round(p*100)):T.repFew(a.rep.map(b=>b.lab).join(", ")))}
+  if(at)C.push(T.att(a.att.map(b=>b.lab).join(", ")));
+  if(a.age!==null&&a.life>0){if(a.age>=a.life)C.push(T.ageOver(a.age.toFixed(1),a.life));else if(a.age>=a.life-1)C.push(T.ageNear)}
+  if(r.dis.res==="Uğursuz")C.push(T.disFail);
+  const room=num(r.meas[IDX_ROOM].v[0]);if(room!==null&&room>25)C.push(T.room(room));
+  const loads=r.meas[IDX_LOAD].v.map(num).filter(x=>x!==null);if(loads.length&&Math.max(...loads)>80)C.push(T.load);
+  if(r.recs&&r.recs.trim())C.push(ftl(L,r,r.recs.trim()));
+  if(a.next)C.push(T.next(fmtDate(a.next)));
+  return C}
+/* free-text fields that get machine-translated */
+function freeTexts(r){const out=[r.cl.obj,r.wExtra,r.notes,r.recs&&r.recs.trim()];r.chk.forEach(c=>out.push(c.n));r.parts.forEach(p=>{out.push(p.name);out.push(p.note)});
+  return [...new Set(out.filter(x=>x&&String(x).trim()))]}
+async function ensureTranslations(r,L){if(L==="az")return true;
+  r.tr=r.tr||{};r.tr[L]=r.tr[L]||{};const need=freeTexts(r).filter(s=>!(s in r.tr[L]));if(!need.length)return true;
+  if(!hasServer()){toast("Sərbəst mətnlərin tərcüməsi üçün server lazımdır");return false}
+  try{const res=await api("translate",{texts:need,to:L});need.forEach((s,i)=>{if(res.out&&res.out[i])r.tr[L][s]=res.out[i]});markDirty();return true}
+  catch(e){toast("Sərbəst mətnlər tərcümə olunmadı (internet?) — qalan hissə tərcümə edildi");return false}}
+
+/* ---------------- calculations ---------------- */
+function measStatus(r,i){const m=r.meas[i],n=MEAS[i][4];const vals=m.v.slice(0,n).map(num).filter(x=>x!==null);
+  if(!vals.length)return "";const mn=num(m.min),mx=num(m.max);
+  if(vals.some(v=>(mn!==null&&v<mn)||(mx!==null&&v>mx)))return "Norma xaricində";
+  return (mn===null&&mx===null)?"Qeydə alındı":"Normal"}
+const batTotal=r=>{const p=num(r.bat.per),s=num(r.bat.str);return p>0&&s>0?Math.min(MAXB,Math.floor(p)*Math.floor(s)):0};
+function refEff(r){const x=num(r.bat.ref);if(x>0)return x;const rs=r.bat.blocks.slice(0,batTotal(r)).map(b=>num(b&&b.r)).filter(v=>v!==null);return median(rs)}
+function blockStatus(r,b,ref){if(!b)return "";const v=num(b.v),R=num(b.r);if(v===null&&R===null)return "";
+  const B=r.bat,dev=(R!==null&&ref)?R/ref-1:null,w=num(B.warn)/100,f=num(B.fail)/100,vw=num(B.vwarn),vf=num(B.vfail),vh=num(B.vhigh);
+  if((dev!==null&&f!==null&&!isNaN(f)&&dev>=f)||(v!==null&&vf!==null&&v<vf))return "Dəyişdirilməli";
+  if((dev!==null&&w!==null&&!isNaN(w)&&dev>=w)||(v!==null&&vw!==null&&v<vw)||(v!==null&&vh!==null&&v>vh))return "Diqqət";
+  return "Normal"}
+const lbl=(r,i)=>{const p=Math.floor(num(r.bat.per))||1;return "Q"+(Math.floor(i/p)+1)+"-B"+String(i%p+1).padStart(2,"0")};
+function analyze(r){
+  const tot=batTotal(r),ref=refEff(r),blocks=[];
+  for(let i=0;i<tot;i++){const b=r.bat.blocks[i]||{};blocks.push({i,lab:lbl(r,i),s:Math.floor(i/(Math.floor(num(r.bat.per))||1))+1,v:num(b.v),r:num(b.r),t:num(b.t),st:blockStatus(r,b,ref),dev:(num(b.r)!==null&&ref)?num(b.r)/ref-1:null})}
+  const tested=blocks.filter(b=>b.st);const rv=blocks.map(b=>b.r).filter(x=>x!==null),vv=blocks.map(b=>b.v).filter(x=>x!==null);
+  const rep=tested.filter(b=>b.st==="Dəyişdirilməli"),att=tested.filter(b=>b.st==="Diqqət");
+  const ms=MEAS.map((_,i)=>measStatus(r,i));const out=MEAS.map((m,i)=>ms[i]==="Norma xaricində"?m[0]:null).filter(Boolean);
+  const nasaz=CHK.filter((_,i)=>r.chk[i].s==="Nasaz"),qeyd=CHK.filter((_,i)=>r.chk[i].s==="Qeyd var");
+  const age=yearsBetween(r.bat.inst,r.svc.date),life=num(r.bat.life);
+  const next=addMonths(r.svc.date,num(r.svc.interval));
+  let overall="QƏNAƏTBƏXŞ",cls="ok";
+  if(nasaz.length||rep.length||r.dis.res==="Uğursuz"){overall="TƏCİLİ MÜDAXİLƏ TƏLƏB OLUNUR";cls="bad"}
+  else if(out.length||att.length||qeyd.length||(age!==null&&life>0&&age>=life)){overall="DİQQƏT TƏLƏB OLUNUR";cls="warn"}
+  const strings=[];const ns=Math.min(8,Math.floor(num(r.bat.str))||0);
+  for(let s=1;s<=ns;s++){const bs=blocks.filter(b=>b.s===s);const rr=bs.map(b=>b.r).filter(x=>x!==null);
+    strings.push({s,n:bs.filter(b=>b.st).length,sumV:bs.reduce((a,b)=>a+(b.v||0),0),avgR:rr.length?rr.reduce((a,b)=>a+b,0)/rr.length:null,maxR:rr.length?Math.max(...rr):null,att:bs.filter(b=>b.st==="Diqqət").length,rep:bs.filter(b=>b.st==="Dəyişdirilməli").length})}
+  const A={tot,ref,blocks,tested,rep,att,rv,vv,ms,out,nasaz,qeyd,age,life,next,overall,cls,strings};A.C=concl(r,A,"az");return A}
+const stCls=s=>(s==="Normal"||s==="Yaxşı")?"ok":(s==="Diqqət"||s==="Qeyd var")?"warn":(s==="Dəyişdirilməli"||s==="Nasaz"||s==="Norma xaricində")?"bad":"";
+
+/* ---------------- storage & sync (offline-first, central server) ---------------- */
+const CFG=Object.assign({serverUrl:"",apiKey:""},window.UPS_CONFIG||{});
+const IS_GAS=!!(window.google&&google.script&&google.script.run);
+const IS_APP=!!(window.Capacitor&&typeof Capacitor.isNativePlatform==="function"&&Capacitor.isNativePlatform());
+const state={reports:{},remote:{},pending:new Set(),settings:{...DEFAULT_SETTINGS},me:{name:"",url:"",key:""},
+  cur:null,plang:"az",tab:"svc",bi:0,dirty:false,saving:null,view:"home",online:null,syncing:false,syncErr:"",lastSync:0,q:""};
+const LS={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+const clone=o=>JSON.parse(JSON.stringify(o));
+function loadLocal(){
+  (LS.get("ups.reports")||[]).forEach(r=>{if(r&&r.id)state.reports[r.id]=r});
+  (LS.get("ups.pending")||[]).forEach(id=>state.pending.add(id));
+  Object.assign(state.me,LS.get("ups.me")||{});
+  if(!state.me.url)state.me.url=CFG.serverUrl||"";
+  if(!state.me.key)state.me.key=CFG.apiKey||"";
+  state.settings={...DEFAULT_SETTINGS,...(LS.get("ups.settings")||{})};
+  (LS.get("ups.remote")||[]).forEach(s=>{if(s&&s.id)state.remote[s.id]=s});
+}
+function saveLocalReports(){if(!LS.set("ups.reports",Object.values(state.reports))){toast("Telefonun yaddaşı dolub: köhnə hesabatları silin");return false}return true}
+const savePending=()=>LS.set("ups.pending",[...state.pending]);
+const hasServer=()=>IS_GAS||!!(state.me.url&&state.me.key);
+
+async function api(action,payload={}){
+  const body={key:state.me.key,action,worker:state.me.name,...payload};
+  if(IS_GAS)return new Promise((res,rej)=>google.script.run
+    .withSuccessHandler(r=>{if(r&&r.ok)res(r);else{const e=new Error(r&&r.error||"server");e.server=true;e.data=r||{};rej(e)}})
+    .withFailureHandler(e=>rej(e)).api(body));
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),60000);
+  try{
+    const res=await fetch(state.me.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),signal:ctl.signal,redirect:"follow"});
+    let j;try{j=await res.json()}catch(e){throw new Error("bad_response")}
+    if(!j.ok){const e=new Error(j.error||"server");e.server=true;e.data=j;throw e}
+    return j}
+  finally{clearTimeout(t)}}
+
+function summaryOf(r){const a=analyze(r);return {id:r.id,repno:r.svc.repno,date:r.svc.date,client:r.cl.name,obj:r.cl.obj,brand:r.ups.brand,model:r.ups.model,sn:r.ups.sn,kva:r.ups.kva,
+  eng:r.svc.eng,overall:a.overall,cls:a.cls,tested:a.tested.length,rep:a.rep.length,att:a.att.length,next:a.next,updatedAt:r.updatedAt,by:r.by||""}}
+function blocksOf(r){const a=analyze(r),p=Math.floor(num(r.bat.per))||1;return a.blocks.filter(b=>b.st).map(b=>[b.lab,b.s,b.i%p+1,b.v,b.r,b.t,b.st])}
+const clsOfOverall=o=>/TƏCİLİ/.test(o||"")?"bad":/DİQQƏT/.test(o||"")?"warn":o?"ok":"";
+
+let syncTimer=null;
+function scheduleSync(ms=2500){clearTimeout(syncTimer);syncTimer=setTimeout(sync,ms)}
+function editorBusy(){const a=document.activeElement;return a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)}
+let pendingRemote=false;
+function applyRemoteToOpen(id){
+  if(!state.cur||state.cur.id!==id||state.view!=="edit")return;
+  if(state.dirty||state.saving)return;
+  if(editorBusy()){pendingRemote=true;return}
+  pendingRemote=false;state.cur=normalize(clone(state.reports[id]));state.reports[id]=state.cur;
+  const y=window.scrollY;renderEditor();window.scrollTo(0,y);toast("Digər cihazdakı dəyişikliklər yükləndi")}
+document.addEventListener("focusout",()=>{if(pendingRemote&&state.cur)setTimeout(()=>applyRemoteToOpen(state.cur.id),300)});
+
+async function sync(){
+  clearTimeout(syncTimer);
+  if(state.syncing){scheduleSync(4000);return}
+  if(!hasServer()){updateSyncBadge();return}
+  state.syncing=true;updateSyncBadge();
+  try{
+    for(const id of [...state.pending]){
+      const r=state.reports[id];
+      if(!r){state.pending.delete(id);continue}
+      if(state.cur&&state.cur.id===id&&(state.dirty||state.saving))continue;
+      try{const res=await api("save",{report:r,summary:summaryOf(r),blocks:blocksOf(r)});
+        state.pending.delete(id);state.remote[id]={...summaryOf(r),...(res.summary||{})}}
+      catch(e){
+        if(e.server&&e.data&&e.data.error==="conflict"&&e.data.report){
+          state.reports[id]=e.data.report;state.pending.delete(id);applyRemoteToOpen(id);
+          toast("Bu hesabat başqa cihazda daha yeni dəyişdirilib — yeni versiya yükləndi")}
+        else if(e.server&&e.data&&e.data.error==="auth")throw e;
+        else if(e.server){state.syncErr="Server xətası: "+e.message}
+        else throw e}}
+    savePending();saveLocalReports();
+    const L=await api("list");
+    state.remote={};(L.items||[]).forEach(s=>{s.cls=clsOfOverall(s.overall);state.remote[s.id]=s});
+    LS.set("ups.remote",Object.values(state.remote));
+    if(L.role&&L.role!==state.me.role){state.me.role=L.role;LS.set("ups.me",state.me)}
+    if(L.settings){state.settings={...DEFAULT_SETTINGS,...L.settings};LS.set("ups.settings",state.settings)}
+    for(const id in state.remote){const loc=state.reports[id];
+      if(loc&&!state.pending.has(id)&&(state.remote[id].updatedAt||0)>(loc.updatedAt||0)){
+        if(state.cur&&state.cur.id===id&&state.dirty)continue;
+        try{const g=await api("get",{id});state.reports[id]=g.report;applyRemoteToOpen(id)}catch(e){}}}
+    saveLocalReports();
+    state.online=true;state.lastSync=Date.now();state.syncErr="";scheduleReminders();
+  }catch(e){
+    state.online=false;
+    state.syncErr=e&&e.message==="auth"?"API açarı yanlışdır — Ayarlarda yoxlayın":e&&e.message==="bad_response"?"Server ünvanı yanlışdır — Ayarlarda yoxlayın":"İnternet yoxdur və ya server cavab vermir";
+  }finally{
+    state.syncing=false;updateSyncBadge();
+    if(state.pending.size)scheduleSync(30000);
+    if(state.view==="home"&&document.activeElement?.id!=="q")renderHome();
+  }}
+window.addEventListener("online",()=>scheduleSync(500));
+setInterval(()=>{if(document.visibilityState==="visible")sync()},90000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")scheduleSync(800)});
+
+function updateSyncBadge(){const el=$("#syncState");if(!el)return;const n=state.pending.size;let t,c="";
+  if(!hasServer()){t="Server qoşulmayıb";c="warn"}
+  else if(state.syncing){t="sinxronlaşır…"}
+  else if(state.online===false){t=(n?n+" gözləyir · ":"")+"oflayn";c="warn"}
+  else if(n){t=n+" göndərilməyib";c="warn"}
+  else if(state.online){t="sinxron ✓";c="ok"}
+  else t="";
+  el.textContent=t;el.className="sync "+c;el.title=state.syncErr||""}
+
+async function persist(r){
+  r.updatedAt=Date.now();r.by=state.me.name||r.by||"";
+  state.reports[r.id]=r;
+  if(!saveLocalReports())throw new Error("local");
+  if(!r.sample){state.pending.add(r.id);savePending();scheduleSync()}updateSyncBadge()}
+async function removeReport(id){
+  if(state.remote[id]){if(!hasServer())throw new Error("offline");await api("delete",{id});delete state.remote[id];LS.set("ups.remote",Object.values(state.remote))}
+  delete state.reports[id];state.pending.delete(id);savePending();saveLocalReports()}
+async function saveSettings(){
+  LS.set("ups.settings",state.settings);LS.set("ups.me",state.me);
+  if(hasServer()&&state.me.role==="admin"){const{co,coaddr,cotel,notify,interval,warn,fail,vwarn,vfail,vhigh,life}=state.settings;await api("settings",{settings:{co,coaddr,cotel,notify,interval,warn,fail,vwarn,vfail,vhigh,life}})}}
+async function getFull(id){
+  const loc=state.reports[id],rem=state.remote[id];
+  if(loc&&(state.pending.has(id)||!rem||(rem.updatedAt||0)<=(loc.updatedAt||0)))return loc;
+  if(!hasServer()){if(loc)return loc;throw new Error("offline")}
+  try{const g=await api("get",{id});state.reports[id]=g.report;saveLocalReports();return g.report}
+  catch(e){if(loc)return loc;throw e}}
+
+let saveTimer=null;
+function markDirty(){state.dirty=true;$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
+async function flush(){
+  clearTimeout(saveTimer);if(!state.cur||!state.dirty)return;
+  if(state.saving){await state.saving;return flush()}
+  state.dirty=false;
+  state.saving=persist(state.cur).then(()=>{$("#saveState").textContent=state.dirty?"dəyişiklik…":"saxlanıldı ✓"})
+    .catch(()=>{state.dirty=true;$("#saveState").textContent="saxlanılmadı"})
+    .finally(()=>{state.saving=null});
+  return state.saving}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flush()});
+
+/* ---------------- welcome (first run) ---------------- */
+function renderWelcome(){
+  state.view="welcome";$("#tabs").hidden=true;$("#hBack").hidden=true;$("#hSettings").hidden=true;
+  $("#hTitle").innerHTML='UPS Servis Jurnalı<small>İlk quraşdırma</small>';
+  const needServer=!IS_GAS&&!(CFG.serverUrl&&CFG.apiKey),needKey=IS_GAS||needServer;
+  $("#main").innerHTML=`<h2 class="sec">Xoş gəlmisiniz</h2><p class="hint">Adınız hesabatlarda “Servis mühəndisi” kimi yazılır və hər dəyişikliyin kim tərəfindən edildiyi serverdə qeyd olunur.</p>
+  <div class="card"><label class="f"><span>Adınız, soyadınız</span><input id="wName" autocomplete="name" value="${esc(state.me.name)}"></label>
+  ${needServer?`<label class="f"><span>Server ünvanı (rəhbərinizdən alın)</span><input id="wUrl" inputmode="url" placeholder="script.google.com/macros/s/…/exec" value="${esc(state.me.url)}"></label>`:""}
+  ${needKey?`<label class="f"><span>API açarı</span><input id="wKey" autocomplete="off" value="${esc(state.me.key)}"></label>`:""}
+  <button class="btn pri" id="wGo">Başla</button><p class="note" id="wMsg" style="margin:0"></p></div>`;
+  $("#wGo").onclick=async()=>{const n=$("#wName").value.trim();if(!n){$("#wMsg").textContent="Adınızı yazın.";return}
+    state.me.name=n;if($("#wUrl"))state.me.url=$("#wUrl").value.trim();if($("#wKey"))state.me.key=$("#wKey").value.trim();
+    if(!state.settings.eng)state.settings.eng=n;LS.set("ups.me",state.me);
+    if(hasServer()){$("#wMsg").textContent="Serverə qoşulur…";try{const pg=await api("ping");state.me.role=pg.role;LS.set("ups.me",state.me)}catch(e){$("#wMsg").textContent=e.message==="auth"?"API açarı yanlışdır.":"Serverə qoşulmaq alınmadı. Ünvanı və interneti yoxlayın, sonra Ayarlardan düzəldə bilərsiniz.";setTimeout(()=>{renderHome();sync()},2200);return}}
+    renderHome();sync()}}
+
+/* ---------------- home ---------------- */
+function listItems(){
+  const ids=new Set([...Object.keys(state.reports),...Object.keys(state.remote)]);const out=[];
+  ids.forEach(id=>{const loc=state.reports[id],rem=state.remote[id];
+    if(loc){const s=summaryOf(normalize(clone(loc)));out.push({...s,local:true,pending:state.pending.has(id),remote:!!rem,pdf:rem&&rem.pdf})}
+    else out.push({...rem,cls:rem.cls||clsOfOverall(rem.overall),local:false,pending:false,remote:true})});
+  return out}
+/* ---------------- planned-service reminders ---------------- */
+const REMIND_DAYS=2;
+function upcomingAll(){const latest={};
+  listItems().forEach(it=>{if(it.local&&state.reports[it.id]&&state.reports[it.id].sample)return;
+    const key=it.sn?"sn:"+String(it.sn).toLowerCase():"c:"+String(it.client||"").toLowerCase()+"|"+String(it.obj||"").toLowerCase();
+    if(!latest[key]||(it.date||"")>(latest[key].date||""))latest[key]=it});
+  const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  return Object.values(latest).map(it=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(it.next||"");if(!m)return null;
+    const due=new Date(+m[1],+m[2]-1,+m[3]).getTime(),days=Math.round((due-t0)/864e5);
+    return {...it,days,at:due-REMIND_DAYS*864e5+9*3600e3}}).filter(Boolean).sort((a,b)=>a.days-b.days)}
+function upcomingBanner(){const u=upcomingAll().filter(x=>x.days<=REMIND_DAYS&&x.days>=-30);if(!u.length)return "";
+  const when=d=>d<0?`<b style="color:var(--bad)">${-d} gün gecikir</b>`:d===0?"<b>bu gün</b>":d===1?"<b>sabah</b>":`<b>${d} gün sonra</b>`;
+  return `<div class="card remind" role="status"><h3>Planlı servis yaxınlaşır</h3>${u.map(x=>`<button class="rrow" data-open="${esc(x.id)}"><span>${esc(x.client||"Adsız müştəri")}${x.obj?` · <span class="note">${esc(x.obj)}</span>`:""}<br><span class="note">${esc([x.brand,x.model].filter(Boolean).join(" "))}${x.sn?" · S/N "+esc(x.sn):""}</span></span><span style="text-align:right">${esc(fmtDate(x.next))}<br>${when(x.days)}</span></button>`).join("")}</div>`}
+let remindSig="";
+async function scheduleReminders(){if(!IS_APP)return;
+  try{const LN=(Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications)||Capacitor.registerPlugin("LocalNotifications");
+    const list=upcomingAll().filter(u=>u.at>Date.now()).slice(0,60);
+    const sig=list.map(u=>u.id+u.next).join(",");if(sig===remindSig||sig===LS.get("ups.remindSig"))return;
+    let perm=await LN.checkPermissions();if(perm.display!=="granted"){perm=await LN.requestPermissions();if(perm.display!=="granted")return}
+    const pend=await LN.getPending();if(pend.notifications&&pend.notifications.length)await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
+    if(list.length)await LN.schedule({notifications:list.map((u,i)=>({id:1000+i,title:"Planlı servis 2 gün sonradır",
+      body:(u.client||"Müştəri")+(u.obj?" ("+u.obj+")":"")+" — "+[u.brand,u.model].filter(Boolean).join(" ")+(u.sn?", S/N "+u.sn:"")+". Tarix: "+fmtDate(u.next),
+      schedule:{at:new Date(u.at),allowWhileIdle:true}}))});
+    remindSig=sig;LS.set("ups.remindSig",sig)}catch(e){}}
+function renderHome(){
+  state.view="home";$("#tabs").hidden=true;$("#hBack").hidden=true;$("#hSettings").hidden=false;$("#saveState").textContent="";
+  $("#hTitle").innerHTML='UPS Servis Jurnalı<small>'+esc(state.me.name?state.me.name:"Servis hesabatları")+'</small>';
+  updateSyncBadge();
+  const q=(state.q||"").toLowerCase(),all=listItems();
+  const items=all.filter(s=>!q||[s.repno,s.client,s.obj,s.model,s.sn,s.eng].join(" ").toLowerCase().includes(q))
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updatedAt||0)-(a.updatedAt||0));
+  let h=`<h2 class="sec">Servis hesabatları</h2><p class="hint">Bütün işçilərin hesabatları mərkəzi serverdə toplanır. İnternet olmayanda hesabat telefonda saxlanılır və bağlantı bərpa olunanda göndərilir.</p>
+  <div class="actions" style="margin-bottom:14px"><button class="btn pri" id="bNew">+ Yeni servis</button>${hasServer()?'<button class="btn" id="bSync">Yenilə</button>':""}${all.length?'<input id="q" type="search" placeholder="Axtar: müştəri, model, seriya №, işçi" style="flex:1;min-width:180px" value="'+esc(state.q||"")+'">':""}</div>`;
+  if(state.syncErr)h+=`<div class="banner" style="margin:0 0 12px">${esc(state.syncErr)}</div>`;
+  if(!hasServer())h+=`<div class="banner" style="margin:0 0 12px">Server qoşulmayıb: hesabatlar yalnız bu cihazda qalır. Ayarlarda server ünvanını və API açarını yazın.</div>`;
+  h+=upcomingBanner();
+  if(!all.length)h+=`<div class="empty"><h3>Hələ hesabat yoxdur</h3><p class="note" style="margin:0">“Yeni servis” ilə ilk hesabatı başladın. Tətbiqi tanımaq üçün doldurulmuş nümunə də aça bilərsiniz (bu nümunə serverə göndərilməz).</p><button class="btn" id="bSample">Nümunə hesabatı aç</button></div>`;
+  else h+=`<div class="rlist">`+items.map(s=>`<button class="rcard" data-open="${esc(s.id)}"><span class="t">${esc(s.client||"Adsız müştəri")}</span><span class="chip ${s.cls||""}">${s.cls==="ok"?"Qənaətbəxş":s.cls==="warn"?"Diqqət":s.cls==="bad"?"Təcili":""}</span>
+    <span class="m"><span class="no">${esc(s.repno||"№ yoxdur")}</span><span>${esc(fmtDate(s.date))}</span><span>${esc([s.brand,s.model].filter(Boolean).join(" "))}${s.kva?" · "+esc(s.kva)+" kVA":""}</span>${s.eng?`<span>${esc(s.eng)}</span>`:""}
+    ${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}</span></button>`).join("")+`</div>`;
+  $("#main").innerHTML=h;
+  $("#bNew").onclick=()=>openNew();
+  const bsy=$("#bSync");if(bsy)bsy.onclick=()=>sync();
+  const bs=$("#bSample");if(bs)bs.onclick=()=>{const r=sampleReport(state.settings);r.sample=true;openReport(r)};
+  const qi=$("#q");if(qi)qi.oninput=e=>{state.q=e.target.value;const p=e.target.selectionStart;renderHome();const n=$("#q");n.focus();n.setSelectionRange(p,p)};
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{b.disabled=true;
+    try{const r=await getFull(b.dataset.open);const n=normalize(clone(r));state.reports[n.id]=n;openReport(n)}
+    catch(e){b.disabled=false;toast("Hesabatı açmaq üçün internet lazımdır")}});
+  window.scrollTo(0,0)}
+function openNew(){
+  const items=listItems().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const h=`<h2 class="sec">Yeni servis</h2><p class="hint">Boş hesabat başladın və ya əvvəlki hesabatdan müştəri, UPS və akkumulyator məlumatlarını köçürün (ölçmələr köçürülmür).</p>
+  <div class="card"><button class="btn pri" id="nBlank">Boş hesabat</button></div>
+  ${items.length?`<div class="card"><h3>Əvvəlki hesabatdan köçür</h3><input id="nq" type="search" placeholder="Müştəri və ya seriya № ilə axtar"><div class="rlist" id="nlist"></div></div>`:""}
+  <button class="btn ghost" id="nCancel">← Geri</button>`;
+  $("#main").innerHTML=h;
+  const draw=()=>{const box=$("#nlist");if(!box)return;const q=($("#nq").value||"").toLowerCase();
+    box.innerHTML=items.filter(s=>!q||[s.client,s.sn,s.model,s.obj].join(" ").toLowerCase().includes(q)).slice(0,40).map(s=>`<button class="rcard" data-copy="${esc(s.id)}"><span class="t">${esc(s.client||"Adsız")}</span><span class="no">${esc(fmtDate(s.date))}</span><span class="m">${esc([s.brand,s.model,s.sn].filter(Boolean).join(" · "))}</span></button>`).join("");
+    box.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{b.disabled=true;
+      try{const src=normalize(clone(await getFull(b.dataset.copy)));const r=blankReport(state.settings);r.cl=src.cl;r.ups=src.ups;r.bat={...src.bat,blocks:[]};
+        r.meas.forEach((m,i)=>{m.min=src.meas[i].min;m.max=src.meas[i].max});startReport(r)}
+      catch(e){b.disabled=false;toast("Köçürmək üçün internet lazımdır")}})};
+  if($("#nq")){$("#nq").oninput=draw;draw()}
+  $("#nCancel").onclick=renderHome;
+  $("#nBlank").onclick=()=>startReport(blankReport(state.settings))}
+function startReport(r){if(!r.svc.eng)r.svc.eng=state.me.name;state.reports[r.id]=r;openReport(r);markDirty()}
+function openReport(r){state.cur=r;state.view="edit";state.tab="svc";state.bi=0;renderEditor()}
+
+/* ---------------- settings ---------------- */
+function renderSettings(){
+  state.view="settings";$("#tabs").hidden=true;$("#hBack").hidden=false;$("#hSettings").hidden=true;
+  $("#hTitle").innerHTML='Ayarlar<small>Bağlantı, şirkət məlumatı və hədlər</small>';
+  const S=state.settings,ro=hasServer()&&state.me.role!=="admin",f=(k,l,o={})=>`<label class="f"><span>${l}</span><input id="st-${k}" data-s="${k}" ${o.n?'class="num" inputmode="decimal"':""} value="${esc(S[k]??"")}"${ro?" readonly":""}></label>`;
+  $("#main").innerHTML=`<h2 class="sec">Ayarlar</h2>
+  <div class="card"><h3>Mən və server</h3>
+   <label class="f"><span>Adınız, soyadınız</span><input id="meName" value="${esc(state.me.name)}"></label>
+   ${IS_GAS?"":`<label class="f"><span>Server ünvanı</span><input id="meUrl" inputmode="url" placeholder="script.google.com/macros/s/…/exec" value="${esc(state.me.url)}"></label>`}
+   <label class="f"><span>Açar (işçi və ya rəhbər açarı)</span><input id="meKey" autocomplete="off" value="${esc(state.me.key)}"></label>
+   <div class="actions"><button class="btn sm" id="mePing">Bağlantını yoxla</button><span class="note" id="pingMsg"></span></div></div>
+  <p class="note">Rolunuz: <b>${hasServer()?(state.me.role==="admin"?"Rəhbər / servis müdiri":"İşçi"):"—"}</b>${ro?" · aşağıdakı ortaq ayarları yalnız rəhbər dəyişə bilər":""}</p>
+  <div class="card"><h3>Servis şirkəti (bütün işçilər üçün ortaq)</h3>${f("co","Şirkət adı")}${f("coaddr","Ünvan")}${f("cotel","Telefon / e-poçt")}${f("notify","Planlı servis xəbərdarlığı üçün e-poçtlar (vergüllə)")}<p class="note" style="margin:0">Planlı servisə ${REMIND_DAYS} gün qalmış server bu ünvanlara e-poçt göndərir; işçilərin telefonunda isə bildiriş çıxır.</p>${f("interval","Servis intervalı, ay",{n:1})}</div>
+  <div class="card"><h3>Akkumulyator hədləri (ortaq, yeni hesabatlar üçün)</h3><div class="grid2">${f("warn","R artımı — Diqqət, %",{n:1})}${f("fail","R artımı — Dəyişdirilməli, %",{n:1})}${f("vwarn","Blok V — Diqqət (aşağı)",{n:1})}${f("vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${f("vhigh","Blok V — Diqqət (yuxarı)",{n:1})}${f("life","İstismar müddəti, il",{n:1})}</div>
+  <p class="note" style="margin:0">Gərginlik hədləri 12 V VRLA blokun float rejimi üçündür; 2 V element və ya Li-ion üçün dəyişin.</p></div>
+  <div class="actions"><button class="btn pri" id="sSave">Yadda saxla</button></div>
+  <div class="card" style="margin-top:16px"><h3>Yedək nüsxə</h3><p class="note" style="margin:0">Bu cihazdakı bütün hesabatları bir .json faylına saxlayın və ya həmin fayldan bərpa edin.</p>
+  <div class="actions"><button class="btn" id="bkSave">Yedək faylı saxla</button><label class="btn" style="display:inline-flex;align-items:center">Yedəkdən bərpa et<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div></div>`;
+  const readMe=()=>{state.me.name=$("#meName").value.trim();if($("#meKey").value.trim()!==state.me.key)state.me.role="";if($("#meUrl"))state.me.url=$("#meUrl").value.trim();state.me.key=$("#meKey").value.trim();LS.set("ups.me",state.me)};
+  $("#mePing").onclick=async()=>{readMe();$("#pingMsg").textContent="yoxlanılır…";
+    try{const pg=await api("ping");state.me.role=pg.role;LS.set("ups.me",state.me);$("#pingMsg").textContent="Bağlantı işləyir ✓ · rol: "+(pg.role==="admin"?"rəhbər":"işçi");sync()}catch(e){$("#pingMsg").textContent=e.message==="auth"?"API açarı yanlışdır":"Serverə qoşulmaq alınmadı"}};
+  $("#sSave").onclick=async()=>{readMe();document.querySelectorAll("[data-s]").forEach(i=>{const k=i.dataset.s;state.settings[k]=["interval","warn","fail","vwarn","vfail","vhigh","life"].includes(k)?(num(i.value)??DEFAULT_SETTINGS[k]):i.value.trim()});
+    try{await saveSettings();toast(ro?"Şəxsi ayarlar saxlanıldı":"Ayarlar saxlanıldı")}catch(e){toast("Ayarlar bu cihazda saxlanıldı, serverə göndərilmədi")}renderHome();sync()};
+  $("#bkSave").onclick=()=>saveFile("UPS-servis-yedek-"+todayISO()+".json",new Blob([JSON.stringify({app:"ups-servis",v:2,reports:Object.values(state.reports)},null,1)],{type:"application/json"}));
+  $("#bkLoad").onchange=async e=>{const fl=e.target.files[0];if(!fl)return;try{const d=JSON.parse(new TextDecoder().decode(await readAB(fl)));if(!d||!Array.isArray(d.reports))throw 0;
+    let n=0;for(const r of d.reports){if(r&&r.kind==="report"&&typeof r.id==="string"&&/^[A-Za-z0-9_\-.~:@+]+$/.test(r.id)){state.reports[r.id]=normalize(r);state.pending.add(r.id);n++}}
+    saveLocalReports();savePending();toast(n+" hesabat bərpa edildi");renderHome();sync()}catch(err){toast("Bu fayl tanınmadı: tətbiqin yedək faylını seçin")}}}
+
+/* ---------------- editor ---------------- */
+function fld(path,label,o={}){const v=getP(state.cur,path)??"";const id="f-"+path.replace(/\./g,"-");
+  if(o.sel)return `<label class="f"><span>${label}</span><select id="${id}" data-path="${path}"><option value=""></option>${o.sel.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</select></label>`;
+  if(o.area)return `<label class="f"><span>${label}</span><textarea id="${id}" data-path="${path}" placeholder="${esc(o.ph||"")}">${esc(v)}</textarea></label>`;
+  const t=o.date?'type="date"':o.n?'type="text" inputmode="decimal" class="num"':'type="text"';
+  return `<label class="f"><span>${label}</span><input ${t} id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}" autocomplete="off"></label>`}
+function renderEditor(){
+  const r=state.cur;state.view="edit";$("#hBack").hidden=false;$("#hSettings").hidden=true;$("#tabs").hidden=false;
+  $("#hTitle").innerHTML=esc(r.cl.name||"Yeni servis")+'<small>'+esc([r.svc.repno,fmtDate(r.svc.date)].filter(Boolean).join(" · ")||"Hesabat")+'</small>';
+  $("#tabs").innerHTML=TABS.map(([k,l],i)=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${k===state.tab}"><span class="n">${i+1}</span>${l}</button>`).join("");
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;renderEditor();window.scrollTo(0,0)});
+  const sel=document.querySelector('.tab[aria-selected="true"]');if(sel)sel.scrollIntoView({inline:"center",block:"nearest"});
+  const body=SECTIONS[state.tab]();
+  const i=TABS.findIndex(t=>t[0]===state.tab);
+  const nav=`<div class="nextbar">${i>0?`<button class="btn" data-go="${TABS[i-1][0]}">← ${TABS[i-1][1]}</button>`:"<span></span>"}${i<TABS.length-1?`<button class="btn pri" data-go="${TABS[i+1][0]}">${TABS[i+1][1]} →</button>`:""}</div>`;
+  $("#main").innerHTML=body+nav;
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.go;renderEditor();window.scrollTo(0,0)});
+  (AFTER[state.tab]||(()=>{}))();
+  live();
+}
+document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur)return;setP(state.cur,p,e.target.value);markDirty();live()});
+document.addEventListener("change",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur)return;setP(state.cur,p,e.target.value);markDirty();live()});
+function live(){if(!state.cur)return;const a=analyze(state.cur);
+  document.querySelectorAll("[data-live]").forEach(el=>{const k=el.dataset.live;let v="",c="";
+    if(k.startsWith("m")){v=a.ms[+k.slice(1)];c=stCls(v)}
+    else if(k==="next")v=a.next?fmtDate(a.next):"—";
+    else if(k==="age")v=a.age!==null?a.age.toFixed(1)+" il":"—";
+    else if(k==="tot")v=a.tot+" blok";
+    else if(k==="ref")v=a.ref?fmt(a.ref)+" mΩ"+(num(state.cur.bat.ref)>0?"":" (median)"):"—";
+    el.textContent=v;if(el.classList.contains("chip"))el.className="chip "+c})}
+const SECTIONS={
+ svc(){return `<h2 class="sec">Servis və müştəri</h2><p class="hint">Hesabat nömrəsi, tarix və müştəri məlumatları.</p>
+  <div class="card"><h3>Servis</h3><div class="grid2">${fld("svc.repno","Hesabat №",{ph:"SR-2026-0143"})}${fld("svc.date","Servis tarixi",{date:1})}</div>
+  ${fld("svc.type","Servis növü",{sel:SVC_TYPES})}<div class="grid2">${fld("svc.eng","Servis mühəndisi")}${fld("svc.interval","Növbəti servis intervalı, ay",{n:1})}</div>
+  <div class="note">Növbəti servis: <b data-live="next"></b></div></div>
+  <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
+  <div class="grid2">${fld("cl.person","Əlaqədar şəxs")}${fld("cl.tel","Telefon")}</div>${fld("cl.sign","İmza üçün müştəri nümayəndəsi")}</div>`},
+ ups(){return `<h2 class="sec">UPS cihazı</h2><p class="hint">Cihazın pasport məlumatları.</p><div class="card">
+  <div class="grid2">${fld("ups.brand","Marka")}${fld("ups.model","Model")}</div>${fld("ups.sn","Seriya №")}
+  <div class="grid2">${fld("ups.kva","Nominal güc, kVA",{n:1})}${fld("ups.kw","Nominal güc, kW",{n:1})}</div>
+  <div class="grid2">${fld("ups.topo","Topologiya",{sel:TOPO})}${fld("ups.phase","Faza (giriş/çıxış)",{sel:PHASE})}</div>
+  <div class="grid2">${fld("ups.fw","Firmware")}${fld("ups.inst","Quraşdırma tarixi",{date:1})}</div>${fld("ups.hours","İş saatı / sayğac")}</div>`},
+ meas(){return `<h2 class="sec">Ölçmə nəticələri</h2><p class="hint">Üçfazalı parametrlərdə L1–L3, digərlərində bir qiymət. Nəticə norma hədlərinə görə dərhal göstərilir.</p><div class="card">`+
+  MEAS.map((m,i)=>`<div class="mrow"><div class="mhead"><b>${esc(m[0])}, ${esc(m[1])}</b><span class="chip" data-live="m${i}"></span></div>
+   <div class="${m[4]===3?"grid3":""}">${(m[4]===3?["L1","L2","L3"]:[""]).map((l,j)=>`<label class="f">${l?`<span>${l}</span>`:""}<input type="text" inputmode="decimal" enterkeyhint="next" class="num" id="m-${i}-${j}" data-path="meas.${i}.v.${j}" value="${esc(state.cur.meas[i].v[j])}"></label>`).join("")}</div>
+   <details class="more"><summary>Norma: ${esc(state.cur.meas[i].min||"—")} … ${esc(state.cur.meas[i].max||"—")} ${esc(m[1])} · dəyiş</summary><div class="lim" style="margin-top:8px">Min <input class="num" inputmode="decimal" id="mn-${i}" data-path="meas.${i}.min" value="${esc(state.cur.meas[i].min)}"> Maks <input class="num" inputmode="decimal" id="mx-${i}" data-path="meas.${i}.max" value="${esc(state.cur.meas[i].max)}"></div></details></div>`).join("")+`</div>`},
+ chk(){return `<h2 class="sec">Vizual və funksional yoxlama</h2><p class="hint">Hər bənd üçün nəticəni seçin. “Qeyd var” və “Nasaz” üçün qısa qeyd yazın.</p>
+  <div class="actions" style="margin-bottom:10px"><button class="btn sm" id="allOk">Boş bəndləri “Yaxşı” et</button></div><div class="card">`+
+  CHK.map((c,i)=>{const s=state.cur.chk[i].s;return `<div class="citem"><b style="font-weight:600">${i+1}. ${esc(c)}</b><div class="seg">${CHK_OPTS.map(([o,cl])=>`<button type="button" class="${cl}" data-chk="${i}" data-v="${esc(o)}" aria-pressed="${s===o}">${o==="Tətbiq olunmur"?"T/O":o==="Yoxlanılmadı"?"Yoxl.":esc(o)}</button>`).join("")}</div>
+   ${s&&s!=="Yaxşı"?`<input type="text" id="cn-${i}" data-path="chk.${i}.n" placeholder="Qeyd" value="${esc(state.cur.chk[i].n)}">`:""}</div>`}).join("")+`</div>`},
+ work(){const r=state.cur;return `<h2 class="sec">Görülən işlər</h2><p class="hint">Hər iş üçün Bəli / Xeyr seçin.</p><div class="card">`+
+  WORKS.map((w,i)=>`<div class="citem"><b style="font-weight:600">${esc(w)}</b><div class="seg">${["Bəli","Xeyr","—"].map(o=>`<button type="button" class="${o==="Bəli"?"s-ok":"s-idle"}" data-work="${i}" data-v="${o}" aria-pressed="${r.works[i]===o}">${o}</button>`).join("")}</div></div>`).join("")+
+  `${fld("wExtra","Əlavə iş (sərbəst mətn)",{area:1})}</div>
+  <div class="card"><h3>Dəyişdirilən / quraşdırılan hissələr</h3>${r.parts.map((p,i)=>`<div class="prow"><span class="wide">${fld(`parts.${i}.name`,"Hissə")}</span>${fld(`parts.${i}.code`,"Kod / Part №")}${fld(`parts.${i}.qty`,"Say",{n:1})}<button class="btn sm danger" data-delpart="${i}" aria-label="Sil">✕</button><span class="wide" style="grid-column:1/-1">${fld(`parts.${i}.note`,"Qeyd")}</span></div>`).join("")||'<p class="note" style="margin:0">Hissə əlavə edilməyib.</p>'}
+  <button class="btn sm" id="addPart">+ Hissə əlavə et</button></div>
+  <div class="card"><h3>Mühəndisin qeydləri</h3>${fld("notes","Texniki qeydlər",{area:1})}${fld("recs","Əlavə tövsiyələr",{area:1})}</div>`},
+ bat(){return `<h2 class="sec">Akkumulyatorlar</h2><p class="hint">Qrup və blok sayını yazın — “Bloklar” bölməsində nömrələr avtomatik yaranır (maks. ${MAXB} blok).</p>
+  <div class="card"><h3>Dəst</h3>${fld("bat.brand","Marka / model")}<div class="grid2">${fld("bat.type","Tip",{sel:BTYPE})}${fld("bat.ah","Tutum, Ah",{n:1})}</div>
+  <div class="grid2">${fld("bat.per","Bir qrupdakı blok sayı",{n:1})}${fld("bat.str","Qrup sayı",{n:1})}</div><div class="note">Cəmi: <b data-live="tot"></b></div>
+  <div class="grid2">${fld("bat.nom","Blokun nominal gərginliyi, V",{n:1})}${fld("bat.dev","Ölçü cihazı",{ph:"Hioki BT3554"})}</div>
+  <div class="grid2">${fld("bat.inst","Quraşdırma tarixi",{date:1})}${fld("bat.life","İstismar müddəti, il",{n:1})}</div><div class="note">Yaşı: <b data-live="age"></b></div></div>
+  <div class="card"><h3>Qiymətləndirmə hədləri</h3>${fld("bat.ref","Referans daxili müqavimət, mΩ",{n:1,ph:"boş = ölçmələrin medianı"})}<div class="note">İstifadə olunan referans: <b data-live="ref"></b></div>
+  <div class="grid2">${fld("bat.warn","R artımı — Diqqət, %",{n:1})}${fld("bat.fail","R artımı — Dəyişdirilməli, %",{n:1})}${fld("bat.vwarn","Blok V — Diqqət (aşağı)",{n:1})}${fld("bat.vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${fld("bat.vhigh","Blok V — Diqqət (yuxarı)",{n:1})}</div></div>
+  <div class="card"><h3>Boşalma (avtonomluq) testi</h3>${fld("dis.res","Nəticə",{sel:DIS})}<div class="grid2">${fld("dis.load","Test yükü, kW",{n:1})}${fld("dis.time","Müddət, dəq",{n:1})}${fld("dis.v0","Başlanğıc DC, V",{n:1})}${fld("dis.v1","Son DC, V",{n:1})}</div></div>`},
+ blk(){const r=state.cur,tot=batTotal(r);if(!tot)return `<h2 class="sec">Blok ölçmələri</h2><div class="empty"><h3>Əvvəlcə dəsti təyin edin</h3><p class="note" style="margin:0">“Akkum.” bölməsində bir qrupdakı blok sayını və qrup sayını yazın.</p><button class="btn pri" data-go="bat">Akkum. bölməsinə keç</button></div>`;
+  if(state.bi>=tot)state.bi=tot-1;
+  return `<h2 class="sec">Blok ölçmələri</h2><p class="hint">Fluke BT521 log faylını əlavə edin və ya qiymətləri əl ilə yazın. Telefonda daxil etdiyiniz digər məlumatlar toxunulmaz qalır.</p>
+  <div class="cols2"><div class="col">
+  <div class="card fluke" id="flukeCard"><h3>Fluke BT521 log faylı</h3>
+   <p class="note" style="margin:0">Fluke Battery Analyzer proqramından və ya tətbiqindən ixrac edilmiş faylı seçin (.csv, .txt, .xls, .xlsx). Sütunlar avtomatik tanınır, tətbiq etməzdən əvvəl yoxlaya bilərsiniz.</p>
+   <label class="drop" id="flukeDrop"><input type="file" id="flukeFile" accept=".csv,.txt,.xls,.xlsx,.tsv" multiple><span><b>Fayl seçin</b> və ya bura sürükləyin</span></label>
+   <div id="flukeMap"></div></div>
+  <div class="probe" id="probe"></div>
+  <div class="card" style="margin-top:12px"><div class="stats" id="bstats"></div></div>
+  </div><div class="col">
+  <div class="card"><h3>Bütün bloklar</h3><p class="note" style="margin:0">Bloka toxunaraq onu redaktə edin. Rəng statusu göstərir.</p><div class="strings" id="bgrid"></div></div>
+  <details class="card more"><summary><h3 style="display:inline">Mətni yapışdır</h3> <span class="note">(əl ilə köçürmə)</span></summary><p class="note" style="margin:0">Hər sətirdə bir blok: gərginlik və müqavimət (məs. “13.52 4.21” və ya CSV sətri).</p>
+   <textarea id="pasteBox" placeholder="13.52;4.21&#10;13.55;4.08&#10;…"></textarea>
+   <div class="grid2"><label class="f"><span>Sütun ardıcıllığı</span><select id="pasteOrder"><option value="vr">Gərginlik, müqavimət</option><option value="rv">Müqavimət, gərginlik</option><option value="nvr">№, gərginlik, müqavimət</option></select></label>
+   <label class="f"><span>Başlanğıc blok</span><select id="pasteStart"><option value="0">1-ci blokdan</option><option value="cur">Cari blokdan (${esc(lbl(r,state.bi))})</option></select></label></div>
+   <button class="btn" id="pasteGo">Tətbiq et</button></details>
+  </div></div>`},
+ rep(){const r=state.cur,a=analyze(r);return `<h2 class="sec">Hesabat</h2>
+  <div class="verdict ${a.cls}">${a.overall}<small>${a.tested.length?`${a.tested.length} blok · ${a.rep.length} dəyişdirilməli · ${a.att.length} diqqət`:"Akkumulyator ölçmələri yoxdur"} · ${a.out.length} parametr norma xaricində · ${a.nasaz.length} nasaz bənd</small></div>
+  <div class="card" style="margin-top:12px"><h3>Avtomatik nəticə</h3>${a.C.length?`<ul class="concl">${a.C.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>`:'<p class="note" style="margin:0">Məlumat daxil edildikcə nəticələr burada yaranır.</p>'}</div>
+  <div class="actions" style="margin:4px 0 12px"><button class="btn pri" id="bPdf">PDF hazırla</button><button class="btn" id="bXls">Excel (.xlsx)</button>
+   <a class="btn" id="pdfLink" target="_blank" rel="noopener" href="${esc((state.remote[r.id]||{}).pdf||"")}" ${(state.remote[r.id]||{}).pdf?"":"hidden"} style="display:inline-flex;align-items:center;text-decoration:none">Drive-dakı PDF</a>
+   ${canDelete(r)?`<button class="btn danger" id="bDel">${state.remote[r.id]?"Hesabatı sil (rəhbər)":"Qaralamanı sil"}</button>`:""}
+   ${state.me.role==="admin"&&state.remote[r.id]?'<button class="btn" id="bHist">Versiyalar</button>':""}
+   <div class="seg langseg" role="group" aria-label="Hesabatın dili"><span class="note" style="align-self:center;margin-right:4px">Dil:</span>${LANGS.map(([k,l])=>`<button type="button" class="s-idle" data-lang="${k}" aria-pressed="${(state.plang||"az")===k}">${l}</button>`).join("")}</div></div>
+  ${r.sample?'<div class="banner" style="margin:0 0 12px">Bu nümunədir: serverə göndərilmir.</div>':""}
+  ${!canDelete(r)&&state.remote[r.id]?'<p class="note">Serverdəki hesabatı yalnız servis müdiri / rəhbər silə bilər. Dəyişikliklərin əvvəlki versiyaları serverdə saxlanılır.</p>':""}
+  <div id="delConfirm" hidden class="card"><b>Bu hesabat ${state.remote[r.id]?"mərkəzi bazadan ":""}silinsin?</b>${state.remote[r.id]?'<p class="note" style="margin:0">Son versiya “_Versiyalar” qovluğunda qalır, lazım olsa bərpa etmək olar.</p>':""}<div class="actions"><button class="btn danger" id="bDelYes">Bəli, sil</button><button class="btn" id="bDelNo">Ləğv et</button></div></div>
+  <div id="histBox"></div>
+  <p class="note">Önizləmə (A4):</p><div class="paperwrap" id="pw"><div class="paperscale" id="ps">${paperHTML(r,a)}</div></div>`}
+};
+const AFTER={
+ chk(){document.querySelectorAll("[data-chk]").forEach(b=>b.onclick=()=>{const i=+b.dataset.chk,v=b.dataset.v;const c=state.cur.chk[i];c.s=c.s===v?"":v;markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y);const n=$("#cn-"+i);if(n&&c.s!=="Yaxşı")n.focus({preventScroll:true})});
+  $("#allOk").onclick=()=>{state.cur.chk.forEach(c=>{if(!c.s)c.s="Yaxşı"});markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)}},
+ work(){document.querySelectorAll("[data-work]").forEach(b=>b.onclick=()=>{const i=+b.dataset.work;state.cur.works[i]=state.cur.works[i]===b.dataset.v?"":b.dataset.v;markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
+  $("#addPart").onclick=()=>{state.cur.parts.push({name:"",code:"",qty:"",note:""});markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)};
+  document.querySelectorAll("[data-delpart]").forEach(b=>b.onclick=()=>{state.cur.parts.splice(+b.dataset.delpart,1);markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)})},
+ blk(){if(!batTotal(state.cur))return;renderProbe();renderGrid();initFluke();
+  $("#pasteGo").onclick=()=>{const r=state.cur,tot=batTotal(r),ord=$("#pasteOrder").value;let i=$("#pasteStart").value==="cur"?state.bi:0,n=0;
+   $("#pasteBox").value.split(/\r?\n/).forEach(line=>{const nums=(line.match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>x.replace(",","."));const need=ord==="nvr"?3:2;if(nums.length<need||i>=tot)return;
+     const [v,R]=ord==="vr"?[nums[0],nums[1]]:ord==="rv"?[nums[1],nums[0]]:[nums[1],nums[2]];
+     r.bat.blocks[i]={...(r.bat.blocks[i]||{}),v,r:R};i++;n++});
+   if(n){markDirty();$("#pasteBox").value="";renderProbe();renderGrid();toast(n+" blok dolduruldu")}else toast("Rəqəm tapılmadı: hər sətirdə ən azı iki qiymət olmalıdır")}},
+ rep(){fitPaper();
+  $("#bPdf").onclick=exportPdf;$("#bXls").onclick=exportXlsx;
+  if($("#bDel")){$("#bDel").onclick=()=>{$("#delConfirm").hidden=false};$("#bDelNo").onclick=()=>{$("#delConfirm").hidden=true};
+  $("#bDelYes").onclick=async()=>{const id=state.cur.id;clearTimeout(saveTimer);state.dirty=false;
+    try{if(state.cur.sample){state.cur=null;renderHome();return}await removeReport(id);state.cur=null;toast("Hesabat silindi");renderHome()}
+    catch(e){state.dirty=false;toast(e&&e.message==="forbidden"?"Silmək üçün rəhbər açarı lazımdır":"Silmək alınmadı: internet bağlantısını yoxlayın")}}}
+  if($("#bHist"))$("#bHist").onclick=showHistory;
+  document.querySelectorAll("[data-lang]").forEach(b=>b.onclick=async()=>{const L=b.dataset.lang;state.plang=L;
+    document.querySelectorAll("[data-lang]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.lang===L)));
+    if(L!=="az"&&freeTexts(state.cur).length){b.textContent="…";await ensureTranslations(state.cur,L);b.textContent=LANGS.find(x=>x[0]===L)[1]}
+    $("#ps").innerHTML=paperHTML(state.cur,analyze(state.cur),L);fitPaper()})}
+};
+function canDelete(r){if(r.sample)return true;if(state.remote[r.id])return state.me.role==="admin";return true}
+async function showHistory(){const box=$("#histBox"),id=state.cur.id;box.innerHTML='<div class="card"><p class="note" style="margin:0">Versiyalar yüklənir…</p></div>';
+  try{const h=await api("history",{id});
+    box.innerHTML=`<div class="card"><h3>Əvvəlki versiyalar</h3>${h.items.length?h.items.map(v=>`<div class="mhead"><b>${esc(v.at.replace("T"," ").slice(0,16))}</b><span class="note">${esc(v.by||"")}</span><button class="btn sm" data-rev="${esc(v.rev)}">Bərpa et</button></div>`).join(""):'<p class="note" style="margin:0">Hələ əvvəlki versiya yoxdur.</p>'}</div>`;
+    box.querySelectorAll("[data-rev]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="bərpa olunur…";
+      try{await flush();const res=await api("restore",{id,rev:b.dataset.rev});const rep=normalize(res.report);
+        await api("save",{report:rep,summary:summaryOf(rep),blocks:blocksOf(rep),force:true});
+        state.reports[id]=rep;state.pending.delete(id);savePending();saveLocalReports();state.cur=rep;toast("Versiya bərpa edildi");sync();renderEditor()}
+      catch(e){b.disabled=false;b.textContent="Bərpa et";toast("Bərpa etmək alınmadı")}})}
+  catch(e){box.innerHTML="";toast(e&&e.message==="forbidden"?"Bu bölmə yalnız rəhbər üçündür":"Versiyaları yükləmək alınmadı")}}
+function fitPaper(){const pw=$("#pw"),ps=$("#ps");if(!pw||!ps)return;const k=Math.min(1,pw.clientWidth/737);ps.style.transform=`scale(${k})`;pw.style.height=(ps.firstElementChild.offsetHeight*k)+"px"}
+
+/* ---------------- battery fast entry ---------------- */
+function ensureBlock(i){const b=state.cur.bat.blocks;while(b.length<=i)b.push({v:"",r:"",t:""});return b[i]}
+function renderProbe(){const r=state.cur,tot=batTotal(r),i=state.bi,b=r.bat.blocks[i]||{},ref=refEff(r),st=blockStatus(r,b,ref),p=Math.floor(num(r.bat.per));
+  const dev=(num(b.r)!==null&&ref)?Math.round((num(b.r)/ref-1)*100):null;
+  $("#probe").innerHTML=`<div class="lbl"><span class="tag">${esc(lbl(r,i))}</span><span class="pos">${i+1} / ${tot} · qrup ${Math.floor(i/p)+1}, blok ${i%p+1}</span><span class="chip ${stCls(st)}">${esc(st)}${dev!==null?" · "+(dev>=0?"+":"")+dev+"%":""}</span></div>
+  <div class="grid3"><label class="f"><span>Gərginlik, V</span><input id="pV" inputmode="decimal" enterkeyhint="next" autocomplete="off" value="${esc(b.v||"")}"></label>
+  <label class="f"><span>Müqavimət, mΩ</span><input id="pR" inputmode="decimal" enterkeyhint="next" autocomplete="off" value="${esc(b.r||"")}"></label>
+  <label class="f"><span>Temp., °C</span><input id="pT" inputmode="decimal" enterkeyhint="next" autocomplete="off" value="${esc(b.t||"")}"></label></div>
+  <div class="row"><button class="btn" id="pPrev"${i===0?" disabled":""}>← Əvvəlki</button><button class="btn pri" id="pNext">${i<tot-1?"Növbəti →":"Bitir ✓"}</button></div>`;
+  const upd=(k,el)=>{const blk=ensureBlock(state.bi);blk[k]=el.value;markDirty();liveProbe()};
+  $("#pV").oninput=e=>upd("v",e.target);$("#pR").oninput=e=>upd("r",e.target);$("#pT").oninput=e=>upd("t",e.target);
+  $("#pV").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#pR").focus()}};
+  $("#pR").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();go(1)}};
+  $("#pT").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();go(1)}};
+  $("#pPrev").onclick=()=>go(-1);$("#pNext").onclick=()=>go(1);
+  renderStats()}
+function liveProbe(){const r=state.cur,b=r.bat.blocks[state.bi]||{},ref=refEff(r),st=blockStatus(r,b,ref),c=$("#probe .chip");
+  const dev=(num(b.r)!==null&&ref)?Math.round((num(b.r)/ref-1)*100):null;c.className="chip "+stCls(st);c.textContent=st+(dev!==null?" · "+(dev>=0?"+":"")+dev+"%":"");
+  const cell=document.querySelector(`.cell[data-b="${state.bi}"]`);if(cell)cell.className="cell cur "+stCls(st);renderStats()}
+function go(d){const tot=batTotal(state.cur);const n=state.bi+d;if(n<0)return;if(n>=tot){toast("Bütün bloklar daxil edildi");renderGrid();return}
+  state.bi=n;renderProbe();renderGrid();const v=$("#pV");v.focus();v.select()}
+function renderGrid(){const r=state.cur,a=analyze(r),p=Math.floor(num(r.bat.per)),ns=Math.ceil(a.tot/p);let h="";
+  for(let s=0;s<ns;s++){const bs=a.blocks.slice(s*p,s*p+p);h+=`<div class="sline"><div class="sl">Qrup ${s+1}<span style="font-weight:500;letter-spacing:0;text-transform:none">${bs.filter(b=>b.st).length}/${bs.length} ölçülüb</span></div><div class="cells">`+
+    bs.map(b=>`<button class="cell ${stCls(b.st)}${b.i===state.bi?" cur":""}" data-b="${b.i}" aria-label="${b.lab} ${b.st||"ölçülməyib"}">${b.i%p+1}</button>`).join("")+`</div></div>`}
+  $("#bgrid").innerHTML=h;
+  document.querySelectorAll(".cell").forEach(c=>c.onclick=()=>{state.bi=+c.dataset.b;renderProbe();renderGrid();$("#probe").scrollIntoView({behavior:"smooth",block:"start"});setTimeout(()=>$("#pV").focus({preventScroll:true}),300)})}
+function renderStats(){const a=analyze(state.cur);const norm=a.tested.length-a.att.length-a.rep.length;
+  $("#bstats").innerHTML=`<div class="stat"><b>${a.tested.length}/${a.tot}</b><span>ölçülüb</span></div><div class="stat"><b>${a.ref?fmt(a.ref):"—"}</b><span>referans R, mΩ</span></div><div class="stat"><b>${a.rv.length?fmt(Math.max(...a.rv)):"—"}</b><span>maks R, mΩ</span></div>
+  <div class="stat ok"><b>${norm}</b><span>normal</span></div><div class="stat warn"><b>${a.att.length}</b><span>diqqət</span></div><div class="stat bad"><b>${a.rep.length}</b><span>dəyişdirilməli</span></div>`}
+
+/* ---------------- report paper ---------------- */
+/* ---------------- company logo (report header) ---------------- */
+const LOGO_B64="_9j_4AAQSkZJRgABAQAAAQABAAD_2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD_2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD_wAARCAClApQDASIAAhEBAxEB_8QAHQAAAQQDAQEAAAAAAAAAAAAAAAEGBwgCBQkDBP_EAFIQAAECBQMCAgQGDQgHCQEAAAECAwAEBQYRBxIhCDETQSJRcZEUFRgyYYEJFhcjM0JSVWJykrHBNkOToaLR4fAZJCZERVRjJTU3RlNzgoPxVv_EABwBAAEFAQEBAAAAAAAAAAAAAAABAgQFBgMHCP_EADkRAAEDAwMCBQIDBwQCAwAAAAEAAgMEBRESITEGQRMUIlFhMnEHgZEVIyRCUqGxFiUzYkPwNHLB_9oADAMBAAIRAxEAPwDqhBBBAhYleFYhc8doMDuYAQYTXnYIIB4QokDIhEr3QoGTCeiDwQDBgD6kNIIwlzzCEHzEL2G5eABznMMW8NatObJl33apckql5gHLQX6WfVCOLRuVHlmZTNL5XYCfCe-E5-sQjjrLI3vvtoSPNRAioV29btQqbL0pp7bS55wEgLQCYj1m5eoPV-WdafanKK2rPpZIwI4uqWt2buqWXqGHBNONf2V36_qJZ1usKmKnV5cJQCTtUCYiqrdZ2jdJfVLKn3VuJOMJRFcbb0FnJieLN6arrcVn0mVvH3Rvp3R2ybVnEPtUNNZT3K8ZzHMyzOOAMKt_b9XO7S1mj7p_13rfou0m26a_Mfk5bhmP9bWpc094dItELBPG5Ah2UKXs9yVSxLaaIQvGM-FHtOadzU2fHplrmWzyAEQxrZ-7lxkbdpf-Kb-ybDPU9r5U2x8HtBtOfUAIy-7X1HzY3ItkDP0w5ZGw74YUPCkXEj9WHDL2lfeAA04n6oCyfs5MFFeMZfISo4-671KI9IW3_ajNOvHUZJek7a4IHrMSYu1L8KcAOe6NbPWjfriSn4O4fqhGxzE-sp3lbsR6XEKOp3q31vpSsTdnNlI7naDH1UjrfusqArNsKbA-dtbEbt3Tq7Zh3_XKWtxPmNsfdK2tI0Mf9p2MJgEcktx0IkaPqTBFeofVJNt9lsaX1xacJZAuBExLOef3uH1anU_pPd7iWqdVcFXA3pAiCbwpdkVdfwROmqEFXG8NRqmtALNepypxqtJoLqhkDdtwYTxZWjfdSRdq2naMnV-SupI1-g1BIckqlLL39gFjMbBIz6SVpPsjnjT9H9SKVUV1C09SZipNMnIaS6TnEbqk9Quu1h1j4FVbVmp2VZ4U4UkggQ5tX2eMKZTdRSOOKiItHur6JVnyPujLOIrjY_WlZFen26VcqUUl9XCt5IwYnegXXbV0NF-gVdidTjP3teYkMka8bHKu6Wvpqz_heCVt4IQ5SMqIEBIxwYeMKc05OEuYIx3gCMgeIVB2KIAYxIhQOIRGM75WYOYWMU94ygQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCIIIIEIggggQiCCCBCwgggzAhYqzniAY8ziBWAcjOTGquO5KLatNdq9enWmGGk7vSODCFzW8pkrxG3UdgtopWASo7EgZKj2iMNT-oewdMZVwztRam5pAJ8FpYKsxXXVnq3u2_am5ZOiMk5MKcJaW8EcervDeoXT7SqUGrw1orzrtVeIcMrv3DJ5xiOBnL9o_1WYrb497vDoBn3JWdwdRus2tE65K6cSM3SqepWwuuJITj2x5y3T98WTDFc1br5qpmyFuNtu5xmJfojVzV9hu3LHtRiWoBG0zSGwlWPXmH3bfT_ISqTNV-rTEx5hLhyE--OQpy85ccqFDb6mqf4r3FwPIPCh22aZaFuVPwLDthwNujala28jMP-naa6wTM8maM9Ks097ktDAO0xJs_cmm2n9NDcy5IoRLp5ISkqiFL-64rJpcq63ab4fmWuAkgEZjoRHDu4rtNDbLX-9mkA-ApNHT3Y8wpFSrSHBNjBWrxMDMOWWtrT2gyvhqmZXYgfjvJJiht4dcWoFwSrks3Khhs5ALYwYhmo6433VHVrcqk4lCzyNxjg-vjbs0ZVTP1nbY8-BHqI7rp7P6saS2wso-Fye5J8imNPP8AVXplINktziFY8gsRy2nK_PVRRenapNknk5UY-cOy-NxnplX0EmIxuMnZqpJPxAqhtHEB-S6RVPrfsWUUUsNBWP0o0Mz17Ws0fQkwRHP0PSGMqU4r2xkJulkYLZP1Qn7Rk9lXv68ubjkBX4R9kAtYnBkR7o--U68rRdUPElEgGOe4fpQ_mD7oQzFOxtQhQ-qE_aEqT_XdzzwumlK6y9PJ7b45Def04cjPUnpXUUpS9Osnd5LUkxyn-Eyh4DzqfZmMfhDaVBTVRmgR6lGHtuL-7VNi_EGtG0kefyXXml3Dpbc48WVm5Lcry3JEYVvSzTq6k7H3ULB8m3k_wjk9IX_cVG4p1XnMj9Iw8bV6lr9tqcTMKnZl7YcgKUY7C4M_nCtqXrinkH8RDj8l0Nq2h7tBklI05c-DPKHdxfEMudt7UWz5F167mGKih0Efe0BRxEQWX193E5MMS9wSKG5cYCllPOIsNZ3VbpPeq25ByeaL5HKXACM_XEhksM2wV3HcbVeBpZJpUHVLT_SK4pN96rUJ-Uq7qjsXgpwTDcmNK9aNKkN13Tm7A9Ju-mJZLmVY9WIudVLOsa_WkTUuZYEp4UyEg-4RG9c0YuO1Zhyr2rOzFQdb9JqXcJKfZiB8AJyP7J9RZzpzAcD3byo10y61Zql1BFp6oUWal5xB2qmHElKfbkxay2Lztu8pBFQoNWYmELGdqFgkRVq8adat8y4peq9Bao9UWfDDrTYSfbmIyqFhau6BTSLo0nn3atb-fEWkqKiE-yBrnR7O3TKe51Nuw2T1x-_ddCyD3Kce2Mx2ivWhfVpaepDTVEuB4SNbRhLjbg2-l9cWDStKkh1C0rQoZBTyMR3a7O4WqpKuGtZrjdlZ55xBCZGYUQ9SgQeEqe8ZRiDgxlAlRBBBAhEEIVADJPaNdMXFRZVzwpioMoV6ioQhcByU1z2t-o4WyhMj1xpHb0tppWxVSaJ-ggx5_bzbA_4ij-qDITRKw8EJwQRom70tpw4TUWx7SI9vtrt785sftCE1t90GaNvLgtvBGpauigvPBhmoNLcPYBQj7pqelpNgzMw4EtgZyYd8pWyMf9JyvogjRs3pbT5IRUmuOOSBHr9tdvdvjNj9oQ3U33SGaNvLgtvBGldvC3GRuXU2cfQoR9NNr9KqpIkJlLhHqh2UrZWO4IWxgj55yelpBkvzTgQgdyY1jN5W2-SlFSaBHrIENLgOSlL2t5K3cEaV68LcYxvqbPpdsKBjJy66C0gOOTqAk9icQuQkErDwQtxBGnTdlvKSFCpsYP6Qhftrt7v8ZsftCDUD3TTPEOXD9Vt4I0jV426--JdqoNqWfIERuUOJcSFpOQYVPa9ruCsoI-aeqEpTmvGnHQhHrMa1m8bceJCKkyMesgQhcByUOe1v1HC3cEaj7arfLgZTUWVLV2AUDG1bcS6gLQcg8iFSNe1_0nKyghMiDI9cCelgjzefZl073nEoT6yYRiZYmU7mHUrA8wYMpNQzjO69YITIgyIEqWCPKYmGZZovPK2oHcxqUXlbbjhaFSaCk9wSBDdQBxlNc9rN3HC3cEag3XbyRk1Nj9oR9MnWaZPjMnONu_qnMKCDsEwTRnhw_VfdBCZBhFuIbQXFnCU8kwq6rKCNIq8rcQ-ZddQbSsHBBIjJ27rcZSVrqbGB6lCGhzT3TDKwbEhbmCNZKXDSJ1lT8tNJUhIySI-VF6W0twtCothSTg5IELkBHiMHdb2CNQbrt5PBqbH7QjBy77caG5VSZx9BEAIKb48f9Q_VbnIhY0Cb3tlatoqTefpIjZSVYplRBMlOtOY77VAwZBOEvis9wvtghNwHnn2QZzCrolghMiCDKF5JPkTClQTwOSYQKSTkiGvqPf8AQ9NLamrlrUwlCWEFSUk8qgPpC5zTNhaXv4HK89StTLZ0ut9-vXFPNs7EEtoUrlZx2ii1UrGrHV9drnwVyYo9qS7mC6CUpWgGPemSl69YOoLtZrr70pZVOdKwFEhKkgxM8zPpqD0tpRoxJIl5FjDMzMoTjOODzEInzJwfp_ysXUVkl4dgbRe3crV0WjWrpXJt2fppQ01asLAQ_Pto3FCvM5iTrC0Onpl5Ff1An_jNTvpiXc52fRD00-03t3TOkfC3NonFIzNTDis5PngmIR6gusmhWah6gWs749QOUBxCsgGO5DIm5dwp0sdHaYhUVRwRwFN116i6faUUZwOTcpKeCMplknBJinusfXNUKx4lHtGWLSTlPiIMVtu287y1Anl1O6Km84HFbkoCjgCNQwwxLj70Mn1kRVzV73HEewXnV568nqSY6UaWLZ1W777r805O1a4H3GnjktFw4xGsblJFIU4WfTPJOe8ZFW5WVRkEdyfVxEB0j3u9Swc1VJVOzI4p16PW5JXlfshb86B4Mw4EnP0mL1L6KrDO0IDQG3B9GKMaH1hi2NS6ZWJ5JWwy6lSkjz5joi71RWM0pIVJzPIz5f3RbULY_D3XqfQ9Db6iieakAuz3TU-RNYJHIa_Yg-RJp8BwGuf0IdXyprE_5Oa94_ug-VJYnf4HM-8f3RNxEewW3Fqs_wDS1NT5EtgfktfsQg6JLAz81r9iHYOqWxD_ALnNe8f3QvypLE_5Sa94_uhdEXsEn7Js5_kamn8iTT_8lr9iD5Eun47Br9mHZ8qWxP8AlJr3j-6D5UliD_dJn3j-6EAiHYJTabP3Y1NP5Eun_qa_YgHRJp-Owa_Yh1jqjsM_7nM_1f3Rl8qKxB_ukz7x_dBpi9gj9lWbnQ1NP5E1gJ-b4ef1I-Sq9HGm1LkH5-oPMssNIJU4RjEPZHVHYrjoaTJzJJOO4_uiG-qLqitqdtB-z6D4qZqbHJB5ENe6FoJOFX3OmstHSvlLW7Db7qm9-U-kSF51Kj0lQekmHFJbWk8EAxpmZVUisPUl5cs9-WlWIGUqQjxnFKU4skqJ7x6Y2jcPOKF53yNl4TLUF0hdGcDKkCyNftQtPShJq784hKs4KyeIt7o91s25dglqXcqW5F8hKFOLOOYoEn2D648VSaFOeMy6ttwcgoOI7QVb4juVf2fqyttjsastXXqp2zYWpUguabZlJ1TifQmEclJ9cQvcdm3zpLMqnZFxyuUVw-lJhJUEp8-IqLpB1KX1pRUmmqjPOzFJyBsJyQI6D6T642fq3SUKk5loPLRhbK1DJ49UW0U7KgbbFeo2682_qNmkel6rJqHoZb2qkobz0umRQrjY--OyjR2KKhzjAjZ9PfVDXLTrSdKtYmlycwyrwmpp_I3-Q5MS5qfpJU7dmjfGm5LEwzl2ZZ3cL9eBEaXlY9p9SVsOeEyim3rS07goDYpSxHKQSRO1M5_yiennoJvFh2d39nD4VvJaZlpqXbm5V1LrDyQpCwcggx7Jx3BiknTd1DXFYdyK0c1ZLiJllzwZV504ykcDvF12nWnWkPy6wtpwApUDkERLhlbM3UFpbbXsr48s2I5HcL1EZx5pPMZ54zHQhWJGNkhyPOAZhc5hYEL4qo78Hp77pVja2Tn6ooBdKNTdR9Sp-jW9VphplLxSClRwBmL4Xc4puhzGElW5OMCIv0XsVik1moVuYlQHH1FSSoc94qX0vnajDiQG_wB1nOoKOSsMULCQCd8JtWV023NKUlsVy6XXJhSQVZUTDjPTxMnObkWPrMTSSFY9fthk6q37JWFbMxUHntr2whAzzEmqfFSRanDYKVHbKS3w5dnDRySqp6_S8xYKkU6i3QXJo5CglzkGIQ-2y_2UqJuJ4qI4G8x7XTXZi77kmq1NvLUlxZKdx47xsNPbTn75uiWpssypTbbg3kDjGYydM2SsqMNJ3K8Vu9wluNeRTuIGcYBU39L9k33ck-m5a1WXlsNqztUo8xbW4qCqu0hdKRMlrcnbvj5bEtOQtC35anSTKUEITvx5nEOEgbdp8xG4EYYwRDgL2Pp-1G3UYbISXHnJVUNa9HritG3HKvR7mcCgok4URFX27rv1S3EG5HsoyPnmL7dSRKLEdSg98-f0Rz6WNr7-3vuMYeue5lY9rSQFhOvYvJyMMDiM87qa9ALRu_UmafFRud0IaPmsxbyxNN3LMVvXVFTORg5zFdujYYdms-cW_CQccn3xtKeJscLHdyFf9DwNkozJISXZ7lam6bfXclMXT0TJZK_xh5RV7XXRy7LXoqqxQbldG3JUEqIi26hkZERpr4j_AGJmyOcJPeK-5wNlYN98rV3OjZNTvPfHKgPQbR-9LukG65XbneLe70UqUTmJ0rmi03UaWqTZrim1pThKgT3jw6cfTsZnIxhSu0S0fRODkxPfTN8MR_CpunLfEaEOeSSc91za1NktSdO7kfpj9fmPA3kIUVHGIbUtc98rn5Vl25ngh1YBPiGLg9VmmaK9RvjuTYHiS6SpRAik5CkhW_Icl1ce0RjA-WGqMbycBea9XUNRa6nU17tJO26vLpTpDOTVOk7ifuJTylJCsbicxPEmwZeWQwVZKABmK1dJWo7lXpPxLOvneg7UpJizfCTj6I3DP-MEdwvT-lqiCroWSx8gYP3Wiu62l3TIfAEzRY_SEVV190puqyqd8bUa6XRvOAkLIi46lJ2lZOAjkxXLVJ2bv_UOUtmTXvk0qG8Z4isrqfxGhreSVKvsMUtOQ8kE7DCaXT3o1fVSal7ouK5HloVhSUKUeRFs5RsykqiXJ3bBjMfFblGZoNFlaWwgJDCAniNmUgRZsYI2CNvATrLbG22AAkknnKN248GFUkngHuIEpSOY8Z6cakZR2cdOENJKjDZHtiBcVc7DcKDuqTUV207XEtTZvw5okk7Vcx8vSrqO9clvLlatOeLNFWRuVkxXXqOv1F4XjMU6Ve3NtqIwDB043iLWvGXk3nCEKUBjMUForTUVbmynbsvKrl1J4V9a-M-kekroWOO58oUgn0sx80nMJnJRqbbOUuJBEfVnA57RoztsF6oHNe0OWtq9PXV5ByRDnhlYxuitmsug12SdNma_b1yupLSStSUqIi0R9Yhu6gOBuzqkrGR4Ks5iquMDWxOlzv2UK5UMdxgMb8j5C5pKua_mHXJN-5Xw4hRRjeYfGkmtF0WNcTKq1U3JqVUsAhSsiPprmjtVqkrM3XT0laQtSilMRcsBanJR9JQ6yojHnmM9TVM9FI2Z5O68JrhXWuqOhx0g7brqHaN0067KMxVKfMIcDqASArOI286yZqVcl0qx4gIz6oov0260TFo1VFArL6vgzyglJUeBF5adUJWpyiJyTdC23E7gQeI2MMzKqPxG916503f471TAZw8chQXqToTWZmmTlTpNxONzABWACREG6RaZahXjcc3T6nc74ZlFkKys-uLuXEMUaZIOT4au_siDun1RF118LA_CH98QKaia-re4nYDhR7_QRuqoHAkZO-DypGt7TJ-g0xVO-NFO70bSrJiJ9U9DK7S6DPVqk3M4lxOV4CiMRZRKU45J8_OGfqwNljzxTk-h5-yFujSKV5byr2pt0L4XNOdhtuucr9yX_Kzbsm5cb2WlEZ3mJG0IkLsv64V02pXI7sT61mIxq6iqvTZUON6v3xL_AEplJvZQTkcxTdP6pqgNmOdl4fTyTOufhl506vdWBqfTnUpmnLblLncQ8UnaQT3iu9xr1a6faq8ZuoTM7KvKOxRJIAi_LaEhtCsnIx5wwtZ7OkLts-cEzLIceabUWzjJzFnconR5nh2cF6_crLHPT64SQ4DI3UH6O9WyKjMN0y6E-HuITvWfOLS0qrSFalUT1OmEOtLGQUnMcsKzTXKXVpiQc3NvMrO3HEWN6W9Z56TnUWpWplSkKUEpKjDrXcvOt0v5WPsPV00NV5Gu4zgFXO2_pQR4Je8VKXGjlJGRBFp4ZXqAlaRkJH5hmTl3JuZWENNoKyo9sCKB6zXbcHU7q3L6c2m658TyL3hzik_MwDzmLAdYuqJsfT5dHpk54dSnyG20pVgkERGWhVotaO6ZTV4VdPh125EFbDih6RKvV744THxD4bfzWYu9SaqbyrD6W_UnXOySLdkJPQrTOXCZltCROvtDnHnzE3aeaeW_pbb527C8pIdmZhwDO7HPMNXQKyFydOVelZTvqs6pW5xXfaYjjrK18RZtDctCgzY-HTaeVIVyM-ULrbCzW9dRJBaKM1so4Gyjjqr6sZucmX7HseYJSnLb7iD28oqKhhbjqp2feMy84dxKzk5MIwXnnV1GbUVzL5KnFE5yTHtz3imnle9-px-y8Pvl8nu1QXyO27JVKKvoHqhBwO0A5hVDAzEYEh2QqIuBOwSDgdoXdkcwkAOIfjLt0HfCemhtPla1qbSqZO8tOupCvfHSdegljOlBVLDhOPmiOY-l1zNWLe8jc0y34iJVwLKT9Bi6Hy_LVG0fE6Txz6Rizo3xsjIJXqnRFxtlJSvbVuAcT3U0Hp_sP_lv7Ig-4BYg4-Df2RELHr-tb8yp_aMHy_bYPaip_aMS_GgHcLbG_WFu-tqmkaAWIP8Adv7IhD0_WKTkS39kRDHy_bXCSo0VPHJ9Ixt6H1kv3RLqm7espybaT3UndDmyROOAcrtBdbNVbROBUofJ-sXOfg39kQfJ_sT_AJb-yIYJ6o7nA_8ADp_3KgT1RXP-Np2_7lQ_Sz2UvxrcdsD9E_8A5P8AYY5-Df2RCHp_sUjIl_7Ihh_KiuXP_h2_7lQnyobmKgn7nbwz6wqD0DsgyW3GMBbfUDTHTexLXn61M-G24lpRb3gDKseUc1bhqv2xXJPVFzBQ06Q17MxZDqs1_ndSaIzaktKqpUyyvc4gKOSPVFY2WktNITj0gMKPrPriprpIydIXk3W91p55hS030t9lnwolXr8oQHEEBP0RBHyvPTvwgnzAgggwcQFoKXYbIw26kpdQFg8c-UbGzrzuXTauM163ZxzahYKmgo7ceyNcCE8Y7wpyMtH5qoQF0bgWrvSVMlJIJYzghdO-njqComsFvNszDzYqLTYS82rzPnxHw6taWztv1Maj2GFtTjbniTTLYwlSByY546Z37VdK7xk6vTJhaJYuJL6QrgjMdUtN73pOptmMVWWdQsTbWx1AOcZHMX0E7ahmk8r3Hpu9t6gpvBm_5GjlVa1u09ldbrJTqlZLKZe5KNy8lsYWVJ7_ALokTpA1zF926LNrj22sUlPhvJcPpEiCqSn3I9TfAQrwrfqQ-_Ix6JKv_wBiCNSKNO6D6302-qCFS1FuB9K1qTwkgmGaPCf4g_NOLZLdU-Yj4z610KAIOYXOPZGptquydy0WVrMg8lxl5oKBSc84jbEgcROB1LaxvErQ9vBQDxxGQ7RjC-UGMLoeV5vsNTLZaeSCkx5NScvKp2sthI-iPpIjBQ3DGYacN9Sa5odyvCcmWJGVcnH1hKGklRJ9kUQ6ldV3r1uBVHp7x-CsnYoA8cRP3U3qszaNvLpMhMD4W8ClSQrkAxRpx5bzrs7MKJW-SrJPmYxt3rDVzCJvAXnvWt8FJD5OPvykTLuuFumyqSXXCAnEXe6YdKW7coLdbqEsBNPJzlQ5iA-m_SuZvK42qvOsEy8uoKyRweYvtIyTFOlm5OWQEobTtAAjRWqjbSxCQj1FUfQ1g8xJ-0Jx6Rx917gY4gVwD7IyxxyYxV804MWGo5wvXg1RL1Kp_wBgnFDvz-6OfOcvP_rGOg_Uqf8AYF0e390c-AB4z_tMYe5__OcAvKfxHAD4nK0HRty7NYi4ASAkCKgdGg-_zcXAzwI3LMOp4_stH0OP4DPygjiIw1-z9pM3g_iRJ-7IiL9fT_sVN_qGK6vwxrfuFr6oE08n2K-Ppvx9ojA_SVEuHkcxEXTd_Idn9ZUS755i2lG4x7Kp6dJNA3Puf8rVXNR2q3QZumvICvGbUkZjm9qja67RvWapimylClk_RHTQ5KsntzFS-r_T1KWxc8oz6a1ZUQIyl9g0ubM3tyq3q-2CvojJj1N4UHaM3guzL6lZhbuyWWsA88R0TolUarNMl6iyoKQ8gKBEcsA6pHgvoJ3NqBMX16Zb8aua1mqc66C5LICRkxZWWp8anLHHccLGdDXMw1JoZNgf8qUb1rLdBoE1NqWAotqCfbiIo0RoK6zPzd1TgJWHTsJj213r0xPuydt0xRU4XQHAk-WYkyxaJL0C3paWaQElbaVLwPPESqYOdKagH08L0ac-crRTuHpbunECDyPVBjMIgjGAIXkDiJOjfKu8dkhGDEZ65XcLft5dPZWA9OoKUjz5iS1LwlSlcADMVgvqoTWpep0pSpMlUvTnQHAORwYg1oNQRSjlyrLtUPpqUmP6jsFB9_6Sz9Ct1N8upWp6aVuOfUYjSmVJ2k1GXrDHz0rBMdEtWLGlq9p8ulMS6f8AV2SQAn1COeFTp7lNqU3T3kFPhLIGfbGXnYbbUtiyvJerbQbe9tU3gjJ-66JaI3km7LRk1qWC422kKAMSOr0uIpn0h32JGedo09NYCyEoSVRcpKwtIKT3GY20cnjRNkb3XonSVy_aNuaXn1DZZADENnUQA2XVP_ZVDlSMjENnUX0bLqYz_MqiJcB_DODlpnnSCos0DlmajTJqnzrYcZdUpJCvKIU6lNCZm1ao5c1vS6lSizvcCR2ib-nrmWex-WqJhuCg0-5aW9SqiylxtxJTyMxGrqHzVHHp5AWWfa4rxSvheMHJwVyy3rdCXmSWn0Hj1giLRdNWvpaU1aVyTGEp9FtazEY666PVTTivPT0jKqXIvqJBCeEiIvZfdk3W6nIOFLzJCsg45iltle6glLZeOF5ORVdL3EZ2wf1C6jXA829Qnn2lhSHGiUkerEQf0-p3XXXjn-cP7412hGt8vdNpO2_XZkCbQ0Up3K57Rten5ARdlf2nKfEOD9caahAfUPlYctIXp9Rdqe7ClfEdydx7KwaUjaBmGfqz_IaeP6H8Id5ye0NDVn-Qs9-p_CON0J8m8hbCQ-hw-FzbrBArs5-ur98S70pcXsoj1xEVX_79mwfy1fviXelEZvZQz5xS9M71AzzheAQu1Xgt_wCyvqyNzScx5TzCJiReYWMhSSI9WspaT7IR78As-e0xpKkAxv8AsV9ARNywZ9lzi13pTVL1FmvDSEpUo8Q0rVqblHumTnGlFB8VPI9sSD1IjN_PkjB3GIuZH-vSqs-kHU_vjF2jLKkY918-9VvFNdXlg2BXTWy6v8NtmRmFKyVNDJ-qCGppw-8LOp_J_BD9wgjf6wdyF6rR3B_l2b9gqza4Oy-tnUDQrakniWGSFlOeDtiULhU1cly0SwZpra3Q1IQMdjiIS0Nk5if1hl7ucUT4DZ5iyOn9Nl7o1FqdXWkBTC85EVzMZyOSVHoxqqjI7_yHdSnc1VkrEs6YmdoSiWl1BIHrCY5RaqXfNaiX1O1p11S2WXVBIJ-mOh3V1dabe08da3YL6VJ94jmRJDauZdPZ5RV7zEW4yEkMWb_EOve1zaVhw0Be7hClZRwIXIxzCJwBBFbwMLyg4OySFgggzulcf5UHntACPOCCA7pudsIUAvhXaPMSkvnOTHpBCAYSgkbBea5RgjO4wIlWPImMztQOYxeeTLpDp7DyEGM7J4LnekL7KBa0zeNekqJSdynFupS6AOdueY6n6LaQ21YVmScjL05HiutJU6VoGc4ihnT9pNqa5Vk35alLL7fdIUniLVC7epzYltNupT4Y28J7xc0UYY3Vjcr1voujhoYjPUNJceNlYf7XqN509n9gQG3aP_yDP7AivCrq6oDyKAMfqxj9tXVEVcUAY_Vidrwt55ylzjwz-isT9r1GH_D2f2BDJ1YuG0tPrPqFRnBKNTPgq8BKgnJVEVvXj1Oy7a31UJIShJUoqTwAIptrjq5eup1xO0i45lyWckFlLjaCQkkRwnqBE3UQqS99RUdup3aWesjbITOuq4Zu7bqnK_OEem4doA4xmNf-EJPbEI2jw0bUdgIQKCicd4oZH-K7UV4JNI6pkdI7ug94IPbBCLnxwiDJgghEnPKUYJ9KMj-l2jCDntCpcd1g-yJmWWyPnK-aYtZ0M6rOUyrqsqovLUkDCQTFWGzhwH1Q79D64bb1MlJ0K2-K4lJP1x2pnlkgIWj6auD6K4MMZwCd10o11tiQrtoLn3m_TYKVhQ7-sfuiBdUqSvVvR1x_YE_ay16Cj39GLSvyrV1Wa004cpmJdKv6ogSTbTK2pd1qspAS4lxPH1xdyAO2Pde03qMStAbtrG62vRlfcrcWmjNC8UqmZJSkHJ544_hFhvoPlFJuiCXeod6VahqWdiVOKA98XZ_GUPpgpzlgVnZZHOpGh3bZKDkYEL5YhAnEGPOOzirU-4SqOO_aNDedySdq0GZqk08lBbbJTk9zG7W4htClrOEpGSYpp1W6tiqTYtijTR2tkpd2mKi7VzKSIt7uVbda9ttpXTOO44UL6oXtOX1dsxUHnVLYCyAM5Eaa2rfm7srkvRJJsqKljkeqNXtMu34KAVrd7evMWx6UdJi20LoqsuQ5nKNwips9C6of4jxsOV4VBFP1HctLsnJU56QWHK2PbEtKtMpS8pCfEOOcw_gMAmMEIDYwkcY4jIHB5zzGudg8cBe9W-jbQU7YGcBYPzLUs0X3jhCe8fBTq_IVdbjUosKKO5hka535TbOtJ0PTSUzDpCUJB5jw0OQZ2326zvKvhI3cxyik1ylvYBc565onbBGcu7r5epbiwnMJzyR_VHPnBS8_n8ox0i1qo7lXsuaaaRuKEFWPqjnFPNLZqc5LrSUlDhGDGLuQ01jtXdef_iLE4iJ4Gys10akl6axFwRnaBFO-jR5HwmbSVAEeUXECuAR6o3EY_h4wPZXXQrgbeSD3S8DtEYa-gGy5pOcEpiTTknjtELdR1ZQzIytFQvc5OHbtHfvEC4jLWj5C11U8Np3lx5BX39OLS0WOxu_KVEucYxDC0eozlDs2Vl3EkKI3c_TD-TyOYtJT6h9lBskJp6NrDysSk4hp6l2nKXbbE3IzLQWUtqKc-vEO4xg4gLQpCuywQfdECrgFRE5ju6tJGNlaWO4K5ZXRRXLcuKcpMwgpT4ignPtiR-nrUhGnlXcXUXSJcnGCYdPVnYHxTXk1mUZIQr0iQIgaj09-v1eTprBI8dYBx7Yy9rlkpqrw2c8LwO8U01juxe3bJ2V3LDlzf9-u3cRvpyhlAPbMTwGktoDaBgJ4EMTRu0E2nZkpJlPplAJJ7w_Rx3842DY2wN0D7r2ayxvFM2af6ihCSBmF5hcY58oTgEKJwB3h5ON-yuCNR3TR1Qulu1bTmZ9ToQsp2pJP0RE3T9TqUJ2eump1eWLs4oqSFLAI5-mPl1-rDt33LL2BT3Spt4gLKPKNrQ-mCVkqRLtor0y04UgqSFHiK2Bsj53SuGw4WXq3zV1e00w1Nj5B91NEzVqDMSrkuqsShS4kpP31PmIoP1FWrKW9eipmnTrLzD53HwznvFnvk1NcZuabx-uYjbW3p3NFtx2tyc89OOMjJ3HMVl7pnvAnxwo3U1FVXOgMegDG6rxp7XVW5eUjUULKGg4kq98dI7NrkvcVAlqpLqBS4gfujlupxaSU4KXWVel9UXd6V7-Zq9vNUJx4FbKexPMTrHVGeAwHssP0LcTSVzqeQ7Hb81Yft9ENfUY_7GVQ_wDRVDmJyfohtaij_Yup8fzJiTcW6qYlezPzpP2UY9OygZZ4fpqic9uTx64g3p5SBLvK_TMToPOJkOfAZ9lXWrdjs-6bN_WXTb1oEzS56XQta2yG1Ecgxzu1H09qundzTEjMsqEspZ2qI4xHTX0hEa6z6S03USgvJ8BIm0JJSoDkmM7dra6X97EN1W9TWGO8U5LR6wuecpVqjQ3kz1HfUhw-aTxFuukScmKhLTk9Oq3POYKzFTLvt6p2TVXqJVGVpIWQgkeUWr6N07qdM_VHXpuT1PYT2XlvT8E9JdmQydirTJIIzDO1Yz9o09-pDvGcYhn6sfyGngM_M_hE-6bUjwPZe6TbROz7Fc3Kv_39Ng8-mqJd6UyE3uvz5iIaqQK_OJz-Or98S_0poAvdZScxS9N480C7nC8BhcJLx6f6lfRo_ekkxhNL2Sjrh7BJMZNDDSI0V9VpqhWtPT7jgR4bSiMxoK2RrInly98EnhQ63dgqEdQM-id1FmWknO1Rhg0WTXULik5RCSr76nj64-y9a0a5dc5WFnclS1BODEqdM-l8_dNxt12dlliUaWDlQjL2OB884kA2BXglfG69XgtjGQSrg2LRPg1q09pSMENDPugh2S7CZNhuWaSNraQBBG4Mm-y9np7THHE1h7BUU6fXEiquNEALKDj3RYfQMYuGvBfzt3n7YrBo2qepeuUpa8yktoeQeDFjbNrjNtanVCjtDPjOY49sVsAwAqO2v_fRtPYpq9d7DzlktFOcAxz_AJUZaAx2EdQuqi1EXHp5ML8PcphClD6hHLuTUQ_OMLG0suFOPriFcgdYKw34hwPZWB_Yr2wM4ghCDnMKSIr155pyUQQQQ4ppOUQQQQiEQQQQISgAgkjJHOIcml9ju6mXpJUdrPwYOpD6vJIzDVmZjwEobQNzzitgSO_MW-0C6Z7xTbTd00ObRKPTyAv0zg8iO9KwyPwQtL0zaX3Krb6cgblW80_tu2dPLZlLap00ykMoGVZHJxDkFVpQ5-HNftRW4aG62q-ddCM_-6IBoXrZn-VCP6URetLgMYXvUc7omBjITgKyfxvS_KfZ98ArFL3BIn2cngDMVt-4ZrX2-2hH9KIwXojrQwy9Mu3ShPgIK0ku-oZhQXHkJ7q6VoyIinr1PatSVgaeTq6dVmkVN1O1ttKhuIMcxnajMViefrk6SqYnFFSyfWYd-slcu6eu5yl3RVlTipdRQClWU8GGftCPRHYeqKasn8R2kdl4f1ffDd6nAbgN2Rk_NHECkpHA7wYzyITAPfvENrSscPYIIxBAFBXGOYMZ4HeBIAiCDGIIEFEKmMYyVgjKYHbjCCTjCB87iNhaCFuXjS0sZ3eOnOPbGvaO9YSeIfPT1QjcmqMvJKaK0tLCs4-mFiBLwArazRmSsY0e4XUuxQpFnU_xPKWTnPsiA5bPxxcyj8zcvMTxWZxNrWWHkJIDDCU8eyIEk5hqasK7rnaUAtCFqjQyHgL3m5EwNhaew_8AxM_pWTnWOrKbVlGF_wAYuccFR9eYpP0KInatcdVuKZbVsWpxIUfri7H46j9MJTN0typdmGaYu9yshyYxJJVtHaMgRmA8HMdeeVeKJdfNVJawbZmJdheZx1G1KR3jn5P1WpVqqTFYnGnFLmFE8gmOmd1aZ2feT6Zm4JHx1p7ZVgRo_uBaXAACiNgD9IRQ1dpfVy-IXfZYnqTp6tvjgBIA0cBUK0vpcnWLoZFwK8CWZWFZUngxey39TNOaBTWKfJ1NlCG0BJx7I-saCaZY9GigH1pVj-EJ9wPTcf8AC3f6T_CLSmp30kWhm64WDpepsmXNcC4919f3Z7DPo_HLQ-uGNqF1QW5akqo0sJnXCPR288w7BoJpqD_3c5_SQi-n7TBzHiUcqx-UvP8ACGzx1EseIyAVo6iK5PZiJ4BVGL31NufVq62TOpeRKl0YbIOMZi_Oj0ginWLT2EI24bT-6Pil9B9MpV1LzVEbCknIORD6kJCWpssiTk0bWkDCR6hDqGmdSxaHHJVTZrFV0dc-tq5NRcEs3LMzku5KvoCkOgpIPqinuvfTTUWZ924rUly6FZUppCe8XKwDxiMVJSoFKkBQPBBjhW26KrcHEbhXtztVPdofBnC5s6d3vdGjVyIXUKc62lS_viCk-uLq2tr9Z9dpLU9OTyJZxSRlB8o39waRWBcsyZur0dpxwnJIwI1o0E0ySNqaUpI9Qc_wiRTxzRN0udlZ20dPVlmkLYJB4Z7LGra126zJqVQnk1CZPCWk98w0rVsWtagV8XZdiFttNK3tMrHaH9RNHrDoE4meptPKXU8jcvcIejaA2kNoSEpHYCOojy7W8q_NJLO7FSctHACwZaYl2kssoCUoGAAI9AcwFAzGWAPOO5IVo0BowjEIRz7IM47Qh3Q3c7pQB2UX6_WY1dFkzS0MByYbQSnjJ7RVjpr01nZ--HHKjLK2yTpPpJ9Ri-j8s1NMFiYb3oUMEGNRR7Mt635h6bpMglp185WR5xAjoWR1PmG_-lZu7dPR3SpZUP8A5Vt2GkMtNtNpwlKcYj04zgmE7DEAAPPnE9xzwtEwBoDT2QtYbQVqPogZiI9YNeaHYdImGpNwTE8pCkpQO4OIlGp1CVp0st2cI8PHIhjTOlmmd7PfHEzTi6tR5yrjMRKunqJWYidgHlRazxHxGOncA8qq2iWp7VQvp24LvBQVuFSFODsM_TFzLevmgXPkUaeQ-UgZCfKG59wHTDACaME480qA_hG-tXTq1rNUpVDllNb--VZjpTNfDGInnOFR2a119vLvGeHajlOUqUUkk4xEfaiXzZzVImqLVKi2l1xBGw-uJCWpATtPZXEMyu6Q2Lcc58Pqsipx08534htRA6Zpb2K0FQyR8RZHyVzlvBKGLonVU9grl1rOCE8YzG50r1Gq-nNyszzbLhl3FDcMHAGYvj9wPTDuaIkn1lQ_uhFaBaXKSUqoaMe0f3RUUVqqKM5Y9eaP6ErBVeZilAOcr7rM1Tt-66MzUGZlIVsBWn1HEMfWbXO2KXbc9SqdMpmZpxsoKE84iQqHpdZdvsql6XJFtC-CN-Y1EzoNprOTjk7MUsrddOVZXwYtayKSePw2kDK3ToLgabwg8ascqvnTrrfJSUy_JVxHwZoqJC1DEWpty8qFdDZco86l8ee2GwdA9LwkpTRQjI52qA_hDktWwbbs5st0GWU0k98qzHaBr4ogx5zhR7RQV9FltQ8OCcGNveDvz74yPP1RiTtjsDq2WhO6gjqO0Pk75ojtXpcskT7I3Dankw2ukKl1Chtz9LqLCkOMHByMecWcWlKgUqSFAjBB9Ua2nW1RqTMuzdPlUtOvcrI84hU1GymmdM3uqCqsUUtYyti2cDv8r6pyaYp7C5mac2NpBJPqEQvq9rTarVqTshTp1Ey-UlOwcmJpqEhLVOVXJzidzSxhQzDDVoHpmt5b7lJUtThyrc5nn3QlZC-qidGw4yrGviqZoy2ncAT7rnJNzc1N1SYnfgigHVEgbTEpdNdzy9t3euarALDR_GUnEXKOgel_lQ0e8Qh0F0x8qMEn1pVj-EQLba5KCQSauF52OhattT5kSjOcrKZ1usaTkTMCqtrUlOdue8Vt1k1nu7VTfQbGpLy5ZslLhQD6UWPVoFpoobVUxZH_ALv-Eb22NNbPtBKxQqY234nzicExPqKZ1W7TIfR8LYVdDcauLwfEAGN1TbSXpeuC5p1uoXG2uWaCt6kLGMxdG0LMpFm0tumUuWQ2EAAkDGY3rbLbI2ttJSPoj0JiRT08VI3RCMBLZ-nKa1N1AZceSsMGCM8H6II75V9pVF-puWd0m1qoN5UeXKJdakpcWBgDMSPdTrNvzVt6gySg8qrlDjpTyBnHeHp1U6VjUzTaZRIs5qEr99aWB6QwIgvpovBq_bPqukd1ObqxSQpqULh9IEcDGYhgFj3A8HhYyoi8hXPz_P8ASrfvNyl8Wi4h3atE2woccjJTHK_Xmwp3TnUSZkly6kS8w6VA4wOTF_tCbzmKLOu6XXEvE9JqUpClnuPVGv6r9C5bUe1n6tTZVJqUujKNqeTiG1URmjDhym9R20Xq3eKwZkaubxCeSk5BjGEflZyiVB6hVdtTMxLKKSFDGcRmE_lcGKR_pOCvB5WPgeWvG6TiCFCT5jEJjnEBK5Y2yiCAjEHHmYBugbog8iR3AzAATCsSszUZ-VpUigrdmlhsgDOMmAbnC6shc94YBuU_On-3rWubUeWF3LKZRtYUfyeI6UUnUvTO35FiiyFSS2xLICEAD_GIU0Z6QaRSbQYnKnMAT82gOBZHKciH0npipvBVVSVeZ5i_p4jG3cL3Tpe21dppQPCGT3T-OsNgjg1ge7_GE-7HYH54Hu_xhh_Jjpx5NVP9cA6Y6X-dD_XHc5C1AqK0_wDj_un592KwTwKxyfo_xiIepPqSs23rGmJOk1V5U5MpKE-EMEcQ4h0x0wc_Gp_rjze6TrKqJBrYROY7BQziEcHOGAo1YbhUwOijYAT3yuYKK6Z6cmZ-pfCHXJhZWlSwScExn8ayQP4J0_VHTk9IWmZI_wCzmMDsNkKOkHTMc_FrP7EVjre9xzleay_h9WyvL3O5XMb43kwPwTvug-M5NXZp3J-iOnJ6QtMz_wANZ_Yjym-kXTRuVeWmnMgpbJB2duIaba_s5cX_AIdVbGlzXDZc00q3oCwMA9s94XJAyI3uotPl6JqDVqFK4TLyrqkoA7YBjRfQeIgOaWnBWAqYHU8hjdyEcQQfVC4B84blRe-EmfIQmNpwD3gwUnOIXKAC64cIHnAw5fgp_wALxnXvBl1FP4TjaB5xc3oX0jd2m9qrLFPiDKCocxXDQ7Sur6t3rKtsSq1U6XcHir28YzHUi3aFRtN7QRJS6W2peRZKlHtnAixoYSXa3cL0_oWwmSTz1QPS3hMzX67viO2jSmQFLmVJTtHfEQPrnVzpjpTKU2luBUzcrYC288jd9EPaSn1ap39MXxUvRtykJUFJUfRJT_8AkQU-7UepLX5uQpilLoNvTACUD5u1JiZM_LSByeFr7xUGozE3cu2arO9I9kM2ppXJzrrGybmypxzI59f8YnEHncOxj4qZS5akU6Xpkm0G2mkBISBjsI-4pGBgxJDS1oC1VFB5anZGeQN0o7wuOcxiBjHMZGHFSgcrBec4AjTXFdlu2pKLnK3UGWUpBOCRmNVqdqHTtOLYma9PLTubQSlJPnHM2_dWr8131ERRaVUnmpGYe2hKVHGMxWVdyZDK2Bgy4rbdKdGVHUWqd50Qs3LldmpdYdoO1ddIt5tUy42cEpTkRmz1X06WmEGqyLjcuVAKVsxiNhoX032ZZFty87WKSzO1F9sKW46nJ5ESFXdJ7Ar1OepjtuyrfipOFpRgpPribplYM5yfZV9W6001S6CJhcwHGr3-VrXdedOWqczPpqzRXMAFDeRnJh52_WmK_S26tL8tu8p9kc6Nf9BLu0z1CpdTp9UefozrwPhhR2pTmL7aSPML08priDhAaGT9QzDKKodUxuc9uCDhdL3Z6Ogpop6SXWH_ANvhPLO7gwAHsY-ZNRpivmzrXH6cezLzLwyw6lY-g5iUCst6mjcLM5T2he_ePL4RKKdLQmEFwd07uY9Qcn0RmEzlBaQUFKT3hD3wBHyvVikMOll6fZQsd0lUfQzMS8wnfLuocHrSrMDcdk7SW7kL0Hs5gjBa0oG91QSkdyY8E1KmLyEzrRI7-nCEY2ymtBdvhfQc44gGfOEbcZUjeh1KkevdGLU1KPqKGJhC1DuArMLpAQWknK9SMQiieBjuYUqAODGDikISVuqCUjzJxAcoAUfao6rMabth-ZYUtvGSQnMRRIdc2nU1VmKKt8Jmn1BIT9MTVfcjaFwUOcZqbMvOLDKtqScntHJ24aLS5PX4tS8p4bbc16KQe3pRTVNbJT1LYW7hy9N6H6WoupYZhOCHMGfuuwdBqzFdpTNUYOW307kx9yvohqaWY-0OmhI48EfuEOzyi64XnNXC2Gd8Y7Eha6sURitseBMLIT9EelKpEtR5NMnLfNHmY-3bjzgxk8Qus8dlE8JoOocrAqx5Zj5qlVJCjyq5yqTLbTSBklRhanPsUmnv1GZOEMoKjmKJXXq5cutmrCrCpNSXKyaHvDO1eARmIc9WyKRsQGXO4C0djsU14Lnj0xsGXO9lcBOsWnS3EtiroKlK2jjz98O1mqU2ZlkzjM2yWVDIO4RBsn0qSLEgllyskvBOd_PCog7Uemas6WXlK01msTD9JW6kZCiRtzDH1MkODK3b4Umks1FcXuip58Eb79x8K9bTqHUBxohST2MGQskRpLHfdm7PpcwpW5bsulSiT3MbwJXnO0e-JoIHCzMsel5Z7LIACF4A7CDB8wBBhfbCffCYympMDviAGFzj0TjJhMLz2HvhcpCCUuSOwhMj8aEUpXIIj5KpUJak02YqNReQyywgrUpSsdhmEedLdSe1hcQB3X2BJ75hSPMRAenuvK9SL9doVFAclZdwoUsHjgxPSlFIAI4hkMzZ2B7eFJraCaheI5hgkZwsswmAYQK3fNwYX0x3SPfHTjhRMZ2KXaMYEJgDygCgrt3g9PPzR74M4RjBR9UKTjsIx57HAPkMwvpeYEJjGwSAE8pRz3hcAcxjkkZQQTASsJyoD3wYS8BLn6YIxGTBBoHumaivNQacQplaQptY2kHzBiivU5pdX9F77lNX9OGXES6XPGnUN9iM85xF6ynHYcxrLltyl3bRZmgVqWS7LzKChW4A4hr4w_YqBc6FtfEWD6hwVWanVuS1mtCV1QsCYQzcsohJnGkH0lY78RMekWrVOv2nKpVTAlqnKDwXWnTgrI4PBiot42bfnSFqCu7LVZemrUnXfvzQBKUpJ54iU2HaHqbKS-p-kE621WWkhyZk0qxlXnxHFsp1YPKzdDcX0khimGCNiD3-Vj1U9Jsrd0u9d9mS6WZ5oFx1Ke6jFEZ6UqdAnXKVXJJyXfbVs3LBGcR1Q0v1kkbobFu3NiXrLQ2OtrThKj9caDXDpetHU-TfnZaWRLz-0lBbSBkxynpGzjWzlVvUnSkN4Z5uh-ruFzNypXIVuB8xAOIeuouh2oelk683UKe6uTSTsWE59GGIxNszBKEpKFjghXEVDm6HaHryGst89E8xytIXscxklCVcqhCCkdxCAjv5xzc4cBQS0jZZY2rCyfREP7p2qFLoeoordx0ZyekWyCgJTkA5hgsSU_WalL0intla5haU-iMmOknTzoBbNuWHJTVWpqHZ59G5fiI7cROo4HSnV7LZ9H2Se41Imbw33Wxa6p7IZaQ03RJ5KEAAJA4AH1Rn8qyy_wAzz_8An6ofJ0msxSir4pY9I5_BiF-5LZn5pY_oxF0A73Xtg8-BjZMT5Vll_mef_wA_VC_Ksss8_E8__n6ofX3JbL_NLP7EH3JbL_NLP9GIXB90f7h8Ji_Krsv8zz_-fqg-VZZf5nn_APP1Q-fuSWX-aWf6MQfclsz81M_0YhMO90f7j8Ji_Kssv8zz_wDn6oX5Vlln_g8__n6ofX3JbL_NLP8ARiD7k1l_mlj-jEAB90v-4fCYvyq7L_M8_wD5-qPKZ6qLMcl3kfEs8coIwRx29kP_AO5PZv5pY_oxHzzulVnNycwoUpjho_zf0QuD7rnMa8Ru44XK_UipM1vUer1iXbLbMy6pSUnuMmNGUnPPaHHqqyxI6oVqSlkhLbbygkDy5hvpIJ-kxnJ8tccr52vBc2seX85WEJgkgJj0KPDBWpScfSY8JVUzU5sSFHlXXX1nA2pyMwxjAdwoMUZmOmMZKzeeblklTqx7PXDw0r0guzWGvMU2myLrEkVje4UnBHtiWNDejq5r1nmqvfDDkvIAhaQR3EXstSy7O0ot7ZJsMS7Muj0nSkBRxE6nojJ65NgvQOm-jJawiasGlgWq0i0jtfRm125aXaZaeS2PhL6sd_PmI5v6_azqtcv2hWSpbcnLuf63MpPoFHnzBfOoFxas1JVqWIVN0oEpm5lQ24A78xGGpurlA0aog040rSKldFQHhPvN-koKPB5iwfM1jduF6HXVsVHEKanGGj-61_UNqWza9OltCNJ1B6ozxCJx1nk7j3ziJ56W9EpDSuzpeozbH_bE-2FTK1D0smGD0udMD1Gd-6bqMFTNenVeOlLoyUZ584teEpKQAnakDgeqEijLneK7n_C6We3Pkf52oG_8o9glwe_nC4PaBJ9ULj8YxKWnwk47ecIVHckfTCjk5EIQd6TjzjnITwE4KknX3ek5JOs28y6pLDrQ3AHzxECdG9JlKpf8uqabC9jowSPpiafsgduz7tVl6nLsqUyGgVKx24iHOjGcblr9YQ4oAqdH74ycY13f1r6d6fiYz8PXvgPqIOfddTmm0sNtstjCUpwBGe1KuCqMCvMuFI5JRlPuir2ut9a72C69X6HTi5SmiSVY8o1FTUimGpw27r5xt9ukudQIIyA4nbJ7qdtQdPpG-pRuWm20kt9irvH2Ua1jQrSVbsm5hQQUoOexMc-GevPVqYqLdJl5H7-6oJAxFxdBLh1OuinIrF6ShaZeTlB-qOVLWRVjHeBx3Wlv3SN26bgYa8gNO4Gcqo_UpcWtelNwOCRrahLuubkgL8sw6tCdedQLjs-dkg-5MVRaCG1A5wcRr-vt1SaugBajngcxv_sfdry5kpmpTjKXSeU7hmKS0GWerlZqON16bOy2s6PiuM8DTIMduT8qNrI1K6jJPV9ulV9ubXLOTGCog425i0fUX1NSmjFqySCk_GE02kEnyJETiq0racnBU1UaXEyDwvYMxGms3T7pzqg2Ju-ZpDDDA3AqIAGPbFlMyamjDIXZPyvOn3623eugkrINLGchg-r8lCVs0PU_Vuy13_Ra7s8ZBdAC-3GYiiweqDUHTbUlNp3lPLmWVveEDnPniJgltQbd04ok9pzpRNPTqUpU2CnlI8ophdKZ53VGRNabAnVTYWc9-VRFqJnw1UIiPPPsvSelLRS3sVYniHhYJZkYcBhdc2px277PRN09exyaZ3JOexIjm5rvqdrTptfE1TpWtL8AukJAX2GY6LaWjFg04DjEsn90c1esZazqM-lSyQXv4w2962TM0OIJWb_C-hpqm9zU1RGHMAOxGVLdv606uXlpsKdbanjU2m8uPDPqiNtMupPVmxtRkSN6VFx5kvBCklWfOLU9JdDpctpFM1BMk248uWOVEc_Nii-pJxrO76AwZ3t6vSjnLLPDVRkuznstfZYbZc6m4Ww0zQ1gODjfK63W3cUtXralLiB2tvshwk-XEUy6m-qe4TdqNPLBmVJmFOeGVoPnFi6JMuSPT6ZllRStEgSkjy4Ec0ranpira1ibnR4jnwwjKu_zonXGaTzDIGHAPKxXQXTdNV1NVVyt1CDOAeFbeSsTW6j6fKvSqVhTylsby1vycEeqKcfDZioauy0zOpImHHx4me-cx1iUkK0xQlxG9PwP5p7fNjlZcgQnXohpAQPhPYeXpRV3Jhp66NjeFsPw3uXnHVzXMAI1YwMbey6vaXDFiU3H_pD9wh2Y4zDS0tJ-0Kmn_oj9wh2g-uNWOF8_3Afxcn_2P-UkZYwIQgd4x3eUKN1CccJu6iUubrFnVCQklEPONHGPZHKKtVi5NIdUpuqFtbLrL5VuVxnmOvjzrLLZcfUA2Rg5iv8Ar50wWrq7T3alSm0JqOCpOwD0jFFdaCWeRlRCd2r0foHqilskj6W4NzDJsUzNGut62q3Jy8jdjhEyoBIXnzifKtS7X1VpzM1KzcvMJ4UkAgqAjl9qD06ak6dzLgVIuoQyonchJ4EbXRjqJvTTK5JaWem33JNKwhwOk8Rzpbvrd4NW3BW2u34dUNwhdcum5gTzpyuhesFyXDpbZTU3bLC3G5Fr0kIGeBFWaX1_XDV6gKOmXcYmivw9qhg5i6lo3DRdT7NZnVtNTDc4x99QoAjkRzq6rtLRpfqGi66TTUNSyHvEwlOB3jvcqmSikY_PoJWT6HtltutTLbrkz96M6fk-y6AaY3Fc1y2Sus1XcJtbZW3n2Ziu1e6nNSqPfrloiVeXvc2NkA8cxKfTTrJTLu0qRVn1NNLk2sFHmcCPg0xolMvzUCeuSapLSkyrhUlSkj1xPe8ve0wnYqjdRNtdXVR1sQwzgfPbCdl26yM6bacsXDdjoTUJhvKEq75MRZZevupNweLcqpR92jpJUEhJ5TGl-yD2rXa1bUpPUxDgl5PCtjY4OPZEXdOnVxSbZo7NmXXSmUSiQGVqWkeyIbKxjal0cjsHt7K6tPSjrlZHXKkjD353HsPhXL011fltS1TDMnKrl3JcEKChjmKydZmpWqdHaepMnMOMUxzKSQcAiLV6ZUiw5uWTdFmuMlE6kLWlsjjMV4-yFuNKspDaWEoUPxwOTHC9eI2kL9W6idIim_1JDCIstzw4cFV66Y69elInvhdqlxx91W5xQ5OY6H6Y1u46rS3Ji69yHEJBJVxiKY_Y-VtGaCJiWS8c4G4Zi3ev91TFn2BPzNNbDTimlYKRj90dqGZtLbBKR2yrj8R4xX9SeRgYATgApja2dU9Jsyabte00mcqzznh4a5KT9UMSb6mdRdPKhJTt-yEwqmzm05KThIMVW0Yuwp1SfuyvJM-545UltwbscxYfqD1KntULNTQqXbADyU4QoNcjjiODa6SSl8yw7-ykVnR1Jaa6nt8jQWvHrcTwfhW4ti-qbftoouG23kqU81vSkHkGKn6q9ZV2aW3S5Raoy4UBZSDiPt6CkahUdubo92S7yJYAhoLBwBEQdeZljfSgZJoZUTnEOuVfJBHHJHyeQo_TnS1BN1I-0z4fFgkEeysLQesWVm9PnbndlHJmbSklKEjJhnaZ9eKriu5uj19hcqy8vaPEGNvP0x9nRhpfbdcsN2qVRhD4DX4NQyO0VU6gabJUjViakqPLtyiA9hJbGMcwlVWVUEjHnGHdle2npSwXa61Vrjaf3YJyr9619U9F0-t9M_QZVc-64ndlr0se6I00P65GL5ulFCuBCmfGVtAXxjMObR7Su3ZzRVys1tCag8qVKgXhux6P0xRJphqna2LTT0Jl0ongEhAxxuhz6ydlWyJ3DlBsXSllukNZTMBL4c4ce67FMvCcZRMy6stuJCkwRqLAeU9aFMWs5PgJBP1QRekYOF41K3wpHM9jhb6McZyFCFOYUQFcW5AwtRc9sUS8KQ_Qq_JNzMtMJKNqk5xkd4olqXojqV02XOu9NMJh-ZpDrniOSrWSAnPIxHQI4HHnHhNycrUJZclPy6HmXBtUFjORHCWISj5VVcbXFcW5OzxwVTK1NRbK1ylGgZ1Fr3QwB4nOxTixEoWrqrdenriKDeNPW_IJPoVFZJCh68w19cejSSrswu6tMXVU6rpJcGxW0FXfyiIqbrLeunTybD15oj1QkmFbEvpQT6I-mI3iSRu0v_VZvx6m1Shkwx_27K65e091Wpvwdwys-HEY2kZIivGrvQxR7iU5UrVmESK05VsQMZjOhTtHriG7q0nuRmnsJGVSy3QFezEPyha4Vm00Fi95GanfFI8N1oZEdpGRTDD91Nmbb703TUsz_wBgqH3roJqVY044yqjPvyrR_DbCQRDEcVMy-5M7LLaKOFEp7R1zkrrsi-6QBUFyqG3hgsvqAX_XDHvHpd0wu2QdTTJFpp13nckggxElt7TvGshcegGT5koHgj2XOTTK86TZV3ydxzTQm0SywotkZzgxb4_ZB6UNiZW19rSU4wMxoLs6Bplhh16gOgr5IAOYhis9ImrFFUt0J3tJzwE8xyY6ophpaFXU9P1B06x0NO06TvwrDq-yE0xI_k4PeYwT9kNpZ4Nt4-sxTysae3nbqlInKHMulPfa2Y0pk62nlduzSMetswGtnHZcX9VdQx_Vn9Fd7_SG0rOPtcHvMKfshlKH_lwe8xR7w5tIy7TXU-1EYqcIGFSqh7Uxz8_Oozutr23l39leI_ZDaUP_AC3_AFmAfZDaX_8Azf8AWYo2lzHeXJ-qMkuOKOESSz7Ewvn5kn-t712d_ZXj_wBIZScfycGfaYP9IVS8ZNuAfWYo_wCBUFfgqO-s_Qgx6IplwzKw23bc3ye_hmAVtQ7hdmdX3-Q-jf8AJXcH2QqmqPo21_WY8pr7IRTFS7ja7d270FIPPeKr0LQzUO6An4BTXWd35SDEjWt0Tak1WYQKmrDR78eUdWz1buArKK89T1Iw0Hf4UL3rc0ldV4T9zy6sKnFqX4ePWY-emUq5LheEvRqU686ewCDzF5bK6D6BS5librKkL24LgzmJzoekWk1iLRNS0nKS7qPx3Fp7w1lFLK7L9kQdC1lbJ49a4NzuqJaa9Hd-X6W3q8HaY2SDtUMZEXF0w6WrC07lGn5-Rl5qYZSCp1SfMQ57s1ute0Hkyrcoue4wkyuCke6I0rF46hXi658GqnxTT5rPhh5W3Cfriaynhg4GStdRWa12ZmuJutwUn3Tq_aFny_wClOsTMwgbW5Zv1-qIgr71z6iqXcF5VRds0dr0_CWvaHEiGPdmpGlul6Pg9TQa7caTuStk7xuhoSVr69dUlSbdm3XKZa6FDDPKCUQOl1HSN_hPqbq-pPhw-r4Hb7r3v3XqdqKvuY6F0danVnwnqgwnO7yJyIl7pr6T5e0VpvzUJQqdbmh4oDvpFBPtiUNH-nmxdJaeymnyCHZ4JBW64ATuiU-SrB4x5DtHVsO-p_KnW2zO1iord3dh7JBhICEoAQnhIAxgRmFZ7CMVZ2_RA32juBjhaTg4XonvGUYp7xlDBsU5YkY7QD15hSMwAAQ9GVHGt-lknqhZ81SVISJktnYvHPaOaEvRLx6e9UEOTlMeElLv_hdhwRmOua853Jhm3vpTZGoEo5LXDSmnHHEkBYAyDFRVW0SzCoiOHBbzpPrWSxRPoaluuB_I9lptKtarM1AtyVmGawymaS2A42VYIOI-bXyu2-7pjU21VRpXoYCQclXERSz0f1a2au7O2ZWPg7KycILmMCPqqXTJf9cYEjVbgQ5LKVlafF7iJNSJZ4DHj1FV-i2RV7aqnlwwHVjuO-Fz6pjs-rVKVMnJOKZ-EDCgg4-dHXfSx1z7QaauZO3ayM5GMDAhoWj0x6ZW7KyypujtvTzIBLuR86JNdpDbNFcpNMSGklsoR9HEMt1EaGmMROSVcdcdYw9UuijiaQGbZPdUA69q1QnK00wzPpW4DyAc4iSOgOoUg2-8g1BPjY4QTjMba8Oity-qu_VK_UEOlaypIK84jbaadKVX0yrTM5RamhEshQK0BfcRFtlJPSVD3v4criv6ktdT0wyzsf8AvG9-ys0gA5UOwJxHPjrt1uuqm3C1ZlKnHZJhxWFLSSOI6CsJU20htXdKQDEJa59MFsawuCffabTODss8R2utLLUxhsR3WP6OuVDaLo2pr26mBV86bbx03o1gTaZtLc7X3WzhwjKirEVd1Aq6Dq0zVqoosluZ34Ix6OY6I6R9INjadNl6ptfCJgn0cK4EaHUjojti97oRXWfDabCsqTnGREWe3VMpicCPQvSLN19Z7XcqmcNOmXv2-wUp6E31RbtsOV-ATCShiXSlR-qOdvWRUaQnUh5DU2F4e5xzjmOkNq6R0Ow7RNtWqgsuqa2KWT3OIgG6OhRi8axM1iuTrbjryioZV2jrcaaWqe3QOFnOjupbfYrxNXyEhjs4HfdOjpSqVFGjDxM-kZljkE_oxQnUqo0s61uqTNgo-G9__lF_bQ6Z7gs2iOUGmVRKZZxBRgL8oYk90ByVSn3KtNTbZm1ueJu3-cNno5Z5mS4xpVtY-rLXarlV1j35bMNvhTzZErK3DokzS5F4Ol-S2DHrIjmtdVMf0v1tS3V21MM_Ct28pwMZjp3pDp9UdOqKKPPTQebQkJbwrOIautnTFZmrrfwx2VQ1UEnPiDiO1fSSTzNqGduypOlur4bDW1DJBqhmzk_dffT9RbTmNHk1QVZpSEyeD6XOcRzDr1ckJnWlVZknfFZExuJA_Si_lpdK1YobZolSqnjUYo2loOZjztroesek3O9WJxpLkq4rdsJyY5VVHLWVDHnbCtOmOqrT0xJVSZL_ABc4-MqV9ErypdxWTIsyTgU420AU_VEjBRxyMQ3rVsC1rNbCLek_ASBjG7MOIjPeLs7ABeU10zKid8kYwCSf1QDmF25GYxGT2jPPGIVRNwN01tSnJlmzJx6UUUuNpCgR7DEVdP8Arbb9yzk3bM7VUCoSyigIUrk8xL99U6aqtrzdPk_wrydg90VZpnSHcltVSavahVFTU-4S7sCuSe_aK6czipYY_p7rVWaO2z0MsVY_S8n0lWyqtuUavMrZrFNYmUuApJUkHiOa3WhpPR7IvBhFsYQ5MuhfgNj1mLHG6uoWSYXIJddK0ApQrBj5rG6ebsv-5kXnqm6X1NL3IQs5iNXUwrXNawYcDnK0XSVcel6l9XNOCwAjSD9XtspC6RaRV6ZprKOVZC0FxtO1Ko8urPTJq-LBfeZlgt9lJJwnJxiJuptLlKVINU6ntJbZZASkJjzrkuxMUecZmkhTRaXuz6sRNuEDaiEh3YLKw3ySK8C5x7HVnH5rlBopfF0WbdqrFlEurllveGtoZx3jp9ppbMrQLfYm2GQh2dbStwY7ExVLTjRanz2uDlxyDaHJJt8leBkZzF2mWkMJQw0MIQnAEcrVG-KlGo8rV_iHf6e7zRmnbpJGXfJTVvVyyapKqt67n2EpmfQQHD5mKQdRXRc5b0vM3daDfjyxy7tb8vMRZfXjSG5dRZ5iaoM4thcqsOApVjOIju8k68TFLastla3GNgZWpQJ4AxEWugjnaSWnI4Ki9JXWpsUrJqWcBrvrafZRL0JalXRL3O7aE8866y2vwy2ok7MRJn2RLDVmsEA-knPAiQunPpwlNNVO3HVW0mpTfprOPMw7-oHR6W1dtN2mKSPHbSdnth1dTvdQCPGXKxreo7cerY7lAMRgjOPf3VRugadp8jMpeqUwlhPfKjiLTdR7KLo06nxR3RMBppRJRz5RUCwOkvW6gXl8GkZ9bNNS75Egbcxfq2rGl6daCbeqX351xrY8pXOTiFpIXz28wSjBxgKR1vcqBt9ju9HKJNwcDthcptH7ppVkahpRX5MPoXNYWlQ7DMdRbXTpRXqDLVyRkaeGVNpKiofNOOcxU_qA6I6nO1NyvWOfDW4sqwnyhvaZ9PfUxTp1mhmuPN0gqHiBSj2iLZhNTDy0zPsVf9Wy2frCkjuMFWI5GjdpP_u6vHalw2zU6k9IW7Tm20MgjxEJABigXXnLPi-iVoISVcGL92hZjdj2qGJf06gln745nJKopDr_ANP-sWrd4zE-04sSyVEo7w-8wukLRE3JWW_DmsoqG9meol0xgEZPdTh0Py7w0teyjhTWB7oph1IsvNaxTALZyX_4xazp8szVrS61n6DNrWcoKU94gzUrpb1lve8pu5UuKALm9Hf1wlfHLK-IMacjla3pq4UFB1DWVU1Q0RvBwc8q4ujzDx0BUkt8qlDj9mOcj7L33cXG_DOfhw4_-UXisSi6sW7paq1HVL8cslse7EVkmekrWdV2Lu5DqvEMyHfPtnMPqGSvrWSNbsEzo-vt9umuBqZ2gSZ0_K6SafNuN2hTUrGD4KePqghjWLNXxTLWkZGoby-y2Eq90EXznajleL1VIXTvcHDGSpaggghFWZRjMBOfKCCFCaTpWO5Q7E-yGteumto37JOydcpEu4pwY8UtjcPrh1EZhMDGcZhHAHYpksMdTHokGQqWX_0X1y25tVV0vrc3jPifB0qITn1YhnMasaxWM-ik6h2kHKdJHap5TWSQPOOgXpA-gQkerEamvWhbFzSzkpW6QxNJdGFbkcxFdTtP0HCz9T08CMUzizHbsqdWvfmi9_1RU-m4pmQnEDIY3FKd0SNQri1JXPD7WZpl-ms8JWVgkgR9l8dGFjVlpxy1G26TMLyQtAxg_VESVHpn1t0xlHX7dvSZnmuSGkqJ49Uc_wB_GcYyFUuZc6Mlgj29wpxOu1wUycTIVGTQtSThZSkGHi1rPYrsmldaV4Tih6SVNAxTuh31qrZcwt26LFmJ7aeXFNk5xCT_AFFSNZqCZWr2YZIA4JKCIf5pjThxwuv7f8p6Z3Z-4VyZSu6S3Or71JyjxP5bIEfdOaX6eVhjCKPJBKh3SgRWSjak6bKkUqNZap7hH5WMR5Td_wBu1BXg0_VZLHqAdhwljf22TxeKep28EEKd57pn02niSuUbTn1IEaZ_pA0vmDuUjB-hIiLKZ_rKgsawbgf-t_jDql2FNtgp1M8T_wC6HaYv6Uuigl3dThOMdG-l4OQD-yI-uV6S9M5VQKWknHrSIbK0uKSM6i7f_tjWVBgBJUdVPD_-7_GExH_SneVtg-mAZUu0np_07pSgpFPYcI_KQI3Mzaem1Bb8SZo8gkJ_6acxWGaqsvTHfFmNYvRHl43-MfVJak2ORsqWozc3t7pLucwhcxm7WoFTS05_dwAEKwQ1J0mojngNhllQ49FgRrLn10pNPYCrcYL-fPw-IrPeWrVhyCvFpbKJ9SeQRzmPhpPUbUahJKptJ03W-ojalQaJhhqmAbLn_qWI_u2-k_AVg1aoahXZIOKt5pptaR2OEwyp2qipMvy-qdeEj4QJ-9O8xEtMlNfLvqnh0mlzdEl3j3CSMAw-6F0T3tWKmitXne7s0hz0lsLWfdDXSyP2aFH8e5TvIiaXtPumq9rtYNvtv29YDTtbqG4hCnkbuY-Rqi9Q-uikSk3THaRItnAW0CniLV2T0y6W2Y63PM29LuzaO7hTnJiUpSVk5NvwZBhtlI_FSnEPEBd9bvyU2KwzzuD5n6R_SFXXSboztC0VM1y6Jhyq1M-ksTA3AH64sRTqZT6TLJlKZJNSrSRgJbSAI9zkq5GT64zjuyJsYwAtFSUFNRD9y3CTGeSc4gUndCwR0U0bJNohcAQQQDZB3Sp7xlGKe8ZQYQiExmFggQkwINo74hYIELEpV-WYQoUf5wxnBCYQsQnHc59sKRCwQqFhsVjHiGAIUP5wmM4IMd0HdJgYhCknsoiMoIELDZn5x3e2F2nyWYyggQsdvn2Prg2qz88xlBBwhYFCvyzC7VY-eYyggRlYlJ8zmAJx2OIyggQsdqvNZg2nzUTGUECEgSB2gwIWCBCTAgIzCwQIIyk2jzGYQjnOTj1RlGCvUPKDugey8yxLE5Mq2T69gjNOAAlCdo9QEKM4jHP0wYSF2DgqNtfb7runtiTtdoEup2ZZbKkpSMmK1aHdYVa1Ak5-h3XKPMzkxuZSCkjGeIuhWqJTbgkHKbVZZLzLgwUqGYjikdNuntErPxxIUxptzfvwE45iCIpTUl-fTjhai2XK2QUZhqYcvzkOWGg1jzFsSU7PTu5Spx0uIKvUeYlnJJz5Rgyy1LsoYaSEobAAAjPgDiJrWho0jhUFXUOq5jL7rIc9o81MsFe5Uugq9ZSMx6A4HaA-uFwo-d0AA-weUBTzkGAZzGUCOFiEpByGwCfPEG31mMoIELEpBGFDcPpECUpT81G32CMoIELAIGSSc59cIGmgchlI_wDiI9IIQADhHC8_CZ_9BP7IgDbQ4DKf2RHpBCpclefhM_8AoJ_ZEHhtYx4KcfqiPSCBJlYBprH4JPuEEZwQIWEEEECEhJzCwQQBK7hJ5iFgghya3ZYqAzAOSBBBDCnFIs7VcE--MVvbRgoB9sEEITumFfPMU-nVVotTsiy4kjGFJBhpVTQ7TSsOKdnbcZUpXcgAfwgggLGu3IXJ9NDJu9gP5KPrv6VNKJllbiaWW-OwEQtcPTHpxTXlOSss4kgn_PeCCOZjZ7KgrKWGNxDWgJvzOltu0tv_AFXxU7e3Maaapbckray-6AP0jBBFbP6XbLK1Li2TAK8C0tRCTMO4P6Rj75S1ZGpYEy66c_pQQRxY4nkpkL3E7lbRvRKz6qsJm0OqB78w_rS6UtL5hSFuSjhJx_nvBBFvExrhuFbxRsc4ZCmmh9Mek1OlkD4gS6QO6sQ9KLprZdu4VS6HLtFPb0Af4QQR10NHZbCKjpw0HQP0W_Qppv0EMISB6hHru3esfXBBDwpIAacBB48zAUgYUO5ggjm4YK7JNx3RnBBDgmlEEEEKkRBBBAhKnvGUEECEQQQQIRBBBAhEEEECEQQQQIRBBBAhEEEECEQQQQIRBBBAhEEEECEQQQQIRBBBAhEEEECEQQQQIRGJHIgggSd0KjBQ5zBBAOEpGyywIwSMHuffBBAE07IcHo5gScgZgghyezhZxkORBBCHhchygecLBBCJ4RBBBAlRBBBAhEEEECEQQQQIRBBBAhEEEECF_9k=";
+const LOGO=LOGO_B64.startsWith("__")?"":"data:image/jpeg;base64,"+LOGO_B64.replace(/_/g,"/").replace(/-/g,"+");
+let LOGO_IMG=null;function logoImg(){if(!LOGO)return Promise.resolve(null);if(LOGO_IMG)return Promise.resolve(LOGO_IMG);
+  return new Promise(res=>{const im=new Image();im.onload=()=>{LOGO_IMG=im;res(im)};im.onerror=()=>res(null);im.src=LOGO})}
+/* page header drawn on every PDF page: logo left, report no / date right, rule below */
+async function pageHeaderPNG(r,lang){const W=1940,H=150,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,W,H);const im=await logoImg();const S=state.settings;
+  if(im){const h=118,w=im.width*h/im.height;x.drawImage(im,0,8,w,h)}
+  else{x.fillStyle="#123B35";x.font="bold 56px 'Roboto Condensed', Arial, sans-serif";x.textBaseline="middle";x.fillText(S.co||tl(lang,"[Şirkət adı]"),0,66)}
+  x.textAlign="right";x.fillStyle="#1B1F1E";x.textBaseline="alphabetic";
+  x.font="bold 34px 'Noto Sans', Arial, sans-serif";x.fillText(tl(lang,"Hesabat №")+" "+(r.svc.repno||"—"),W,52);
+  x.font="30px 'Noto Sans', Arial, sans-serif";x.fillText(tl(lang,"Tarix:")+" "+(fmtDate(r.svc.date)||"—"),W,92);
+  x.fillStyle="#55605C";x.font="24px 'Noto Sans', Arial, sans-serif";x.fillText([S.coaddr,S.cotel].filter(Boolean).join("   "),W,126);
+  x.fillStyle="#123B35";x.fillRect(0,H-6,W,5);return c.toDataURL("image/png")}
+function pageFooterPNG(i,n,lang){const W=1940,H=50,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,W,H);x.fillStyle="#B9C2BF";x.fillRect(0,2,W,2);x.fillStyle="#55605C";x.font="24px 'Noto Sans', Arial, sans-serif";
+  x.textAlign="center";x.fillText(i+" / "+n,W/2,38);x.textAlign="left";x.fillText(tl(lang,"UPS TEXNİKİ SERVİS HESABATI"),0,38);return c.toDataURL("image/png")}
+function rChartsHTML(r,a){
+  const p=Math.floor(num(r.bat.per))||0;if(!p||!a.rv.length)return "";
+  const ref=a.ref,w=num(r.bat.warn),f=num(r.bat.fail);
+  const lines=[];if(ref){lines.push({v:ref,t:t("Referans")+" "+fmt(ref),c:"#55605C",d:""});
+    if(w!==null)lines.push({v:ref*(1+w/100),t:"+"+w+"% "+t("diqqət"),c:"#B7860B",d:"4 3"});
+    if(f!==null)lines.push({v:ref*(1+f/100),t:"+"+f+"% "+t("dəyiş."),c:"#B42318",d:"4 3"})}
+  const top=Math.max(...a.rv,...lines.map(l=>l.v))*1.12;
+  const W=733,H=150,L=34,R=82,T=12,B=22,pw=W-L-R,ph=H-T-B;
+  const y=v=>T+ph-(v/top)*ph;
+  const step=top>20?5:top>8?2:1,ticks=[];for(let k=0;k<=top;k+=step)ticks.push(k);
+  const col={"Normal":"#5AA982","Diqqət":"#E0A82E","Dəyişdirilməli":"#C8372D"};
+  let h=`<div class="rchart-legend"><span><i style="background:#5AA982"></i>${t("Normal")}</span><span><i style="background:#E0A82E"></i>${t("Diqqət")}</span><span><i style="background:#C8372D"></i>${t("Dəyişdirilməli")}</span><span class="small">${t("Hər sütun bir blokun daxili müqavimətidir, mΩ")}</span></div>`;
+  const ns=Math.ceil(a.tot/p);
+  for(let s=0;s<ns;s++){const bs=a.blocks.slice(s*p,s*p+p);if(!bs.some(b=>b.r!==null))continue;
+    const bw=pw/bs.length,gap=Math.min(2,bw*0.25);
+    let g=`<svg class="rchart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Arial, sans-serif" font-size="9">`;
+    ticks.forEach(k=>{g+=`<line x1="${L}" x2="${L+pw}" y1="${y(k)}" y2="${y(k)}" stroke="#E3E8E6" stroke-width="1"/><text x="${L-5}" y="${y(k)+3}" text-anchor="end" fill="#6B7672">${k}</text>`});
+    bs.forEach((b,k)=>{if(b.r===null)return;const x=L+k*bw+gap/2,yy=y(b.r),hh=Math.max(1,T+ph-yy);
+      g+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${Math.max(1,bw-gap).toFixed(1)}" height="${hh.toFixed(1)}" rx="1.5" fill="${col[b.st]||"#9AA5A1"}"><title>${b.lab}: ${fmt(b.r)} mΩ, ${t(b.st)}</title></rect>`;
+      if(b.st&&b.st!=="Normal")g+=`<text x="${(x+(bw-gap)/2).toFixed(1)}" y="${(yy-3).toFixed(1)}" text-anchor="middle" fill="#1B1F1E" font-weight="bold">${k+1}</text>`});
+    lines.forEach(l=>{g+=`<line x1="${L}" x2="${L+pw}" y1="${y(l.v)}" y2="${y(l.v)}" stroke="${l.c}" stroke-width="1.2" ${l.d?`stroke-dasharray="${l.d}"`:""}/><text x="${L+pw+4}" y="${y(l.v)+3}" fill="${l.c}">${esc(l.t)}</text>`});
+    g+=`<line x1="${L}" x2="${L+pw}" y1="${T+ph}" y2="${T+ph}" stroke="#9AA5A1" stroke-width="1"/>`;
+    bs.forEach((b,k)=>{const n=k+1;if(n===1||n%5===0||n===bs.length)g+=`<text x="${(L+k*bw+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="#6B7672">${n}</text>`});
+    g+=`</svg>`;
+    const st=a.strings[s]||{};
+    h+=`<div class="rchart-box avoid"><div class="rchart-title"><b>${t("Qrup")} ${s+1}</b><span>${t("orta")} ${fmt(st.avgR)} mΩ · ${t("maks")} ${fmt(st.maxR)} mΩ${st.att?` · <span class="p-warn">&nbsp;${st.att} ${t("diqqət")}&nbsp;</span>`:""}${st.rep?` · <span class="p-bad">&nbsp;${st.rep} ${t("dəyişdirilməli")}&nbsp;</span>`:""}</span></div>${g}</div>`}
+  return `<h4 class="avoid" style="margin-top:16px">${t("Daxili müqavimət — qruplar üzrə diaqram")}</h4>`+h}
+function paperHTML(r,a,lang){PL=lang||state.plang||"az";const S=state.settings,dash=v=>v?esc(v):"—",T=CT[PL]||CT.az;
+  const pc=s=>s==="Normal"||s==="Yaxşı"?"p-ok":s==="Diqqət"||s==="Qeyd var"?"p-warn":s==="Dəyişdirilməli"||s==="Nasaz"||s==="Norma xaricində"?"p-bad":"";
+  const kv=rows=>`<table>${rows.map(rw=>`<tr>${rw.map(([k,v])=>`<td class="k">${t(k)}</td><td>${v}</td>`).join("")}</tr>`).join("")}</table>`;
+  const ovc=a.cls==="ok"?"p-ok":a.cls==="warn"?"p-warn":"p-bad";
+  const norm=i=>{const m=r.meas[i],mn=m.min,mx=m.max;return !mn&&!mx?"—":!mn?"≤ "+esc(mx):!mx?"≥ "+esc(mn):esc(mn)+" – "+esc(mx)};
+  const p=Math.floor(num(r.bat.per))||0,ns=p?Math.ceil(a.tot/p):0;
+  const tv=v=>v?esc(t(v)):"—";
+  const C=concl(r,a,PL);
+  let h=`<div class="paper" id="paper" lang="${PL}"><div class="ph"><div>${LOGO?`<img class="logo" src="${LOGO}" alt="${esc(S.co||"")}">`:`<div class="co">${esc(S.co||t("[Şirkət adı]"))}</div>`}<div class="coi">${esc([S.coaddr,S.cotel].filter(Boolean).join("   "))}</div></div>
+  <div class="meta"><b>${t("Hesabat №")} ${dash(r.svc.repno)}</b><br>${t("Tarix:")} ${dash(fmtDate(r.svc.date))}</div></div>
+  <h1>${t("UPS TEXNİKİ SERVİS HESABATI")}</h1><div class="sub">${esc(t(r.svc.type||""))}</div>
+  <div class="ov"><span style="font-weight:700">${t("ÜMUMİ QİYMƏTLƏNDİRMƏ:")}</span><b class="${ovc}">${t(a.overall)}</b></div>
+  <h4>${t("1. Müştəri və servis məlumatları")}</h4>${kv([[["Müştəri",dash(r.cl.name)],["Əlaqədar şəxs",dash(r.cl.person)]],[["Obyekt",dash(ft(r.cl.obj))],["Telefon",dash(r.cl.tel)]],[["Ünvan",dash(r.cl.addr)],["Servis mühəndisi",dash(r.svc.eng)]],[["Servis tarixi",dash(fmtDate(r.svc.date))],["Növbəti servis",dash(fmtDate(a.next))]]])}
+  <h4>${t("2. UPS cihazı")}</h4>${kv([[["Marka",dash(r.ups.brand)],["Model",dash(r.ups.model)]],[["Seriya №",dash(r.ups.sn)],["Firmware",dash(r.ups.fw)]],[["Güc",(r.ups.kva?esc(r.ups.kva)+" kVA":"")+(r.ups.kw?" / "+esc(r.ups.kw)+" kW":"")||"—"],["Faza (giriş/çıxış)",dash(r.ups.phase)]],[["Topologiya",tv(r.ups.topo)],["Quraşdırma tarixi",dash(fmtDate(r.ups.inst))]]])}
+  <h4>${t("3. Ölçmə nəticələri")}</h4><table><tr><th style="text-align:left">${t("Parametr")}</th><th>L1</th><th>L2</th><th>L3</th><th>${t("Vahid")}</th><th>${t("Norma")}</th><th>${t("Nəticə")}</th></tr>`+
+  MEAS.map((m,i)=>`<tr><td>${esc(t(m[0]))}</td>${m[4]===3?[0,1,2].map(j=>`<td class="c num">${esc(r.meas[i].v[j])}</td>`).join(""):`<td class="c num" colspan="3">${esc(r.meas[i].v[0])}</td>`}<td class="c">${esc(m[1])}</td><td class="c num">${norm(i)}</td><td class="c ${pc(a.ms[i])}">${esc(t(a.ms[i]))}</td></tr>`).join("")+`</table>
+  <h4>${t("4. Vizual və funksional yoxlama")}</h4><table><tr><th>#</th><th style="text-align:left">${t("Yoxlanılan bənd")}</th><th>${t("Nəticə")}</th><th style="text-align:left">${t("Qeyd")}</th></tr>`+
+  CHK.map((c,i)=>`<tr><td class="c">${i+1}</td><td>${esc(t(c))}</td><td class="c ${pc(r.chk[i].s)}">${tv(r.chk[i].s)}</td><td>${esc(ft(r.chk[i].n))}</td></tr>`).join("")+`</table>
+  <h4>${t("5. Görülən işlər")}</h4><table>`+WORKS.map((w,i)=>`<tr><td class="c" style="width:4%">${i+1}</td><td>${esc(t(w))}</td><td class="c" style="width:14%">${tv(r.works[i])}</td></tr>`).join("")+`</table>${r.wExtra?`<p><i>${t("Əlavə:")} ${esc(ft(r.wExtra))}</i></p>`:""}
+  <div class="pb"></div><h4>${t("6. Akkumulyatorlar")}</h4>${kv([[["Marka / model",dash(r.bat.brand)],["Tip",tv(r.bat.type)]],[["Konfiqurasiya",a.tot?esc(T.cfg(r.bat.str,r.bat.per,a.tot)):"—"],["Tutum",r.bat.ah?esc(r.bat.ah)+" Ah":"—"]],[["Quraşdırma tarixi",dash(fmtDate(r.bat.inst))],["Yaşı",a.age!==null?a.age.toFixed(1)+" "+t("il"):"—"]],[["Ölçü cihazı",dash(r.bat.dev)],["Referans R",a.ref?fmt(a.ref)+" mΩ":"—"]]])}
+  <table style="margin-top:6px"><tr><td class="k">${t("Ölçülmüş blok")}</td><td>${a.tested.length}</td><td class="k">${t("Orta R, mΩ")}</td><td>${a.rv.length?fmt(a.rv.reduce((x,y)=>x+y,0)/a.rv.length):"—"}</td><td class="k">${t("Min / maks R")}</td><td>${a.rv.length?fmt(Math.min(...a.rv))+" / "+fmt(Math.max(...a.rv)):"—"}</td></tr>
+  <tr><td class="k">${t("Orta blok V")}</td><td>${a.vv.length?fmt(a.vv.reduce((x,y)=>x+y,0)/a.vv.length):"—"}</td><td class="k">${t("Min / maks V")}</td><td>${a.vv.length?fmt(Math.min(...a.vv))+" / "+fmt(Math.max(...a.vv)):"—"}</td><td class="k">${t("Normal / Diqqət / Dəyiş.")}</td><td><span class="p-ok">&nbsp;${a.tested.length-a.att.length-a.rep.length}&nbsp;</span> / <span class="p-warn">&nbsp;${a.att.length}&nbsp;</span> / <span class="p-bad">&nbsp;${a.rep.length}&nbsp;</span></td></tr></table>
+  ${a.strings.length?`<table style="margin-top:6px"><tr><th style="text-align:left">${t("Qrup")}</th><th>${t("Blok sayı")}</th><th>${t("Cəmi V")}</th><th>${t("Orta R, mΩ")}</th><th>${t("Maks R")}</th><th>${t("Diqqət")}</th><th>${t("Dəyişdirilməli")}</th></tr>${a.strings.map(s=>`<tr><td>${t("Qrup")} ${s.s}</td><td class="c">${s.n}</td><td class="c num">${s.sumV?s.sumV.toFixed(1):"—"}</td><td class="c num">${fmt(s.avgR)}</td><td class="c num">${fmt(s.maxR)}</td><td class="c ${s.att?"p-warn":""}">${s.att}</td><td class="c ${s.rep?"p-bad":""}">${s.rep}</td></tr>`).join("")}</table>`:""}
+  <table style="margin-top:6px"><tr><td class="k p-bad">${t("Dəyişdirilməli")}</td><td>${a.rep.length?a.rep.map(b=>b.lab).join(", "):t("yoxdur")}</td></tr><tr><td class="k p-warn">${t("Diqqət")}</td><td>${a.att.length?a.att.map(b=>b.lab).join(", "):t("yoxdur")}</td></tr>
+  <tr><td class="k">${t("Boşalma testi")}</td><td>${r.dis.res?esc(t(r.dis.res))+(r.dis.time?": "+esc(r.dis.time)+" "+t("dəq"):"")+(r.dis.load?" / "+esc(r.dis.load)+" "+t("kW yük"):"")+(r.dis.v0&&r.dis.v1?"; DC "+esc(r.dis.v0)+" V → "+esc(r.dis.v1)+" V":""):"—"}</td></tr></table>
+  <p class="small">${esc(T.rule(r.bat.warn,r.bat.fail,r.bat.vwarn,r.bat.vfail))}</p>
+  <h4>${t("7. Dəyişdirilən / quraşdırılan hissələr")}</h4>${r.parts.filter(x=>x.name).length?`<table><tr><th>#</th><th style="text-align:left">${t("Hissə")}</th><th>${t("Kod / Part №")}</th><th>${t("Say")}</th><th style="text-align:left">${t("Qeyd")}</th></tr>${r.parts.filter(x=>x.name).map((x,i)=>`<tr><td class="c">${i+1}</td><td>${esc(ft(x.name))}</td><td class="c">${esc(x.code)}</td><td class="c">${esc(x.qty)}</td><td>${esc(ft(x.note))}</td></tr>`).join("")}</table>`:`<p><i>${t("Hissə dəyişdirilməyib.")}</i></p>`}
+  <h4>${t("8. Nəticə və tövsiyələr")}</h4><ul>${C.map(c=>`<li>${esc(c)}</li>`).join("")||"<li>—</li>"}</ul>
+  ${r.notes?`<p><b>${t("Texniki qeydlər:")}</b> ${esc(ft(r.notes))}</p>`:""}
+  `;
+  if(a.tested.length&&p){h+=`<div class="pb"></div><h4>${t("Əlavə: Akkumulyator ölçmə cədvəli (V / mΩ)")}</h4><table class="bt"><tr><th>${t("Blok")}</th>${Array.from({length:ns},(_,s)=>`<th>${t("Qrup")} ${s+1}</th>`).join("")}</tr>`;
+    for(let k=0;k<p;k++){h+=`<tr><td>${k+1}</td>`;for(let s=0;s<ns;s++){const b=a.blocks[s*p+k];h+=b?`<td class="${pc(b.st)}">${b.v!==null?b.v.toFixed(2):"—"} / ${b.r!==null?b.r.toFixed(2):"—"}</td>`:"<td></td>"}h+="</tr>"}h+="</table>"+rChartsHTML(r,a)}
+  const sigH=`<div class="sigwrap avoid"><h4>${t("9. Təsdiq")}</h4><div class="sig"><div><b>${t("Servis mühəndisi:")}</b><span>${t("Ad, soyad:")} ${esc(r.svc.eng)}</span><span>${t("İmza:")} ______________________</span><span>${t("Tarix:")} ____ . ____ . ________</span></div>
+  <div><b>${t("Müştəri nümayəndəsi:")}</b><span>${t("Ad, soyad:")} ${esc(r.cl.sign||r.cl.person)}</span><span>${t("İmza:")} ______________________</span><span>${t("Tarix:")} ____ . ____ . ________</span></div></div></div>`;
+  h+=sigH;
+  return h+"</div>"}
+
+/* ---------------- Fluke BT521 log import ---------------- */
+const FK={q:[],cur:null};
+function initFluke(){const inp=$("#flukeFile"),drop=$("#flukeDrop");if(!inp)return;
+  inp.onchange=()=>{queueFiles([...inp.files]);inp.value=""};
+  ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
+  drop.addEventListener("drop",e=>queueFiles([...(e.dataTransfer?.files||[])]));
+  if(FK.cur)renderFlukeMap()}
+async function queueFiles(files){if(!files.length)return;FK.q.push(...files);if(!FK.cur)nextFlukeFile()}
+async function nextFlukeFile(){FK.cur=null;const f=FK.q.shift();if(!f){$("#flukeMap")&&($("#flukeMap").innerHTML="");return}
+  try{const rows=await readTable(f);FK.cur=analyzeTable(f.name,rows);renderFlukeMap()}
+  catch(e){toast(f.name+": faylı oxumaq alınmadı");nextFlukeFile()}}
+function readAB(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsArrayBuffer(f)})}
+async function readTable(f){const buf=await readAB(f),ext=(f.name.split(".").pop()||"").toLowerCase();
+  if(ext==="xls"||ext==="xlsx"){if(!window.XLSX)throw new Error("xlsx");const wb=XLSX.read(buf,{type:"array"});let best=null,bs=-1;
+    wb.SheetNames.forEach(n=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,defval:""});const sc=rows.filter(r=>r.filter(c=>pnum(c)!==null).length>=2).length;if(sc>bs){bs=sc;best=rows}});
+    return (best||[]).map(r=>r.map(c=>String(c??"").trim()))}
+  const u=new Uint8Array(buf);let txt;
+  if(u[0]===0xFF&&u[1]===0xFE)txt=new TextDecoder("utf-16le").decode(buf);else if(u[0]===0xFE&&u[1]===0xFF)txt=new TextDecoder("utf-16be").decode(buf);
+  else{txt=new TextDecoder("utf-8").decode(buf);if(txt.includes("\uFFFD"))try{txt=new TextDecoder("windows-1252").decode(buf)}catch(e){}}
+  txt=txt.replace(/^\uFEFF/,"");const lines=txt.split(/\r?\n/).filter(l=>l.trim()!=="");
+  const sample=lines.slice(0,40).join("\n");const cnt=d=>(sample.match(new RegExp(d==="\t"?"\t":"\\"+d,"g"))||[]).length;
+  let delim=["\t",";",","].map(d=>[d,cnt(d)]).sort((a,b)=>b[1]-a[1])[0];delim=delim[1]?delim[0]:null;
+  return lines.map(l=>delim?splitCSV(l,delim):l.trim().split(/\s{2,}|\s+/)).map(r=>r.map(c=>c.trim()))}
+function splitCSV(line,d){const out=[];let cur="",q=false;for(let i=0;i<line.length;i++){const ch=line[i];
+  if(q){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+  else if(ch==='"')q=true;else if(ch===d){out.push(cur);cur=""}else cur+=ch}out.push(cur);return out}
+function pnum(c){if(c===null||c===undefined)return null;const m=String(c).replace(/\s/g,"").match(/-?\d+(?:[.,]\d+)?/);if(!m)return null;const n=parseFloat(m[0].replace(",","."));return Number.isFinite(n)?n:null}
+const KW={
+  r:/resist|impedan|ohm|mω|mΩ|mohm|daxili|müqav|\bir\b|\bri\b/i,
+  v:/volt|gərg|\(v\)|\bvdc\b|\bv\b|\bu\b/i,
+  vx:/ripple|\bac\b|disch|boşal|ohm|resist/i,
+  t:/temp|°c|℃|\bdeg/i,
+  id:/^(no\.?|#|№|id|nr\.?)$|batt?(ery)?\s*(id|no|#|№)|cell\s*(id|no|#)|blo[kc]|index|seq/i,
+  s:/string|sıra|qrup|grup|group|\bstr\b/i};
+function analyzeTable(name,rows){
+  let hdr=-1;for(let i=0;i<Math.min(rows.length,40);i++){const r=rows[i];const sc=r.filter(c=>c&&(KW.r.test(c)||(KW.v.test(c)&&!KW.vx.test(c))||KW.t.test(c)||KW.id.test(c)||KW.s.test(c))).length;if(sc>=2){hdr=i;break}}
+  const width=Math.max(...rows.map(r=>r.length),0);
+  const heads=Array.from({length:width},(_,j)=>hdr>=0&&rows[hdr][j]?rows[hdr][j]:"Sütun "+(j+1));
+  const data=rows.slice(hdr+1).filter(r=>r.filter(c=>pnum(c)!==null).length>=1);
+  const map={v:-1,r:-1,t:-1,id:-1,s:-1};
+  if(hdr>=0)heads.forEach((h,j)=>{if(map.r<0&&KW.r.test(h))map.r=j;else if(map.v<0&&KW.v.test(h)&&!KW.vx.test(h))map.v=j;else if(map.t<0&&KW.t.test(h))map.t=j;else if(map.s<0&&KW.s.test(h))map.s=j;else if(map.id<0&&KW.id.test(h))map.id=j});
+  const med=j=>median(data.map(r=>pnum(r[j])).filter(x=>x!==null));
+  const used=()=>Object.values(map);
+  if(map.v<0)for(let j=0;j<width;j++){if(used().includes(j))continue;const m=med(j);if(m!==null&&m>=1.6&&m<=17&&!Number.isInteger(m)){map.v=j;break}}
+  if(map.r<0)for(let j=0;j<width;j++){if(used().includes(j))continue;const m=med(j);if(m!==null&&m>0.01&&m<60&&!Number.isInteger(m)){map.r=j;break}}
+  if(map.id<0)for(let j=0;j<width;j++){if(used().includes(j))continue;const vals=data.map(r=>pnum(r[j]));if(vals.length&&vals.every(x=>x!==null&&Number.isInteger(x)&&x>0&&x<=MAXB)){map.id=j;break}}
+  const sm=/(?:string|str|s[ıi]ra|qrup|grup|group|q|s)[ _\-]?(\d{1,2})(?!\d)/i.exec(name.replace(/\.[^.]+$/,""));
+  let start=sm?+sm[1]:null;
+  if(start===null)for(let i=0;i<(hdr>=0?hdr:0);i++){const rr=rows[i];const j=rr.findIndex(c=>KW.s.test(c||""));if(j>=0){const n=pnum(rr.slice(j).join(" "));if(n!==null){start=n;break}}}
+  return {name,heads,data,map,place:map.id>=0?"id":"seq",start:Math.max(1,Math.min(8,Math.floor(start||1)))}}
+function rUnit(F){const m=median(F.data.map(r=>pnum(r[F.map.r])).filter(x=>x!==null&&x>0));if(m===null)return 1;const h=(F.heads[F.map.r]||"").toLowerCase();
+  if(/µ|μ|uohm|uω/.test(h)||m>1000)return 0.001;if(m<0.1)return 1000;return 1}
+function planFluke(F){const r=state.cur,tot=batTotal(r),per=Math.floor(num(r.bat.per))||1,M=F.map,k=M.r>=0?rUnit(F):1;
+  const ids=M.id>=0?F.data.map(x=>pnum(x[M.id])).filter(x=>x!==null):[];const minId=ids.length?Math.min(...ids):1;
+  const out=[];let seq=(F.start-1)*per,skipped=0;
+  F.data.forEach(row=>{const v=M.v>=0?pnum(row[M.v]):null,R=M.r>=0?pnum(row[M.r]):null,t=M.t>=0?pnum(row[M.t]):null;if(v===null&&R===null)return;
+    let idx;if(F.place==="id"&&M.id>=0){const id=pnum(row[M.id]);if(id===null){skipped++;return}
+      if(M.s>=0&&pnum(row[M.s])!==null)idx=(pnum(row[M.s])-1)*per+(id-1);else idx=(F.start-1)*per+(id-minId)}
+    else idx=seq++;
+    if(idx<0||idx>=tot){skipped++;return}
+    out.push({idx,v,r:R!==null?Math.round(R*k*1000)/1000:null,t})});
+  const over=out.filter(o=>{const b=r.bat.blocks[o.idx];return b&&(num(b.v)!==null||num(b.r)!==null)}).length;
+  return {out,skipped,over,k}}
+function renderFlukeMap(){const box=$("#flukeMap");if(!box||!FK.cur)return;const F=FK.cur,r=state.cur,ns=Math.floor(num(r.bat.str))||1;
+  const P=planFluke(F);const opt=(key,lab)=>`<label class="f"><span>${lab}</span><select data-fk="${key}"><option value="-1">— yoxdur —</option>${F.heads.map((h,j)=>`<option value="${j}"${F.map[key]===j?" selected":""}>${esc(h)}</option>`).join("")}</select></label>`;
+  box.innerHTML=`<div class="fsum"><span class="chip">${esc(F.name)}</span><span class="chip ${P.out.length?"ok":"bad"}">${P.out.length} blok tanındı</span>${P.over?`<span class="chip warn">${P.over} mövcud qiymət yenilənəcək</span>`:""}${P.skipped?`<span class="chip warn">${P.skipped} sətir yerləşmədi</span>`:""}${P.k!==1?`<span class="chip">müqavimət ×${P.k} → mΩ</span>`:""}${FK.q.length?`<span class="chip">növbədə ${FK.q.length} fayl</span>`:""}</div>
+  <div class="grid2">${opt("v","Gərginlik sütunu")}${opt("r","Daxili müqavimət sütunu")}${opt("t","Temperatur sütunu")}${opt("id","Batareya № sütunu")}</div>
+  <div class="grid2"><label class="f"><span>Yerləşdirmə</span><select data-fk="place"><option value="id"${F.place==="id"?" selected":""}${F.map.id<0?" disabled":""}>Fayldakı nömrəyə görə</option><option value="seq"${F.place==="seq"?" selected":""}>Fayldakı ardıcıllıqla</option></select></label>
+  <label class="f"><span>Bu fayl hansı qrupdan başlayır</span><select data-fk="start">${Array.from({length:ns},(_,i)=>`<option value="${i+1}"${F.start===i+1?" selected":""}>Qrup ${i+1}</option>`).join("")}</select></label></div>
+  ${F.map.s>=0?'<p class="note" style="margin:0">Faylda qrup (string) sütunu tapıldı — bloklar ona görə yerləşdirilir.</p>':""}
+  <div class="maptbl" style="max-height:260px"><table><tr><th>Blok</th><th>V</th><th>mΩ</th><th>°C</th><th>Status</th></tr>${P.out.slice(0,60).map(o=>{const st=blockStatus(r,{v:o.v,r:o.r},refEff(r));return `<tr><td>${esc(lbl(r,o.idx))}</td><td class="num">${fmt(o.v)}</td><td class="num">${fmt(o.r)}</td><td class="num">${o.t===null?"—":o.t}</td><td><span class="chip ${stCls(st)}">${esc(st)}</span></td></tr>`}).join("")}</table></div>
+  ${P.out.length>60?`<p class="note" style="margin:0">… və daha ${P.out.length-60} blok</p>`:""}
+  <div class="actions"><button class="btn pri" id="fkApply"${P.out.length?"":" disabled"}>${P.out.length} bloku doldur</button><button class="btn" id="fkCancel">Ləğv et</button></div>`;
+  box.querySelectorAll("[data-fk]").forEach(sel=>sel.onchange=()=>{const k=sel.dataset.fk;if(k==="place")F.place=sel.value;else if(k==="start")F.start=+sel.value;else F.map[k]=+sel.value;if(k==="id"&&F.map.id<0)F.place="seq";renderFlukeMap()});
+  $("#fkCancel").onclick=()=>nextFlukeFile();
+  $("#fkApply").onclick=()=>{const P2=planFluke(F);P2.out.forEach(o=>{const b=ensureBlock(o.idx);if(o.v!==null)b.v=o.v.toFixed(3).replace(/0$/,"");if(o.r!==null)b.r=String(o.r);if(o.t!==null)b.t=String(o.t)});
+    markDirty();toast(P2.out.length+" blok "+F.name+" faylından dolduruldu");renderProbe();renderGrid();nextFlukeFile()}}
+
+/* ---------------- export ---------------- */
+const fname=(r,ext)=>((r.svc.repno||"UPS-hesabat")+"_"+(r.cl.name||"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_").replace(/_+$/,"").slice(0,90)+"."+ext;
+function blobToB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=()=>rej(r.error);r.readAsDataURL(blob)})}
+async function saveFile(filename,blob){
+  try{
+    if(IS_APP){const P=Capacitor.Plugins||{};const FS=P.Filesystem||Capacitor.registerPlugin("Filesystem"),SH=P.Share||Capacitor.registerPlugin("Share");
+      const data=await blobToB64(blob);const w=await FS.writeFile({path:filename,data,directory:"CACHE"});
+      await SH.share({title:filename,url:w.uri,dialogTitle:"Faylı saxla və ya göndər"});return true}
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);return true}
+  catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("Faylı saxlamaq alınmadı");return false}}
+async function exportPdf(){await flush();const btn=$("#bPdf");btn.disabled=true;btn.textContent="PDF hazırlanır…";const r=state.cur;
+  try{if(!window.html2pdf)throw new Error("lib");const el=$("#paper");
+    const L=state.plang||"az";
+    const pdf=await html2pdf().set({margin:[22,8,14,8],image:{type:"jpeg",quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",onclone:d=>{const ph=d.querySelector(".paper .ph");if(ph)ph.style.display="none"}},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css"],before:".pb",avoid:["tr",".sigwrap",".rchart-box"]}}).from(el).toPdf().get("pdf");
+    const head=await pageHeaderPNG(r,L),n=pdf.internal.getNumberOfPages();
+    for(let i=1;i<=n;i++){pdf.setPage(i);pdf.addImage(head,"PNG",8,5,194,15);pdf.addImage(pageFooterPNG(i,n,L),"PNG",8,284,194,5)}
+    const blob=pdf.output("blob");
+    const name=fname(r,"pdf").replace(/\.pdf$/,(state.plang&&state.plang!=="az"?"_"+state.plang.toUpperCase():"")+".pdf");
+    if(hasServer()&&!r.sample){btn.textContent="Drive-a yüklənir…";
+      try{await sync();if(state.pending.has(r.id))throw new Error("pending");
+        const res=await api("pdf",{id:r.id,client:r.cl.name,name,data:await blobToB64(blob)});
+        if(state.remote[r.id])state.remote[r.id].pdf=res.url;const l=$("#pdfLink");if(l){l.href=res.url;l.hidden=false}
+        toast("PDF müştərinin Drive qovluğuna yükləndi")}
+      catch(e){toast("PDF Drive-a yüklənmədi (internet?) — telefonda saxlayın")}}
+    btn.textContent="Saxlanılır…";await saveFile(name,blob)}
+  catch(e){toast("PDF yaratmaq alınmadı")}
+  btn.disabled=false;btn.textContent="PDF hazırla"}
+async function exportXlsx(){await flush();if(!window.XLSX){toast("Excel kitabxanası yüklənmədi");return}
+  const r=state.cur,a=analyze(r),wb=XLSX.utils.book_new();
+  const info=[["UPS TEXNİKİ SERVİS HESABATI"],["Şirkət",state.settings.co],["Hesabat №",r.svc.repno],["Servis tarixi",fmtDate(r.svc.date)],["Servis növü",r.svc.type],["Mühəndis",r.svc.eng],["Növbəti servis",fmtDate(a.next)],["Ümumi qiymət",a.overall],[],
+   ["Müştəri",r.cl.name],["Obyekt",r.cl.obj],["Ünvan",r.cl.addr],["Əlaqədar şəxs",r.cl.person],["Telefon",r.cl.tel],[],
+   ["UPS marka",r.ups.brand],["Model",r.ups.model],["Seriya №",r.ups.sn],["Güc, kVA",num(r.ups.kva)],["Güc, kW",num(r.ups.kw)],["Topologiya",r.ups.topo],["Faza",r.ups.phase],["Firmware",r.ups.fw],["Quraşdırma",fmtDate(r.ups.inst)],[],
+   ["NƏTİCƏ VƏ TÖVSİYƏLƏR"],...a.C.map(c=>["•",c]),[],["Texniki qeydlər",r.notes]];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(info),"Hesabat");
+  {const wsM=XLSX.utils.aoa_to_sheet([["Parametr","Vahid","L1","L2","L3","Min","Maks","Nəticə"],...MEAS.map((m,i)=>[m[0],m[1],num(r.meas[i].v[0]),m[4]===3?num(r.meas[i].v[1]):null,m[4]===3?num(r.meas[i].v[2]):null,num(r.meas[i].min),num(r.meas[i].max),a.ms[i]])]);wsM["!merges"]=MEAS.map((m,i)=>m[4]===3?null:{s:{r:i+1,c:2},e:{r:i+1,c:4}}).filter(Boolean);XLSX.utils.book_append_sheet(wb,wsM,"Ölçmələr")}
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["#","Bənd","Nəticə","Qeyd"],...CHK.map((c,i)=>[i+1,c,r.chk[i].s,r.chk[i].n]),[],["Görülən iş","Cavab"],...WORKS.map((w,i)=>[w,r.works[i]]),[],["Hissə","Kod","Say","Qeyd"],...r.parts.map(x=>[x.name,x.code,num(x.qty),x.note])]),"Yoxlama");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Etiket","Qrup","Blok","Gərginlik, V","Daxili müqavimət, mΩ","Temp., °C","Sapma","Status"],...a.blocks.map(b=>[b.lab,b.s,b.i%(Math.floor(num(r.bat.per))||1)+1,b.v,b.r,b.t,b.dev!==null?Math.round(b.dev*1000)/1000:null,b.st])]),"Akkumulyatorlar");
+  const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  await saveFile(fname(r,"xlsx"),new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}))}
+
+/* ---------------- boot ---------------- */
+$("#hBack").onclick=async()=>{await flush();state.cur=null;renderHome();sync()};
+$("#hSettings").onclick=renderSettings;
+window.addEventListener("resize",fitPaper);
+if(IS_APP){try{const AP=(Capacitor.Plugins&&Capacitor.Plugins.App)||Capacitor.registerPlugin("App");
+  AP.addListener("backButton",async()=>{if(state.view==="edit"||state.view==="settings"){await flush();state.cur=null;renderHome();sync()}else AP.exitApp()})}catch(e){}}
+loadLocal();
+if(!state.me.name)renderWelcome();else{renderHome();sync()}
+</script>
+</body>
+</html>
