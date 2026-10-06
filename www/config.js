@@ -3,6 +3,6 @@
 // API açarı: setup() funksiyasının göstərdiyi İŞÇİ açarı (rəhbər açarını buraya YAZMAYIN)
 // Boş qalsa, hər işçi ilk açılışda ünvanı və açarı özü daxil edir.
 window.UPS_CONFIG = {
-  serverUrl: "",
-  apiKey: ""
+  serverUrl: "https://script.google.com/macros/s/…/exec",
+  apiKey: "İŞÇİ açarı"
 };
