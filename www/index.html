@@ -1200,12 +1200,53 @@ async function saveFile(filename,blob){
       await SH.share({title:filename,url:w.uri,dialogTitle:"Faylı saxla və ya göndər"});return true}
     const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);return true}
   catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("Faylı saxlamaq alınmadı");return false}}
+/* PDF pages are laid out here instead of by html2pdf: the report blocks are measured, packed into A4 pages
+   (a new device starts a new page, a block is never cut), and every page is captured on its own,
+   so no blank first page and no drift of the page breaks on long reports. */
+async function buildPdf(paper){const PW=733,PH=Math.floor(PW*261/194),FILL=PH-30,OPT={margin:[22,8,14,8],image:{type:"jpeg",quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}};
+  const host=document.createElement("div");host.style.cssText="position:absolute;left:-12000px;top:0;width:"+PW+"px";document.body.appendChild(host);
+  try{const src=paper.cloneNode(true);src.removeAttribute("id");src.classList.add("pdfmode");src.style.transform="none";host.appendChild(src);
+    const kids=[...src.children].filter(c=>!c.classList.contains("ph"));
+    const tops=kids.map(c=>c.getBoundingClientRect().top),endY=src.getBoundingClientRect().bottom;
+    const outerH=el=>{const cs=getComputedStyle(el);return el.getBoundingClientRect().height+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0)};
+    /* only a block taller than a whole page is divided: a wrapper into its parts, a table by rows (header row repeated), a list by items */
+    const split=(el,room)=>{const isT=el.tagName==="TABLE",isL=el.tagName==="UL"||el.tagName==="OL";if(!isT&&!isL)return null;
+      const parts=isT?[...el.rows]:[...el.children],hd=isT&&parts[0]&&parts[0].querySelector("th")?parts.shift():null,hh=hd?hd.getBoundingClientRect().height:0,pad=isT?4:10;
+      let n=0,gh=hh;while(n<parts.length&&gh+outerH(parts[n])<=room-pad){gh+=outerH(parts[n]);n++}
+      if(n<(isT?3:2)||n>=parts.length)return null;
+      const mk=(list,first)=>{const t=el.cloneNode(false);if(!first)t.style.marginTop="0";if(hd)t.appendChild(first?hd:hd.cloneNode(true));list.forEach(x=>t.appendChild(x));return t};
+      const restH=parts.slice(n).reduce((x,p)=>x+outerH(p),hh)+pad;
+      return [{el:mk(parts.slice(0,n),true),h:gh+pad},{el:mk(parts.slice(n),false),h:restH}]};
+    const queue=[];kids.forEach((c,i)=>queue.push(c.classList.contains("pb")?{pb:1}:{el:c,h:(i+1<kids.length?tops[i+1]:endY)-tops[i]}));
+    const pages=[];let cur=[],used=0;const close=()=>{if(cur.length){pages.push(cur);cur=[];used=0}};
+    while(queue.length){const it=queue.shift();if(it.pb){close();continue}
+      const room=FILL-used;
+      if(it.h<=room){const nx=queue[0];if(/^H[45]$/.test(it.el.tagName)&&nx&&!nx.pb&&cur.length&&it.h+Math.min(nx.h,120)>room){close();queue.unshift(it);continue}
+        cur.push(it.el);used+=it.h;continue}
+      if(it.h<=FILL){close();queue.unshift(it);continue}
+      if(!/^(TABLE|UL|OL)$/.test(it.el.tagName)&&it.el.children.length>1){queue.unshift(...[...it.el.children].map(ch=>({el:ch,h:outerH(ch)})));continue}
+      const sp=split(it.el,room);if(sp){cur.push(sp[0].el);used+=sp[0].h;close();queue.unshift(sp[1]);continue}
+      if(cur.length){close();queue.unshift(it);continue}
+      cur.push(it.el);close()}
+    close();
+    const divs=pages.map(list=>{const d=document.createElement("div");d.className="paper pdfmode";d.setAttribute("lang",paper.getAttribute("lang")||"az");d.style.width=PW+"px";list.forEach(c=>d.appendChild(c));return d});
+    host.innerHTML="";let pdf=null;
+    for(const d of divs){host.appendChild(d);const w=html2pdf().set(OPT).from(d);const cv=await w.toCanvas().get("canvas");
+      if(!pdf){pdf=await w.toPdf().get("pdf");for(let j=pdf.internal.getNumberOfPages();j>=1;j--)pdf.deletePage(j)}pdf.addPage("a4","portrait");
+      host.removeChild(d);
+      const pp=Math.floor(cv.width*261/194);
+      const parts=cv.height<=pp*1.06?[[0,cv.height]]:Array.from({length:Math.ceil(cv.height/pp)},(_,k)=>[k*pp,Math.min(pp,cv.height-k*pp)]);
+      parts.forEach(([y,hh],k)=>{let c2=cv;if(parts.length>1){c2=document.createElement("canvas");c2.width=cv.width;c2.height=hh;const x=c2.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c2.width,hh);x.drawImage(cv,0,y,cv.width,hh,0,0,cv.width,hh)}
+        if(k>0)pdf.addPage();let wm=194,hm=hh*194/cv.width;if(hm>261){wm=194*261/hm;hm=261}
+        pdf.addImage(c2.toDataURL("image/jpeg",0.92),"JPEG",8+(194-wm)/2,22,wm,hm)})}
+    return pdf}
+  finally{host.remove()}}
 async function exportPdf(){await flush();const btn=$("#bPdf");btn.disabled=true;btn.textContent="PDF hazırlanır…";const r=state.cur;
   try{if(!window.html2pdf)throw new Error("lib");let el=$("#paper");
     const L=state.plang||"az";
     if(await ensurePhotos(r)){$("#ps").innerHTML=paperHTML(r,null,state.plang||"az");fitPaper()}
-    el=$("#paper");el.classList.add("pdfmode");let pdf;
-    try{pdf=await html2pdf().set({margin:[22,8,14,8],image:{type:"jpeg",quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css"],before:".pb",avoid:[".blk",".sigwrap",".rchart-box"]}}).from(el).toPdf().get("pdf")}finally{el.classList.remove("pdfmode")}
+    el=$("#paper");const sx=window.scrollX,sy=window.scrollY;window.scrollTo(0,0);let pdf;
+    try{pdf=await buildPdf(el)}finally{window.scrollTo(sx,sy)}
     const head=await pageHeaderPNG(r,L),n=pdf.internal.getNumberOfPages();
     for(let i=1;i<=n;i++){pdf.setPage(i);pdf.addImage(head,"PNG",8,5,194,15,"zhead","FAST");pdf.addImage(pageFooterPNG(i,n,L),"PNG",8,284,194,5)}
     const blob=pdf.output("blob");
