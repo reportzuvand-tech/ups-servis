@@ -135,6 +135,7 @@ details.more summary::-webkit-details-marker{display:none}
 ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .nextbar{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
+#hTheme{min-width:42px;font-size:15px}@media (max-width:600px){#hTheme .tl{display:none}}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
 .note{font-size:12px;color:var(--muted)}
 .banner{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:12px}
@@ -208,6 +209,7 @@ ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
     <div class="brand" id="hTitle">UPS Servis Jurnalı<small id="hSub">Servis hesabatları</small></div>
     <span class="save" id="saveState"></span><span class="sync" id="syncState"></span>
     <button class="btn sm ghost" id="hBack" hidden>← Siyahı</button>
+    <button class="btn sm ghost" id="hTheme" title="Ekran modu" aria-label="Ekran modu"></button>
     <button class="btn sm ghost" id="hSettings">Ayarlar</button>
   </div>
   <nav class="tabs" id="tabs" hidden role="tablist"></nav>
@@ -914,7 +916,7 @@ const SECTIONS={
  rep(){const r=state.cur,A=analyzeReport(r),multi=A.devs.length>1,outN=A.devs.reduce((x,y)=>x+y.a.out.length,0),nasN=A.devs.reduce((x,y)=>x+y.a.nasaz.length,0);return `<h2 class="sec">Hesabat</h2>
   <div class="verdict ${A.cls}">${A.overall}<small>${multi?A.devs.length+" cihaz · ":""}${A.tested?`${A.tested} blok · ${A.rep} dəyişdirilməli · ${A.att} diqqət · `:(A.devs.some(x=>TYPES[x.d.type].hasBat)?"Akkumulyator ölçmələri yoxdur · ":"")}${outN} parametr norma xaricində · ${nasN} nasaz bənd</small></div>
   <div class="card" style="margin-top:12px"><h3>Avtomatik nəticə</h3>${A.devs.map(x=>x.a.C.length?`${multi?`<b>${x.i+1}. ${esc(TYPES[x.d.type].title)}${devName(x.d)?" — "+esc(devName(x.d)):""}</b>`:""}<ul class="concl">${x.a.C.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>`:"").join("")||'<p class="note" style="margin:0">Məlumat daxil edildikcə nəticələr burada yaranır.</p>'}</div>
-  <div class="actions" style="margin:4px 0 12px"><button class="btn pri" id="bPdf">PDF hazırla</button><button class="btn" id="bXls">Excel (.xlsx)</button>
+  <div class="actions" style="margin:4px 0 12px"><button class="btn pri" id="bPdf">PDF hazırla</button><button class="btn" id="bPrint">Çap et</button><button class="btn" id="bXls">Excel (.xlsx)</button>
    <a class="btn" id="pdfLink" target="_blank" rel="noopener" href="${esc((state.remote[r.id]||{}).pdf||"")}" ${(state.remote[r.id]||{}).pdf?"":"hidden"} style="display:inline-flex;align-items:center;text-decoration:none">Drive-dakı PDF</a>
    ${canDelete(r)?`<button class="btn danger" id="bDel">${state.remote[r.id]?"Hesabatı sil (rəhbər)":"Qaralamanı sil"}</button>`:""}
    ${state.me.role==="admin"&&state.remote[r.id]?'<button class="btn" id="bHist">Versiyalar</button>':""}
@@ -954,7 +956,7 @@ const AFTER={
      r.bat.blocks[i]={...(r.bat.blocks[i]||{}),v,r:R};i++;n++});
    if(n){markDirty();$("#pasteBox").value="";renderProbe();renderGrid();toast(n+" blok dolduruldu")}else toast("Rəqəm tapılmadı: hər sətirdə ən azı iki qiymət olmalıdır")}},
  rep(){fitPaper();ensurePhotos(state.cur).then(n=>{if(n&&state.tab==="rep"){$("#ps").innerHTML=paperHTML(state.cur,null,state.plang||"az");fitPaper()}});
-  $("#bPdf").onclick=exportPdf;$("#bXls").onclick=exportXlsx;
+  $("#bPdf").onclick=exportPdf;$("#bPrint").onclick=printReport;$("#bXls").onclick=exportXlsx;
   if($("#bDel")){$("#bDel").onclick=()=>{$("#delConfirm").hidden=false};$("#bDelNo").onclick=()=>{$("#delConfirm").hidden=true};
   $("#bDelYes").onclick=async()=>{const id=state.cur.id;clearTimeout(saveTimer);state.dirty=false;
     try{if(state.cur.sample){state.cur=null;state.rep=null;renderHome();return}await removeReport(id);state.cur=null;state.rep=null;toast("Hesabat silindi");renderHome()}
@@ -1078,8 +1080,9 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
     else{const F=TYPES[d.type].info.map(([key,lab,o])=>[lab,o&&o.date?dash(fmtDate(u[key])):o&&o.sel?tv(u[key]):dash(u[key])]);const rows=[];for(let x=0;x<F.length;x+=2)rows.push(F.slice(x,x+2));
       h+=W(band+head(multi?"Cihaz məlumatları":TYPES[d.type].title)+kv(rows))}
     const mIdx=MEAS.map((m,j)=>j).filter(j=>mPh(V,j)>0&&V.meas[j].v.slice(0,mPh(V,j)).some(x=>String(x??"").trim()!==""));
-    if(mIdx.length)h+=W(head("Ölçmə nəticələri")+`<table><tr><th style="text-align:left">${t("Parametr")}</th><th>L1</th><th>L2</th><th>L3</th><th>${t("Vahid")}</th><th>${t("Norma")}</th><th>${t("Nəticə")}</th></tr>`+
-      mIdx.map(j=>[MEAS[j],j]).map(([m,j])=>`<tr><td>${esc(t(m[0]))}</td>${mPh(V,j)===3?[0,1,2].map(q=>`<td class="c num">${esc(V.meas[j].v[q])}</td>`).join(""):`<td class="c num" colspan="3">${esc(V.meas[j].v[0])}</td>`}<td class="c">${esc(m[1])}</td><td class="c num">${norm(j)}</td><td class="c ${pc(a.ms[j])}">${esc(t(a.ms[j]))}</td></tr>`).join("")+`</table>`);
+    const tri=mIdx.some(j=>mPh(V,j)===3);
+    if(mIdx.length)h+=W(head("Ölçmə nəticələri")+`<table class="${tri?"m3":"m1"}"><tr><th style="text-align:left">${t("Parametr")}</th>${tri?"<th>L1</th><th>L2</th><th>L3</th>":"<th>L1</th>"}<th>${t("Vahid")}</th><th>${t("Norma")}</th><th>${t("Nəticə")}</th></tr>`+
+      mIdx.map(j=>[MEAS[j],j]).map(([m,j])=>`<tr><td>${esc(t(m[0]))}</td>${mPh(V,j)===3?[0,1,2].map(q=>`<td class="c num">${esc(V.meas[j].v[q])}</td>`).join(""):`<td class="c num"${tri?' colspan="3"':""}>${esc(V.meas[j].v[0])}</td>`}<td class="c">${esc(m[1])}</td><td class="c num">${norm(j)}</td><td class="c ${pc(a.ms[j])}">${esc(t(a.ms[j]))}</td></tr>`).join("")+`</table>`);
     const cIdx=CHK.map((c,j)=>j).filter(j=>!chkHidden(V,j)&&V.chk[j].s&&V.chk[j].s!=="Yoxlanılmadı"&&V.chk[j].s!=="Tətbiq olunmur");
     if(cIdx.length)h+=W(head("Vizual və funksional yoxlama")+`<table><tr><th>#</th><th style="text-align:left">${t("Yoxlanılan bənd")}</th><th>${t("Nəticə")}</th><th style="text-align:left">${t("Qeyd")}</th></tr>`+
       cIdx.map((j,q)=>[CHK[j],j,q]).map(([c,j,q])=>`<tr><td class="c">${q+1}</td><td>${esc(t(c))}</td><td class="c ${pc(V.chk[j].s)}">${tv(V.chk[j].s)}</td><td>${esc(ft(V.chk[j].n))}</td></tr>`).join("")+`</table>`);
@@ -1241,14 +1244,31 @@ async function buildPdf(paper){const PW=733,PH=Math.floor(PW*261/194),FILL=PH-30
         pdf.addImage(c2.toDataURL("image/jpeg",0.92),"JPEG",8+(194-wm)/2,22,wm,hm)})}
     return pdf}
   finally{host.remove()}}
+/* full report PDF (pages + header/footer on every page) — used by "PDF hazırla" and "Çap et" */
+async function makePdf(r,L){if(!window.html2pdf)throw new Error("lib");
+  if(await ensurePhotos(r)){$("#ps").innerHTML=paperHTML(r,null,L);fitPaper()}
+  const el=$("#paper");const sx=window.scrollX,sy=window.scrollY;window.scrollTo(0,0);let pdf;
+  try{pdf=await buildPdf(el)}finally{window.scrollTo(sx,sy)}
+  const head=await pageHeaderPNG(r,L),n=pdf.internal.getNumberOfPages();
+  for(let i=1;i<=n;i++){pdf.setPage(i);pdf.addImage(head,"PNG",8,5,194,15,"zhead","FAST");pdf.addImage(pageFooterPNG(i,n,L),"PNG",8,284,194,5)}
+  return pdf}
+/* print: on Windows / browser the print dialog opens; on the phone the PDF goes to the share menu (choose a printer / print service) */
+async function printReport(){await flush();const btn=$("#bPrint");btn.disabled=true;btn.textContent="Hazırlanır…";const r=state.cur,L=state.plang||"az";
+  try{const pdf=await makePdf(r,L);
+    if(IS_APP){const name=fname(r,"pdf").replace(/\.pdf$/,"_cap.pdf");const P=Capacitor.Plugins||{};const FS=P.Filesystem||Capacitor.registerPlugin("Filesystem"),SH=P.Share||Capacitor.registerPlugin("Share");
+      const w=await FS.writeFile({path:name,data:await blobToB64(pdf.output("blob")),directory:"CACHE"});
+      await SH.share({title:name,url:w.uri,dialogTitle:"Çap etmək üçün printer / PDF proqramı seçin"})}
+    else{const url=URL.createObjectURL(pdf.output("blob"));
+      const fr=document.createElement("iframe");fr.style.cssText="position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0";fr.src=url;document.body.appendChild(fr);
+      let ok=false;await new Promise(res=>{fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print();ok=true}catch(e){}res()},400)};setTimeout(res,8000)});
+      if(!ok){pdf.autoPrint();const wn=window.open(URL.createObjectURL(pdf.output("blob")),"_blank");if(!wn)toast("Brauzer yeni pəncərəni blokladı — PDF hazırla ilə yükləyib çap edin")}
+      setTimeout(()=>{fr.remove();URL.revokeObjectURL(url)},120000)}}
+  catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("Çap üçün hazırlamaq alınmadı")}
+  btn.disabled=false;btn.textContent="Çap et"}
 async function exportPdf(){await flush();const btn=$("#bPdf");btn.disabled=true;btn.textContent="PDF hazırlanır…";const r=state.cur;
   try{if(!window.html2pdf)throw new Error("lib");let el=$("#paper");
     const L=state.plang||"az";
-    if(await ensurePhotos(r)){$("#ps").innerHTML=paperHTML(r,null,state.plang||"az");fitPaper()}
-    el=$("#paper");const sx=window.scrollX,sy=window.scrollY;window.scrollTo(0,0);let pdf;
-    try{pdf=await buildPdf(el)}finally{window.scrollTo(sx,sy)}
-    const head=await pageHeaderPNG(r,L),n=pdf.internal.getNumberOfPages();
-    for(let i=1;i<=n;i++){pdf.setPage(i);pdf.addImage(head,"PNG",8,5,194,15,"zhead","FAST");pdf.addImage(pageFooterPNG(i,n,L),"PNG",8,284,194,5)}
+    const pdf=await makePdf(r,L);
     const blob=pdf.output("blob");
     const name=fname(r,"pdf").replace(/\.pdf$/,(state.plang&&state.plang!=="az"?"_"+state.plang.toUpperCase():"")+".pdf");
     if(hasServer()&&!r.sample){btn.textContent="Drive-a yüklənir…";
@@ -1276,7 +1296,7 @@ async function paperToModel(paper){const M={header:{},blocks:[]};
     if(tg==="H4"&&cl.contains("devh")){const b=n.querySelector("b");out.push({k:"h",text:txt(n.querySelector("span")||n),badge:b?txt(b):"",badgeCls:b?cellCls(b):""});return}
     if(tg==="H4"){out.push({k:"h",text:txt(n)});return}
     if(tg==="H5"){out.push({k:"h2",text:txt(n)});return}
-    if(tg==="TABLE"){const rows=[...n.rows].map(tr=>[...tr.cells].map(td=>({v:txt(td),cls:cellCls(td),span:td.colSpan||1,c:/\bc\b/.test(td.className)})));out.push({k:"table",bt:cl.contains("bt"),rows});return}
+    if(tg==="TABLE"){const rows=[...n.rows].map(tr=>[...tr.cells].map(td=>({v:txt(td),cls:cellCls(td),span:td.colSpan||1,c:/\bc\b/.test(td.className)})));out.push({k:"table",bt:cl.contains("bt"),m1:cl.contains("m1"),rows});return}
     if(tg==="UL"){out.push({k:"list",items:[...n.querySelectorAll("li")].map(txt)});return}
     if(tg==="P"){const s=txt(n);if(s)out.push({k:"text",text:s,small:cl.contains("small"),italic:!!n.querySelector("i")});return}
     if(cl.contains("prow2")){out.push({k:"photos",items:[...n.querySelectorAll("figure")].map(f=>{const im=f.querySelector("img");return {src:im?im.getAttribute("src"):"",cap:txt(f.querySelector("figcaption")||f)}})});return}
@@ -1323,7 +1343,7 @@ function buildXlsx(ExcelJS,M,opt){
     else if(it.k==="table"){let rows=it.rows;const n=Math.max(...rows.map(r=>r.reduce((x,c)=>x+c.span,0)));
       if(it.bt&&n>8){const cut=(r,from,to)=>{let i=0;const o=[];for(const c of r){if(i===0||(i>=from&&i<to))o.push(c);i+=c.span}return o};
         return [...rowsOf({k:"table",rows:rows.map(r=>cut(r,1,8))}),{h:8,cells:[]},...rowsOf({k:"table",rows:rows.map(r=>cut(r,8,99))})]}
-      const sp=spansFor(n,rows[0]&&rows[0][0]);
+      const sp=it.m1&&n===5?[3,1,1,2,1]:spansFor(n,rows[0]&&rows[0][0]);
       rows.forEach(r=>{let li=0,col=1;const cells=[];let h=15;
         r.forEach(c=>{const w=sp.slice(li,li+c.span).reduce((x,y)=>x+y,0);const a=col,b=col+w-1;const s=sty[c.cls]||{};
           cells.push({a,b,v:c.v,font:s.font||F(),fill:s.fill,al:s.al||(c.c?"center":"left"),border:true});h=Math.max(h,lines(c.v,a,b)*12+4);li+=c.span;col=b+1});
@@ -1390,6 +1410,14 @@ async function exportXlsx(){await flush();const btn=$("#bXls"),L=state.plang||"a
 /* ---------------- boot ---------------- */
 $("#hBack").onclick=async()=>{await flush();state.cur=null;state.rep=null;renderHome();sync()};
 $("#hSettings").onclick=renderSettings;
+/* screen mode: Avto (follows the phone / Windows setting) → İşıqlı → Qaranlıq; remembered on this device */
+const THEMES=[["auto","◐ Avto"],["light","☀ İşıqlı"],["dark","☾ Qaranlıq"]];
+function applyTheme(m){if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);else document.documentElement.removeAttribute("data-theme");
+  const b=$("#hTheme");if(b){const T=THEMES.find(x=>x[0]===m)||THEMES[0];b.innerHTML=T[1].slice(0,1)+'<span class="tl"> '+T[1].slice(2)+"</span>";b.title="Ekran modu: "+T[1].slice(2)}
+  const dark=m==="dark"||(m!=="light"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
+  const mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.content=dark?"#0F1513":"#EDF1EF"}
+applyTheme(LS.get("ups_theme")||"auto");
+$("#hTheme").onclick=()=>{const cur=LS.get("ups_theme")||"auto",i=THEMES.findIndex(x=>x[0]===cur),nx=THEMES[(i+1)%THEMES.length][0];LS.set("ups_theme",nx);applyTheme(nx);toast("Ekran modu: "+THEMES.find(x=>x[0]===nx)[1].slice(2))};
 window.addEventListener("resize",fitPaper);
 if(IS_APP){try{const AP=(Capacitor.Plugins&&Capacitor.Plugins.App)||Capacitor.registerPlugin("App");
   AP.addListener("backButton",async()=>{if(state.view==="edit"||state.view==="settings"){await flush();state.cur=null;state.rep=null;renderHome();sync()}else AP.exitApp()})}catch(e){}}
