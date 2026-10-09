@@ -822,6 +822,11 @@ function renderSettings(){
   <div class="card"><h3>Akkumulyator hədləri (ortaq, yeni hesabatlar üçün)</h3><div class="grid2">${f("warn","R artımı — Diqqət, %",{n:1})}${f("fail","R artımı — Dəyişdirilməli, %",{n:1})}${f("vwarn","Blok V — Diqqət (aşağı)",{n:1})}${f("vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${f("vhigh","Blok V — Diqqət (yuxarı)",{n:1})}${f("life","İstismar müddəti, il",{n:1})}</div>
   <p class="note" style="margin:0">Gərginlik hədləri 12 V VRLA blokun float rejimi üçündür; 2 V element və ya Li-ion üçün dəyişin.</p></div>
   <div class="actions"><button class="btn pri" id="sSave">Yadda saxla</button></div>
+  <div class="card" style="margin-top:16px"><h3>PDF və Excel faylları</h3>
+   ${IS_APP?`<p class="note" style="margin:0">Telefonda fayllar <b>Documents / UPS Servis Hesabatları / müştərinin adı</b> qovluğuna yazılır, sonra göndərmək menyusu açılır.</p>`
+    :typeof window.showDirectoryPicker==="function"&&!state.noDir?`<p class="note" style="margin:0">Hər müştəri üçün bu qovluğun içində ayrıca qovluq açılır və hesabat ora yazılır.</p><div class="actions"><span class="note" id="dirName">Qovluq: …</span><button class="btn sm" id="dirPick">Qovluğu seç / dəyiş</button></div>`
+    :`<p class="note" style="margin:0">Bu versiyada brauzer qovluq seçməyə icazə vermir — fayllar Yükləmələr qovluğuna düşür. Müştəri qovluqları üçün masaüstü ikonu ilə açılan Windows versiyasından istifadə edin.</p>`}
+   <label class="f" style="display:flex;gap:8px;align-items:center;grid-template-columns:none"><input type="checkbox" id="pdfDrive" style="width:auto;min-height:0" ${LS.get("ups.pdfdrive")?"checked":""}><span>PDF-in nüsxəsini Google Drive-a da yüklə (Drive yaddaşı dolur, PDF yavaşlayır)</span></label></div>
   <div class="card" style="margin-top:16px"><h3>Yedək nüsxə</h3><p class="note" style="margin:0">Bu cihazdakı bütün hesabatları bir .json faylına saxlayın və ya həmin fayldan bərpa edin.</p>
   <div class="actions"><button class="btn" id="bkSave">Yedək faylı saxla</button><label class="btn" style="display:inline-flex;align-items:center">Yedəkdən bərpa et<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div></div>`;
   const readMe=()=>{state.me.name=$("#meName").value.trim();if($("#meKey").value.trim()!==state.me.key)state.me.role="";if($("#meUrl"))state.me.url=$("#meUrl").value.trim();state.me.key=$("#meKey").value.trim();LS.set("ups.me",state.me)};
@@ -829,6 +834,9 @@ function renderSettings(){
     try{const pg=await api("ping");state.me.role=pg.role;LS.set("ups.me",state.me);$("#pingMsg").textContent="Bağlantı işləyir ✓ · rol: "+(pg.role==="admin"?"rəhbər":"işçi");sync()}catch(e){$("#pingMsg").textContent=e.message==="auth"?"API açarı yanlışdır":"Serverə qoşulmaq alınmadı"}};
   $("#sSave").onclick=async()=>{readMe();document.querySelectorAll("[data-s]").forEach(i=>{const k=i.dataset.s;state.settings[k]=["interval","warn","fail","vwarn","vfail","vhigh","life"].includes(k)?(num(i.value)??DEFAULT_SETTINGS[k]):i.value.trim()});
     try{await saveSettings();toast(ro?"Şəxsi ayarlar saxlanıldı":"Ayarlar saxlanıldı")}catch(e){toast("Ayarlar bu cihazda saxlanıldı, serverə göndərilmədi")}renderHome();sync()};
+  $("#pdfDrive").onchange=e=>LS.set("ups.pdfdrive",e.target.checked);
+  const dn=$("#dirName");if(dn){getRoot().then(h=>{dn.textContent="Qovluq: "+(h?h.name:"seçilməyib")});
+    $("#dirPick").onclick=async()=>{try{const h=await pickRoot();await h.requestPermission({mode:"readwrite"});dn.textContent="Qovluq: "+h.name;toast("Qovluq seçildi: "+h.name)}catch(e){if(e&&e.name==="SecurityError"){state.noDir=true;toast("Bu versiyada qovluq seçmək mümkün deyil")}}}}
   $("#bkSave").onclick=()=>saveFile("UPS-servis-yedek-"+todayISO()+".json",new Blob([JSON.stringify({app:"ups-servis",v:2,reports:Object.values(state.reports)},null,1)],{type:"application/json"}));
   $("#bkLoad").onchange=async e=>{const fl=e.target.files[0];if(!fl)return;try{const d=JSON.parse(new TextDecoder().decode(await readAB(fl)));if(!d||!Array.isArray(d.reports))throw 0;
     let n=0;for(const r of d.reports){if(r&&r.kind==="report"&&typeof r.id==="string"&&/^[A-Za-z0-9_\-.~:@+]+$/.test(r.id)){state.reports[r.id]=normalize(r);state.pending.add(r.id);n++}}
@@ -1216,17 +1224,36 @@ function renderFlukeMap(){const box=$("#flukeMap");if(!box||!FK.cur)return;const
 /* ---------------- export ---------------- */
 const fname=(r,ext)=>((r.svc.repno||"UPS-hesabat")+"_"+(r.cl.name||"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_").replace(/_+$/,"").slice(0,90)+"."+ext;
 function blobToB64(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=()=>rej(r.error);r.readAsDataURL(blob)})}
-async function saveFile(filename,blob){
+/* ---- where finished files go ----
+   Windows: a folder chosen once in Ayarlar; inside it every customer gets its own sub-folder (File System Access API).
+   Phone: Documents/UPS Servis Hesabatları/<müştəri>/ and the share menu. Otherwise: the browser's download folder. */
+const safeName=x=>String(x||"").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g," ").trim().replace(/[. ]+$/,"").slice(0,80)||"Adsız müştəri";
+function idb(mode,fn){return new Promise((res,rej)=>{const o=indexedDB.open("ups-folder",1);o.onupgradeneeded=()=>o.result.createObjectStore("h");
+  o.onsuccess=()=>{const tx=o.result.transaction("h",mode),q=fn(tx.objectStore("h"));tx.oncomplete=()=>res(q&&q.result);tx.onerror=()=>rej(tx.error)};o.onerror=()=>rej(o.error)})}
+const canDir=()=>!IS_APP&&typeof window.showDirectoryPicker==="function"&&!state.noDir;
+async function getRoot(){try{return await idb("readonly",st=>st.get("root"))||null}catch(e){return null}}
+async function pickRoot(){const h=await showDirectoryPicker({id:"ups-servis",mode:"readwrite"});await idb("readwrite",st=>st.put(h,"root"));return h}
+/* called at the very start of a button click (the browser allows the folder dialog / permission question only then) */
+async function prepareFolder(){if(!canDir())return null;
+  try{let root=await getRoot();if(!root){toast("Hesabatların saxlanacağı qovluğu seçin (bir dəfə)");root=await pickRoot()}
+    let p=await root.queryPermission({mode:"readwrite"});if(p!=="granted")p=await root.requestPermission({mode:"readwrite"});return p==="granted"?root:null}
+  catch(e){if(e&&e.name==="SecurityError")state.noDir=true;return null}}
+async function writeToDir(root,client,filename,blob){const d=await root.getDirectoryHandle(safeName(client),{create:true});
+  const fh=await d.getFileHandle(filename,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();return root.name+"\\"+safeName(client)+"\\"+filename}
+async function saveFile(filename,blob,client,root){
   try{
     if(IS_APP){const P=Capacitor.Plugins||{};const FS=P.Filesystem||Capacitor.registerPlugin("Filesystem"),SH=P.Share||Capacitor.registerPlugin("Share");
-      const data=await blobToB64(blob);const w=await FS.writeFile({path:filename,data,directory:"CACHE"});
-      await SH.share({title:filename,url:w.uri,dialogTitle:"Faylı saxla və ya göndər"});return true}
+      const data=await blobToB64(blob);let saved="";
+      if(client!==undefined){const pth="UPS Servis Hesabatları/"+safeName(client)+"/"+filename;try{await FS.writeFile({path:pth,data,directory:"DOCUMENTS",recursive:true});saved="Documents/"+pth}catch(e){}}
+      const w=await FS.writeFile({path:filename,data,directory:"CACHE"});if(saved)toast("Saxlanıldı: "+saved);
+      await SH.share({title:filename,url:w.uri,dialogTitle:"Göndər (WhatsApp, e-poçt…) və ya bağla"});return true}
+    if(root&&client!==undefined){try{toast("Saxlanıldı: "+await writeToDir(root,client,filename,blob));return true}catch(e){toast("Qovluğa yazmaq alınmadı — fayl Yükləmələr qovluğuna saxlanılır")}}
     const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);return true}
   catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("Faylı saxlamaq alınmadı");return false}}
 /* PDF pages are laid out here instead of by html2pdf: the report blocks are measured, packed into A4 pages
    (a new device starts a new page, a block is never cut), and every page is captured on its own,
    so no blank first page and no drift of the page breaks on long reports. */
-async function buildPdf(paper){const PW=733,PH=Math.floor(PW*261/194),FILL=PH-30,OPT={margin:[22,8,14,8],image:{type:"jpeg",quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}};
+async function buildPdf(paper,onPage){const PW=733,PH=Math.floor(PW*261/194),FILL=PH-30,OPT={margin:[22,8,14,8],image:{type:"jpeg",quality:0.85},html2canvas:{scale:1.7,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0,logging:false},jsPDF:{unit:"mm",format:"a4",orientation:"portrait",compress:true}};
   const host=document.createElement("div");host.style.cssText="position:absolute;left:-12000px;top:0;width:"+PW+"px";document.body.appendChild(host);
   try{const src=paper.cloneNode(true);src.removeAttribute("id");src.classList.add("pdfmode");src.style.transform="none";host.appendChild(src);
     const kids=[...src.children].filter(c=>!c.classList.contains("ph"));
@@ -1253,28 +1280,30 @@ async function buildPdf(paper){const PW=733,PH=Math.floor(PW*261/194),FILL=PH-30
       cur.push(it.el);close()}
     close();
     const divs=pages.map(list=>{const d=document.createElement("div");d.className="paper pdfmode";d.setAttribute("lang",paper.getAttribute("lang")||"az");d.style.width=PW+"px";list.forEach(c=>d.appendChild(c));return d});
-    host.innerHTML="";let pdf=null;
-    for(const d of divs){host.appendChild(d);const w=html2pdf().set(OPT).from(d);const cv=await w.toCanvas().get("canvas");
-      if(!pdf){pdf=await w.toPdf().get("pdf");for(let j=pdf.internal.getNumberOfPages();j>=1;j--)pdf.deletePage(j)}pdf.addPage("a4","portrait");
+    host.innerHTML="";
+    const tiny=document.createElement("div");tiny.style.cssText="width:4px;height:4px";host.appendChild(tiny);
+    const pdf=await html2pdf().set(OPT).from(tiny).toPdf().get("pdf");host.removeChild(tiny);for(let j=pdf.internal.getNumberOfPages();j>=1;j--)pdf.deletePage(j);
+    let pg=0;
+    for(const d of divs){if(onPage)onPage(++pg,divs.length);host.appendChild(d);const cv=await html2pdf().set(OPT).from(d).toCanvas().get("canvas");pdf.addPage("a4","portrait");
       host.removeChild(d);
       const pp=Math.floor(cv.width*261/194);
       const parts=cv.height<=pp*1.06?[[0,cv.height]]:Array.from({length:Math.ceil(cv.height/pp)},(_,k)=>[k*pp,Math.min(pp,cv.height-k*pp)]);
       parts.forEach(([y,hh],k)=>{let c2=cv;if(parts.length>1){c2=document.createElement("canvas");c2.width=cv.width;c2.height=hh;const x=c2.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c2.width,hh);x.drawImage(cv,0,y,cv.width,hh,0,0,cv.width,hh)}
         if(k>0)pdf.addPage();let wm=194,hm=hh*194/cv.width;if(hm>261){wm=194*261/hm;hm=261}
-        pdf.addImage(c2.toDataURL("image/jpeg",0.92),"JPEG",8+(194-wm)/2,22,wm,hm)})}
+        pdf.addImage(c2.toDataURL("image/jpeg",0.85),"JPEG",8+(194-wm)/2,22,wm,hm)})}
     return pdf}
   finally{host.remove()}}
 /* full report PDF (pages + header/footer on every page) — used by "PDF hazırla" and "Çap et" */
-async function makePdf(r,L){if(!window.html2pdf)throw new Error("lib");
+async function makePdf(r,L,onPage){if(!window.html2pdf)throw new Error("lib");
   if(await ensurePhotos(r)){$("#ps").innerHTML=paperHTML(r,null,L);fitPaper()}
   const el=$("#paper");const sx=window.scrollX,sy=window.scrollY;window.scrollTo(0,0);let pdf;
-  try{pdf=await buildPdf(el)}finally{window.scrollTo(sx,sy)}
+  try{pdf=await buildPdf(el,onPage)}finally{window.scrollTo(sx,sy)}
   const head=await pageHeaderPNG(r,L),n=pdf.internal.getNumberOfPages();
   for(let i=1;i<=n;i++){pdf.setPage(i);pdf.addImage(head,"PNG",8,5,194,15,"zhead","FAST");pdf.addImage(pageFooterPNG(i,n,L),"PNG",8,284,194,5)}
   return pdf}
 /* print: on Windows / browser the print dialog opens; on the phone the PDF goes to the share menu (choose a printer / print service) */
 async function printReport(){await flush();const btn=$("#bPrint");btn.disabled=true;btn.textContent="Hazırlanır…";const r=state.cur,L=state.plang||"az";
-  try{const pdf=await makePdf(r,L);
+  try{const pdf=await makePdf(r,L,(i,n)=>{btn.textContent="Hazırlanır… "+i+"/"+n});
     if(IS_APP){const name=fname(r,"pdf").replace(/\.pdf$/,"_cap.pdf");const P=Capacitor.Plugins||{};const FS=P.Filesystem||Capacitor.registerPlugin("Filesystem"),SH=P.Share||Capacitor.registerPlugin("Share");
       const w=await FS.writeFile({path:name,data:await blobToB64(pdf.output("blob")),directory:"CACHE"});
       await SH.share({title:name,url:w.uri,dialogTitle:"Çap etmək üçün printer / PDF proqramı seçin"})}
@@ -1285,19 +1314,18 @@ async function printReport(){await flush();const btn=$("#bPrint");btn.disabled=t
       setTimeout(()=>{fr.remove();URL.revokeObjectURL(url)},120000)}}
   catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("Çap üçün hazırlamaq alınmadı")}
   btn.disabled=false;btn.textContent="Çap et"}
-async function exportPdf(){await flush();const btn=$("#bPdf");btn.disabled=true;btn.textContent="PDF hazırlanır…";const r=state.cur;
-  try{if(!window.html2pdf)throw new Error("lib");let el=$("#paper");
-    const L=state.plang||"az";
-    const pdf=await makePdf(r,L);
-    const blob=pdf.output("blob");
-    const name=fname(r,"pdf").replace(/\.pdf$/,(state.plang&&state.plang!=="az"?"_"+state.plang.toUpperCase():"")+".pdf");
-    if(hasServer()&&!r.sample){btn.textContent="Drive-a yüklənir…";
+async function exportPdf(){const root=await prepareFolder();await flush();const btn=$("#bPdf");btn.disabled=true;btn.textContent="PDF hazırlanır…";const r=state.cur;
+  try{const L=state.plang||"az";
+    const pdf=await makePdf(r,L,(i,n)=>{btn.textContent="PDF hazırlanır… "+i+"/"+n});
+    btn.textContent="Saxlanılır…";const blob=pdf.output("blob");
+    const name=fname(r,"pdf").replace(/\.pdf$/,(L!=="az"?"_"+L.toUpperCase():"")+".pdf");
+    await saveFile(name,blob,r.cl.name||"",root);
+    if(LS.get("ups.pdfdrive")&&hasServer()&&!r.sample){btn.textContent="Drive-a yüklənir…";
       try{await sync();if(state.pending.has(r.id))throw new Error("pending");
         const res=await api("pdf",{id:r.id,client:r.cl.name,name,data:await blobToB64(blob)});
         if(state.remote[r.id])state.remote[r.id].pdf=res.url;const l=$("#pdfLink");if(l){l.href=res.url;l.hidden=false}
-        toast("PDF müştərinin Drive qovluğuna yükləndi")}
-      catch(e){toast("PDF Drive-a yüklənmədi (internet?) — telefonda saxlayın")}}
-    btn.textContent="Saxlanılır…";await saveFile(name,blob)}
+        toast("PDF Drive-a da yükləndi")}
+      catch(e){toast("PDF Drive-a yüklənmədi (internet?)")}}}
   catch(e){toast("PDF yaratmaq alınmadı")}
   btn.disabled=false;btn.textContent="PDF hazırla"}
 /* ---------------- Excel export that mirrors the PDF report ----------------
@@ -1413,7 +1441,7 @@ async function loadExcelJS(){if(window.ExcelJS)return true;const H="https:"+"/"+
   for(const u of [H+"cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js",H+"cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"]){try{await loadScriptOnce(u);if(window.ExcelJS)return true}catch(e){}}
   return false}
 
-async function exportXlsx(){await flush();const btn=$("#bXls"),L=state.plang||"az";btn.disabled=true;btn.textContent="Excel hazırlanır…";
+async function exportXlsx(){const root=await prepareFolder();await flush();const btn=$("#bXls"),L=state.plang||"az";btn.disabled=true;btn.textContent="Excel hazırlanır…";
   try{if(!await loadExcelJS()){toast("Excel üçün internet lazımdır (kitabxana yüklənmədi)");return}
     const r=realOf(state.cur);await ensurePhotos(r);$("#ps").innerHTML=paperHTML(r,null,L);fitPaper();
     const M=await paperToModel($("#paper"));await primeImgSizes(M);
@@ -1423,7 +1451,7 @@ async function exportXlsx(){await flush();const btn=$("#bXls"),L=state.plang||"a
     useType(keep);
     const wb=buildXlsx(window.ExcelJS,M,{sheet:L==="ru"?"Отчёт":L==="en"?"Report":"Hesabat",footer:tl(L,REPORT_TITLE),extra});
     const buf=await wb.xlsx.writeBuffer();
-    await saveFile(fname(r,"xlsx").replace(/\.xlsx$/,(L!=="az"?"_"+L.toUpperCase():"")+".xlsx"),new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}))}
+    await saveFile(fname(r,"xlsx").replace(/\.xlsx$/,(L!=="az"?"_"+L.toUpperCase():"")+".xlsx"),new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),r.cl.name||"",root)}
   catch(e){toast("Excel yaratmaq alınmadı")}
   finally{btn.disabled=false;btn.textContent="Excel (.xlsx)"}}
 
