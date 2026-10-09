@@ -136,6 +136,7 @@ ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .nextbar{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
 #hTheme{min-width:42px;font-size:15px}@media (max-width:600px){#hTheme .tl{display:none}}
+.dlist{display:grid;gap:6px}.drow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)}.drow .k{font:500 12px var(--f-num);color:var(--muted)}.drow .dn{flex:1;min-width:0;display:grid}.drow .dn small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
 .note{font-size:12px;color:var(--muted)}
 .banner{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:12px}
@@ -774,9 +775,17 @@ function renderHome(){
     try{const r=await getFull(b.dataset.open);const n=normalize(clone(r));state.reports[n.id]=n;openReport(n)}
     catch(e){b.disabled=false;toast("Hesabatı açmaq üçün internet lazımdır")}});
   window.scrollTo(0,0)}
+/* next service from an earlier report: customer + every device (passport data, battery set-up, measurement limits) are copied;
+   measurements, checklist, works, photos, parts and notes start empty */
+function nextFrom(src){src=realOf(src);const r=blankReport(state.settings);r.cl=clone(src.cl);
+  r.svc.type=src.svc.type||r.svc.type;r.svc.interval=src.svc.interval||r.svc.interval;
+  r.devices=src.devices.map(d=>{const nd=blankDevice(state.settings,d.type);nd.info=clone(d.info);nd.bat={...clone(d.bat),blocks:[]};
+    nd.meas.forEach((m,i)=>{if(d.meas[i]){m.min=d.meas[i].min;m.max=d.meas[i].max}});return nd});return r}
+function startCopy(src){const r=nextFrom(src);startReport(r);state.tab="svc";renderEditor();window.scrollTo(0,0);
+  toast("Köçürüldü: "+r.devices.length+" cihaz. Cihaz siyahısını yoxlayın, dəyişiklik varsa düzəldin.")}
 function openNew(){
   const items=listItems().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const h=`<h2 class="sec">Yeni servis</h2><p class="hint">Boş hesabat başladın və ya əvvəlki hesabatdan müştəri və cihaz məlumatlarını köçürün (ölçmələr köçürülmür).</p>
+  const h=`<h2 class="sec">Yeni servis</h2><p class="hint">Boş hesabat başladın və ya əvvəlki hesabatı kopyalayın: müştəri və bütün cihazları (pasport məlumatları, akkumulyator quruluşu, normalar) köçürülür, ölçmələr boş başlayır.</p>
   <div class="card"><button class="btn pri" id="nBlank">Yeni hesabat — cihazı seç</button></div>
   ${items.length?`<div class="card"><h3>Əvvəlki hesabatdan köçür</h3><input id="nq" type="search" placeholder="Müştəri və ya seriya № ilə axtar"><div class="rlist" id="nlist"></div></div>`:""}
   <button class="btn ghost" id="nCancel">← Geri</button>`;
@@ -784,8 +793,7 @@ function openNew(){
   const draw=()=>{const box=$("#nlist");if(!box)return;const q=($("#nq").value||"").toLowerCase();
     box.innerHTML=items.filter(s=>!q||[s.client,s.sn,s.model,s.obj].join(" ").toLowerCase().includes(q)).slice(0,40).map(s=>`<button class="rcard" data-copy="${esc(s.id)}"><span class="t">${esc(s.client||"Adsız")}</span><span class="no">${esc(fmtDate(s.date))}</span><span class="m">${esc([s.brand,s.model,s.sn].filter(Boolean).join(" · "))}</span></button>`).join("");
     box.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{b.disabled=true;
-      try{const src=normalize(clone(await getFull(b.dataset.copy)));const r=blankReport(state.settings);r.cl=src.cl;r.devices=src.devices.map(d=>{const nd=blankDevice(state.settings,d.type);nd.info=clone(d.info);nd.bat={...clone(d.bat),blocks:[]};
-        nd.meas.forEach((m,i)=>{if(d.meas[i]){m.min=d.meas[i].min;m.max=d.meas[i].max}});return nd});startReport(r)}
+      try{const src=normalize(clone(await getFull(b.dataset.copy)));startCopy(src)}
       catch(e){b.disabled=false;toast("Köçürmək üçün internet lazımdır")}})};
   if($("#nq")){$("#nq").oninput=draw;draw()}
   $("#nCancel").onclick=renderHome;
@@ -867,7 +875,13 @@ const SECTIONS={
   ${fld("svc.type","Servis növü",{sel:SVC_TYPES})}<div class="grid2">${fld("svc.eng","Servis mühəndisi")}${fld("svc.interval","Növbəti servis intervalı, ay",{n:1})}</div>
   <div class="note">Növbəti servis: <b data-live="next"></b></div></div>
   <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
-  <div class="grid2">${fld("cl.person","Əlaqədar şəxs")}${fld("cl.tel","Telefon")}</div>${fld("cl.sign","İmza üçün müştəri nümayəndəsi")}</div>`},
+  <div class="grid2">${fld("cl.person","Əlaqədar şəxs")}${fld("cl.tel","Telefon")}</div>${fld("cl.sign","İmza üçün müştəri nümayəndəsi")}</div>
+  <div class="card"><h3>Müştərinin cihazları (${state.rep.devices.length})</h3>
+  <div class="dlist">${state.rep.devices.map((d,i)=>`<div class="drow"><span class="k">${i+1}</span><span class="dn"><b>${esc(TYPES[d.type].title)}</b>${devName(d)||d.info.sn?`<small>${esc([devName(d),d.info.sn?"SN "+d.info.sn:""].filter(Boolean).join(" · "))}</small>`:""}</span>
+    <button class="btn sm" data-dedit="${i}">Düzəlt</button>${state.rep.devices.length>1?`<button class="btn sm danger" data-ddel="${i}">Sil</button>`:""}</div>`).join("")}</div>
+  <button class="btn" id="svcAddDev">+ Cihaz əlavə et</button></div>
+  ${state.rep.devices.some(d=>devName(d)||d.info.sn)||state.rep.cl.name?`<div class="card"><h3>Növbəti servis</h3><p class="note" style="margin:0">Bu hesabatın müştəri və cihaz siyahısından yeni hesabat yaradılır. Ölçmələr, yoxlama, görülən işlər və şəkillər boş başlayır; bu hesabat dəyişmir.</p>
+  <button class="btn" id="svcCopy">⧉ Növbəti servis üçün kopyala</button></div>`:""}`},
  upsUPS(){return `<h2 class="sec">UPS cihazı</h2><p class="hint">Cihazın pasport məlumatları.</p><div class="card">
   <div class="grid2">${fld("ups.brand","Marka")}${fld("ups.model","Model")}</div>${fld("ups.sn","Seriya №")}
   <div class="grid2">${fld("ups.kva","Nominal güc, kVA",{n:1})}${fld("ups.kw","Nominal güc, kW",{n:1})}</div>
@@ -938,6 +952,12 @@ SECTIONS.ups=function(){const T=TYPES[CUR_TYPE],R=state.rep;
   const body=CUR_TYPE==="ups"?SECTIONS.upsUPS():`<h2 class="sec">${esc(T.title)}</h2><p class="hint">Cihazın pasport məlumatları.</p><div class="card"><div class="grid2">${T.info.map(([k,l,o])=>fld("ups."+k,l,o||{})).join("")}</div></div>`;
   return body+(R.devices.length>1?`<div class="card"><button class="btn sm danger" id="rmDev">Bu cihazı hesabatdan çıxar</button><div id="rmConf" hidden><p style="margin:0 0 8px"><b>${state.di+1}-ci cihaz və onun bütün ölçmələri bu hesabatdan silinsin?</b></p><div class="actions"><button class="btn danger" id="rmYes">Bəli, çıxar</button><button class="btn" id="rmNo">Ləğv et</button></div></div></div>`:"")};
 const AFTER={
+ svc(){document.querySelectorAll("[data-dedit]").forEach(b=>b.onclick=()=>{setActive(+b.dataset.dedit);state.tab="ups";renderEditor();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-ddel]").forEach(b=>b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Silinsin?";return}
+    state.rep.devices.splice(+b.dataset.ddel,1);setActive(0);markDirty();toast("Cihaz hesabatdan çıxarıldı");const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
+  const a=$("#svcAddDev");if(a)a.onclick=()=>$("#addDev").click();
+  const c=$("#svcCopy");if(c)c.onclick=async()=>{if(c.dataset.confirm!=="1"){c.dataset.confirm="1";c.textContent="Yeni hesabat yaradılsın? Təsdiq üçün yenidən basın";return}
+    await flush();startCopy(state.rep)}},
  foto(){const V=state.cur;$("#phCam").onchange=e=>addPhotos([...e.target.files]);$("#phGal").onchange=e=>addPhotos([...e.target.files]);
   document.querySelectorAll("img[data-pid]").forEach(async im=>{const p=(V.photos||[]).find(x=>x.id===im.dataset.pid);if(!p)return;const d=await photoData(p);if(d)im.src=d;else im.alt="Şəkil yüklənmədi (internet?)"});
   document.querySelectorAll("[data-phdel]").forEach(b=>b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Silinsin?";return}V.photos.splice(+b.dataset.phdel,1);markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
