@@ -141,7 +141,11 @@ ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
 .ltbl{border-collapse:collapse;width:100%;font-size:13px}.ltbl th,.ltbl td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}.ltbl th{background:var(--surface2);font-size:12px;position:sticky;top:0}.ltbl td.c,.ltbl th:not([style]){text-align:center}.ltbl .msep td{background:var(--surface2);font:700 12px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.ltbl tr.pl-done td{background:var(--ok-bg)}.ltbl tr.pl-over td{background:var(--bad-bg)}.ltbl tr.pl-soon td{background:var(--warn-bg)}.ltbl a{color:var(--accent)}
 .stars{display:inline-flex;gap:2px}.star{border:0;background:none;font-size:22px;line-height:1;color:var(--line);cursor:pointer;padding:2px}.star.on{color:#E0A100}
 .tkfocus{outline:2px solid var(--accent)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+.sigslot{display:grid;gap:8px;align-content:start;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}.sigslot img{background:#fff;border-radius:6px;max-width:100%;height:80px;object-fit:contain;border:1px solid var(--line)}.sigempty{height:80px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:6px;color:var(--muted);font-size:13px}
+.sigpad{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:max(10px,env(safe-area-inset-top,0px)) 10px max(10px,env(safe-area-inset-bottom,0px))}.sp-in{background:var(--surface);border-radius:12px;padding:14px;width:min(960px,100%);height:min(620px,100%);display:grid;grid-template-rows:auto auto 1fr auto;gap:10px}
+.sp-head{display:flex;justify-content:space-between;align-items:center}.sp-area{position:relative;background:#fff;border:2px dashed #8A9893;border-radius:10px;min-height:160px;overflow:hidden;touch-action:none}.sp-area canvas{position:absolute;inset:0;touch-action:none;cursor:crosshair}
+.sp-hint{position:absolute;left:0;right:0;top:40%;text-align:center;color:#8A9893;font-size:15px;pointer-events:none}.sp-line{position:absolute;left:8%;right:8%;bottom:26%;border-bottom:1px solid #C9D3CF;pointer-events:none}.sp-btns{justify-content:flex-end}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:70;max-width:calc(100% - 32px)}
 .note{font-size:12px;color:var(--muted)}
 .banner{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:12px}
 .prow{display:grid;grid-template-columns:2fr 1.2fr .7fr auto;gap:6px;align-items:end}
@@ -172,7 +176,7 @@ ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
 .paper li{margin-bottom:3px}
 .paper .sigwrap{break-inside:avoid;page-break-inside:avoid;margin-top:14px}
 .paper .sig{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:22px}
-.paper .sig div{display:grid;gap:14px}
+.paper .sig div{display:grid;gap:14px}.paper .sigimg{display:flex;align-items:flex-end;gap:8px}.paper .sigimg img{height:58px;max-width:230px;object-fit:contain;object-position:left bottom}
 .paper .small{font-size:9px;color:#55605C}
 .paper .bt td{font-size:8.5px;padding:2px 3px;text-align:center;font-family:var(--f-num)}
 .langseg{flex:0 0 auto}.langseg button{flex:0 0 auto;min-width:46px}
@@ -976,6 +980,7 @@ const SECTIONS={
  rep(){const r=state.cur,A=analyzeReport(r),multi=A.devs.length>1,outN=A.devs.reduce((x,y)=>x+y.a.out.length,0),nasN=A.devs.reduce((x,y)=>x+y.a.nasaz.length,0);return `<h2 class="sec">Hesabat</h2>
   <div class="verdict ${A.cls}">${A.overall}<small>${multi?A.devs.length+" cihaz · ":""}${A.tested?`${A.tested} blok · ${A.rep} dəyişdirilməli · ${A.att} diqqət · `:(A.devs.some(x=>TYPES[x.d.type].hasBat)?"Akkumulyator ölçmələri yoxdur · ":"")}${outN} parametr norma xaricində · ${nasN} nasaz bənd</small></div>
   <div class="card" style="margin-top:12px"><h3>Avtomatik nəticə</h3>${A.devs.map(x=>x.a.C.length?`${multi?`<b>${x.i+1}. ${esc(TYPES[x.d.type].title)}${devName(x.d)?" — "+esc(devName(x.d)):""}</b>`:""}<ul class="concl">${x.a.C.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>`:"").join("")||'<p class="note" style="margin:0">Məlumat daxil edildikcə nəticələr burada yaranır.</p>'}</div>
+  ${sigCard()}
   <div class="actions" style="margin:4px 0 12px"><button class="btn pri" id="bPdf">PDF hazırla</button><button class="btn" id="bPrint">Çap et</button><button class="btn" id="bXls">Excel (.xlsx)</button>
    <a class="btn" id="pdfLink" target="_blank" rel="noopener" href="${esc((state.remote[r.id]||{}).pdf||"")}" ${(state.remote[r.id]||{}).pdf?"":"hidden"} style="display:inline-flex;align-items:center;text-decoration:none">Drive-dakı PDF</a>
    ${canDelete(r)?`<button class="btn danger" id="bDel">${state.remote[r.id]?"Hesabatı sil (rəhbər)":"Qaralamanı sil"}</button>`:""}
@@ -1035,6 +1040,9 @@ const AFTER={
  rep(){fitPaper();ensurePhotos(state.cur).then(n=>{if(n&&state.tab==="rep"){$("#ps").innerHTML=paperHTML(state.cur,null,state.plang||"az");fitPaper()}});
   $("#bPdf").onclick=exportPdf;$("#bPrint").onclick=printReport;$("#bXls").onclick=exportXlsx;
   ratingCard();
+  document.querySelectorAll("[data-sign]").forEach(b=>b.onclick=()=>openSignPad(b.dataset.sign));
+  document.querySelectorAll("[data-signdel]").forEach(b=>b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Silinsin?";return}
+    const r=realOf(state.rep);if(r.sig)delete r.sig[b.dataset.signdel];markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
   if($("#bDel")){$("#bDel").onclick=()=>{$("#delConfirm").hidden=false};$("#bDelNo").onclick=()=>{$("#delConfirm").hidden=true};
   $("#bDelYes").onclick=async()=>{const id=state.cur.id;clearTimeout(saveTimer);state.dirty=false;
     try{if(state.cur.sample){state.cur=null;state.rep=null;renderHome();return}await removeReport(id);state.cur=null;state.rep=null;toast("Hesabat silindi");renderHome()}
@@ -1193,8 +1201,8 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
   h+=`
   ${(()=>{const hd=`<h4>${n++}. ${t("Nəticə və tövsiyələr")}</h4>`;return multi?Cs.map((x,ix)=>W((ix===0?hd:"")+`<p style="margin:8px 0 0"><b>${t("Cihaz")} ${x.i+1}: ${t(TYPES[x.d.type].title)}${devName(x.d)?" — "+esc(devName(x.d)):""}</b></p><ul>${x.C.map(c=>`<li>${esc(c)}</li>`).join("")||"<li>—</li>"}</ul>`)).join(""):W(hd+`<ul>${(Cs[0]?Cs[0].C:[]).map(c=>`<li>${esc(c)}</li>`).join("")||"<li>—</li>"}</ul>`)})()}
   ${r.notes?`<p><b>${t("Texniki qeydlər:")}</b> ${esc(ft(r.notes))}</p>`:""}`;
-  h+=`<div class="sigwrap avoid"><h4>${n}. ${t("Təsdiq")}</h4><div class="sig"><div><b>${t("Servis mühəndisi:")}</b><span>${t("Ad, soyad:")} ${esc(r.svc.eng)}</span><span>${t("İmza:")} ______________________</span><span>${t("Tarix:")} ____ . ____ . ________</span></div>
-  <div><b>${t("Müştəri nümayəndəsi:")}</b><span>${t("Ad, soyad:")} ${esc(r.cl.sign||r.cl.person)}</span><span>${t("İmza:")} ______________________</span><span>${t("Tarix:")} ____ . ____ . ________</span></div></div></div>`;
+  const sg=(k,label,name)=>{const S=(r.sig||{})[k];return `<div><b>${t(label)}</b><span>${t("Ad, soyad:")} ${esc((S&&S.name)||name)}</span>${S&&S.img?`<span class="sigimg">${t("İmza:")} <img src="${S.img}" alt=""></span><span>${t("Tarix:")} ${esc(fmtDT(S.at))}</span>`:`<span>${t("İmza:")} ______________________</span><span>${t("Tarix:")} ____ . ____ . ________</span>`}</div>`};
+  h+=`<div class="sigwrap avoid"><h4>${n}. ${t("Təsdiq")}</h4><div class="sig">${sg("eng","Servis mühəndisi:",r.svc.eng)}${sg("cl","Müştəri nümayəndəsi:",r.cl.sign||r.cl.person)}</div></div>`;
   return h+"</div>"}
 
 /* ---------------- Fluke BT521 log import ---------------- */
@@ -1405,7 +1413,7 @@ async function paperToModel(paper){const M={header:{},blocks:[]};
     if(cl.contains("prow2")){out.push({k:"photos",items:[...n.querySelectorAll("figure")].map(f=>{const im=f.querySelector("img");return {src:im?im.getAttribute("src"):"",cap:txt(f.querySelector("figcaption")||f)}})});return}
     if(cl.contains("rchart-legend")){out.push({k:"text",text:txt(n).replace(/\n+/g,"   "),small:true});return}
     if(cl.contains("rchart-box")){const tt=n.querySelector(".rchart-title");if(tt)out.push({k:"text",text:txt(tt).replace(/\n+/g,"   "),bold:true});const sv=n.querySelector("svg");if(sv){try{const png=await svgToPng(sv);out.push({k:"img",...png})}catch(e){}}return}
-    if(cl.contains("sig")){out.push({k:"sig",cols:[...n.children].map(d=>[...d.children].map(txt))});return}
+    if(cl.contains("sig")){out.push({k:"sig",cols:[...n.children].map(d=>[...d.children].map(txt)),imgs:[...n.children].map(d=>{const im=d.querySelector("img");return im?im.getAttribute("src"):""})});return}
     for(const ch of n.children)await conv(ch,out)};
   for(const ch of paper.children){const cl=ch.classList;
     if(cl.contains("ph")){const im=ch.querySelector("img.logo");M.header={logo:im?im.getAttribute("src"):"",co:txt(ch.querySelector(".co")||{innerText:""}),coi:txt(ch.querySelector(".coi")||{innerText:""}),meta:txt(ch.querySelector(".meta")).split("\n").map(s=>s.trim()).filter(Boolean)};continue}
@@ -1456,7 +1464,9 @@ function buildXlsx(ExcelJS,M,opt){
       R.push(r,cap)}
     else if(it.k==="img"){const id=addImg(it.src);const W=colW(1,8)*7-4,H=Math.round(W*it.h/it.w);R.push({h:Math.round(H*0.75)+4,cells:[],imgs:id===null?[]:[{id,col:0,w:W,h:H}]})}
     else if(it.k==="sig"){const L=it.cols[0]||[],Rr=it.cols[1]||[];const n=Math.max(L.length,Rr.length);
-      for(let i=0;i<n;i++)R.push({h:i===0?16:22,cells:[{a:1,b:4,v:L[i]||"",font:F({bold:i===0})},{a:5,b:8,v:Rr[i]||"",font:F({bold:i===0})}]})}
+      const SI=(it.imgs||[]).map(x=>x?addImg(x):null);
+      for(let i=0;i<n;i++){const isSig=i===2&&SI.some(x=>x!==null),row={h:isSig?50:i===0?16:22,cells:[{a:1,b:4,v:L[i]||"",font:F({bold:i===0})},{a:5,b:8,v:Rr[i]||"",font:F({bold:i===0})}],imgs:[]};
+        if(isSig)SI.forEach((id,c)=>{if(id!==null)row.imgs.push({id,col:c?5:1,maxW:150,maxH:58,src:it.imgs[c]})});R.push(row)}}
     return R};
   let r=1;const PAGE=735;let used=0;
   const write=row=>{const R=ws.getRow(r);R.height=row.h;
@@ -1489,7 +1499,7 @@ function buildXlsx(ExcelJS,M,opt){
   return wb}
 const IMG_SIZES={};
 function imgSize(src){return IMG_SIZES[src]||{w:4,h:3}}
-async function primeImgSizes(M){const srcs=[(M.header||{}).logo];M.blocks.forEach(u=>Array.isArray(u)&&u.forEach(it=>{if(it.k==="photos")it.items.forEach(p=>srcs.push(p.src))}));
+async function primeImgSizes(M){const srcs=[(M.header||{}).logo];M.blocks.forEach(u=>Array.isArray(u)&&u.forEach(it=>{if(it.k==="photos")it.items.forEach(p=>srcs.push(p.src));if(it.k==="sig")(it.imgs||[]).forEach(x=>x&&srcs.push(x))}));
   await Promise.all(srcs.filter(Boolean).map(s=>IMG_SIZES[s]?0:new Promise(res=>{const i=new Image();i.onload=()=>{IMG_SIZES[s]={w:i.naturalWidth,h:i.naturalHeight};res()};i.onerror=res;i.src=s})))}
 function loadScriptOnce(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function loadExcelJS(){if(window.ExcelJS)return true;const H="https:"+"/"+"/";
@@ -1813,6 +1823,43 @@ async function taskForm(t,back){state.view="tasks";let W=[];try{W=((await api("w
     const b=$("#tfSave");b.disabled=true;try{const r=await api("task_save",{task});state.tasks=r.tasks||[];LS.set("ups.tasks",state.tasks);toast(t.id?"Tapşırıq yeniləndi":"Tapşırıq verildi — işçinin telefonunda bildiriş çıxacaq");state.tkF="open";renderTasks()}
     catch(e){b.disabled=false;toast(e&&e.message==="unknown_action"?"Serverdə Code.gs yenilənməyib":"Alınmadı (internet?)")}};window.scrollTo(0,0)}
 
+
+/* ================= elektron imza: müştəri və servis mühəndisi ekranda imzalayır ================= */
+const fmtDT=iso=>{const d=new Date(iso||"");if(isNaN(d))return "";const p=x=>String(x).padStart(2,"0");return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes())};
+function sigCard(){const r=realOf(state.rep),S=r.sig||{};
+  const box=(k,label,name)=>{const x=S[k];return `<div class="sigslot"><b>${label}</b>${x&&x.img?`<img src="${x.img}" alt="İmza"><span class="note">${esc(x.name||name||"")} · ${esc(fmtDT(x.at))}</span>
+    <div class="actions"><button class="btn sm" data-sign="${k}">Yenidən imzala</button><button class="btn sm ghost" data-signdel="${k}">Sil</button></div>`
+    :`<div class="sigempty">İmzalanmayıb</div><button class="btn pri" data-sign="${k}">✍ İmzala</button>`}</div>`};
+  return `<div class="card"><h3>İmzalar</h3><p class="note" style="margin:0">“İmzala” basın — ekranda açılan sahədə barmaqla və ya qələmlə imza atın. İmza hesabata (PDF, Excel, çap) avtomatik düşür.</p>
+   <div class="grid2">${box("eng","Servis mühəndisi",r.svc.eng)}${box("cl","Müştəri nümayəndəsi",r.cl.sign||r.cl.person)}</div></div>`}
+function openSignPad(kind){const r=realOf(state.rep);const isCl=kind==="cl";
+  const ov=document.createElement("div");ov.className="sigpad";ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");
+  ov.innerHTML=`<div class="sp-in"><div class="sp-head"><b>${isCl?"Müştəri nümayəndəsinin imzası":"Servis mühəndisinin imzası"}</b><button class="btn sm ghost" id="spX" aria-label="Bağla">✕</button></div>
+   <label class="f"><span>Ad, soyad</span><input id="spName" value="${esc(isCl?(r.cl.sign||r.cl.person||""):(r.svc.eng||state.me.name||""))}"></label>
+   <div class="sp-area"><canvas id="spCv"></canvas><span class="sp-hint" id="spHint">Burada barmaqla və ya qələmlə imza atın</span><span class="sp-line"></span></div>
+   <div class="actions sp-btns"><button class="btn" id="spClear">Təmizlə</button><button class="btn ghost" id="spCancel">Ləğv et</button><button class="btn pri" id="spOk">Təsdiq et</button></div></div>`;
+  document.body.appendChild(ov);document.body.style.overflow="hidden";
+  const cv=ov.querySelector("#spCv"),area=ov.querySelector(".sp-area"),ctx=cv.getContext("2d");let strokes=[],cur=null,dpr=1;
+  const size=()=>{const w=area.clientWidth,h=area.clientHeight;dpr=window.devicePixelRatio||1;cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+"px";cv.style.height=h+"px";redraw()};
+  const seg=(p0,p1,p2)=>{ctx.lineWidth=p1.w*dpr;ctx.beginPath();if(!p2){ctx.moveTo(p0.x*dpr,p0.y*dpr);ctx.lineTo(p1.x*dpr,p1.y*dpr)}else{const m1={x:(p0.x+p1.x)/2,y:(p0.y+p1.y)/2},m2={x:(p1.x+p2.x)/2,y:(p1.y+p2.y)/2};ctx.moveTo(m1.x*dpr,m1.y*dpr);ctx.quadraticCurveTo(p1.x*dpr,p1.y*dpr,m2.x*dpr,m2.y*dpr)}ctx.stroke()};
+  function redraw(){ctx.clearRect(0,0,cv.width,cv.height);ctx.strokeStyle=ctx.fillStyle="#0B1F4D";ctx.lineCap=ctx.lineJoin="round";strokes.forEach(S=>{if(S.length===1){ctx.beginPath();ctx.arc(S[0].x*dpr,S[0].y*dpr,S[0].w*dpr/2,0,7);ctx.fill()}else for(let i=1;i<S.length;i++)seg(i>1?S[i-2]:S[i-1],S[i-1],S[i])})}
+  const pt=e=>{const b=cv.getBoundingClientRect(),pr=e.pointerType==="pen"&&e.pressure>0?e.pressure:0.5;return {x:e.clientX-b.left,y:e.clientY-b.top,w:1.4+pr*2.6}};
+  cv.addEventListener("pointerdown",e=>{e.preventDefault();cv.setPointerCapture(e.pointerId);cur=[pt(e)];strokes.push(cur);ov.querySelector("#spHint").hidden=true;redraw()});
+  cv.addEventListener("pointermove",e=>{if(!cur)return;e.preventDefault();const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];evs.forEach(x=>cur.push(pt(x)));
+    ctx.strokeStyle="#0B1F4D";ctx.lineCap=ctx.lineJoin="round";const n=cur.length;if(n>=3)seg(cur[n-3],cur[n-2],cur[n-1]);else if(n===2)seg(cur[0],cur[1])});
+  const end=()=>{cur=null};cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);cv.addEventListener("pointerleave",end);
+  const close=()=>{window.removeEventListener("resize",size);ov.remove();document.body.style.overflow="";state.sigOpen=null};state.sigOpen=close;
+  ov.querySelector("#spX").onclick=close;ov.querySelector("#spCancel").onclick=close;
+  ov.querySelector("#spClear").onclick=()=>{strokes=[];ov.querySelector("#spHint").hidden=false;redraw()};
+  ov.querySelector("#spOk").onclick=()=>{const P=[].concat(...strokes);if(P.length<8){toast("İmza atılmayıb");return}
+    let x0=Math.min(...P.map(p=>p.x)),y0=Math.min(...P.map(p=>p.y)),x1=Math.max(...P.map(p=>p.x)),y1=Math.max(...P.map(p=>p.y));const pad=6;x0-=pad;y0-=pad;x1+=pad;y1+=pad;
+    const H=140,k=Math.min(H/(y1-y0),520/(x1-x0),2),out=document.createElement("canvas");out.width=Math.max(20,Math.round((x1-x0)*k));out.height=Math.max(20,Math.round((y1-y0)*k));
+    const o=out.getContext("2d");o.drawImage(cv,x0*dpr,y0*dpr,(x1-x0)*dpr,(y1-y0)*dpr,0,0,out.width,out.height);
+    r.sig=r.sig||{};const name=ov.querySelector("#spName").value.trim();r.sig[kind]={img:out.toDataURL("image/png"),name,at:new Date().toISOString()};
+    if(isCl&&name&&!r.cl.sign)r.cl.sign=name;if(!isCl&&name&&!r.svc.eng)r.svc.eng=name;
+    markDirty();close();toast(isCl?"Müştərinin imzası əlavə olundu":"Mühəndisin imzası əlavə olundu");const y=window.scrollY;renderEditor();window.scrollTo(0,y)};
+  window.addEventListener("resize",size);requestAnimationFrame(size)}
+
 /* ---------------- boot ---------------- */
 $("#hBack").onclick=async()=>{await flush();state.cur=null;state.rep=null;renderHome();sync()};
 $("#hSettings").onclick=renderSettings;
@@ -1827,7 +1874,7 @@ $("#hTheme").onclick=()=>{const cur=LS.get("ups_theme")||"auto",i=THEMES.findInd
 window.addEventListener("resize",fitPaper);
 if(IS_APP){try{const AP=(Capacitor.Plugins&&Capacitor.Plugins.App)||Capacitor.registerPlugin("App");
   AP.addListener("resume",()=>scheduleSync(300));
-  AP.addListener("backButton",async()=>{if(["edit","settings","lists","plan","staff","tasks"].includes(state.view)){await flush();state.cur=null;state.rep=null;renderHome();sync()}else AP.exitApp()})}catch(e){}}
+  AP.addListener("backButton",async()=>{if(state.sigOpen){state.sigOpen();return}if(["edit","settings","lists","plan","staff","tasks"].includes(state.view)){await flush();state.cur=null;state.rep=null;renderHome();sync()}else AP.exitApp()})}catch(e){}}
 loadLocal();
 if(!state.me.name)renderWelcome();else{renderHome();sync()}
 </script>
