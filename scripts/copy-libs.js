@@ -6,6 +6,7 @@ fs.mkdirSync(out, { recursive: true });
 const files = [
   ['node_modules/html2pdf.js/dist/html2pdf.bundle.min.js', 'html2pdf.bundle.min.js'],
   ['node_modules/xlsx/dist/xlsx.full.min.js', 'xlsx.full.min.js'],
+  ['node_modules/exceljs/dist/exceljs.min.js', 'exceljs.min.js'],
 ];
 for (const [from, to] of files) {
   fs.copyFileSync(path.join(root, from), path.join(out, to));
