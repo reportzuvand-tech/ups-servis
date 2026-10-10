@@ -878,7 +878,8 @@ function renderSettings(){
    <label class="f"><span>Adınız, soyadınız${state.me.personal?" (şəxsi açara bağlıdır)":""}</span><input id="meName" value="${esc(state.me.name)}"${state.me.personal?" readonly":""}></label>
    ${IS_GAS?"":`<label class="f"><span>Server ünvanı</span><input id="meUrl" inputmode="url" placeholder="script.google.com/macros/s/…/exec" value="${esc(state.me.url)}"></label>`}
    <label class="f"><span>Açar (işçi və ya rəhbər açarı)</span><input id="meKey" autocomplete="off" value="${esc(state.me.key)}"></label>
-   <div class="actions"><button class="btn sm" id="mePing">Bağlantını yoxla</button><span class="note" id="pingMsg"></span></div></div>
+   ${state.me.personal?'<p class="note" style="margin:0">Ad şəxsi açara bağlıdır və rəhbərin işçi siyahısından gəlir (Ayarlar → İşçilər). Başqa adla işləmək üçün <b>Hesabdan çıx</b> basın və öz açarınızla daxil olun.</p>':""}
+   <div class="actions"><button class="btn sm" id="mePing">Bağlantını yoxla</button><button class="btn sm danger" id="meOut">Hesabdan çıx</button><span class="note" id="pingMsg"></span></div></div>
   <p class="note">Rolunuz: <b>${hasServer()?(state.me.role==="admin"?"Rəhbər / servis müdiri":"İşçi"):"—"}</b>${ro?" · aşağıdakı ortaq ayarları yalnız rəhbər dəyişə bilər":""}</p>
   <div class="card"><h3>Servis şirkəti (bütün işçilər üçün ortaq)</h3>${f("co","Şirkət adı")}${f("coaddr","Ünvan")}${f("cotel","Telefon / e-poçt")}${f("notify","Planlı servis xəbərdarlığı üçün e-poçtlar (vergüllə)")}<p class="note" style="margin:0">Planlı servisə ${REMIND_DAYS} gün qalmış server bu ünvanlara e-poçt göndərir; işçilərin telefonunda isə bildiriş çıxır.</p>${f("interval","Servis intervalı, ay",{n:1})}</div>
   <div class="card"><h3>Akkumulyator hədləri (ortaq, yeni hesabatlar üçün)</h3><div class="grid2">${f("warn","R artımı — Diqqət, %",{n:1})}${f("fail","R artımı — Dəyişdirilməli, %",{n:1})}${f("vwarn","Blok V — Diqqət (aşağı)",{n:1})}${f("vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${f("vhigh","Blok V — Diqqət (yuxarı)",{n:1})}${f("life","İstismar müddəti, il",{n:1})}</div>
@@ -893,6 +894,9 @@ function renderSettings(){
   <div class="card" style="margin-top:16px"><h3>Yedək nüsxə</h3><p class="note" style="margin:0">Bu cihazdakı bütün hesabatları bir .json faylına saxlayın və ya həmin fayldan bərpa edin.</p>
   <div class="actions"><button class="btn" id="bkSave">Yedək faylı saxla</button><label class="btn" style="display:inline-flex;align-items:center">Yedəkdən bərpa et<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div></div>`;
   const readMe=()=>{state.me.name=$("#meName").value.trim();if($("#meKey").value.trim()!==state.me.key)state.me.role="";if($("#meUrl"))state.me.url=$("#meUrl").value.trim();state.me.key=$("#meKey").value.trim();LS.set("ups.me",state.me)};
+  $("#meOut").onclick=()=>{const b=$("#meOut");
+    if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=state.pending.size?state.pending.size+" hesabat göndərilməyib — yenə də çıxılsın?":"Çıxılsın? Təsdiq üçün yenidən basın";return}
+    logout()};
   $("#mePing").onclick=async()=>{readMe();$("#pingMsg").textContent="yoxlanılır…";
     try{const pg=await api("ping");applyWho(pg);$("#pingMsg").textContent="Bağlantı işləyir ✓ · "+(pg.personal?"şəxsi açar: "+pg.name+" · ":"")+"rol: "+(pg.role==="admin"?"rəhbər":"işçi");sync()}catch(e){$("#pingMsg").textContent=e.message==="auth"?"API açarı yanlışdır":"Serverə qoşulmaq alınmadı"}};
   $("#sSave").onclick=async()=>{readMe();document.querySelectorAll("[data-s]").forEach(i=>{const k=i.dataset.s;state.settings[k]=["interval","warn","fail","vwarn","vfail","vhigh","life"].includes(k)?(num(i.value)??DEFAULT_SETTINGS[k]):i.value.trim()});
@@ -1668,6 +1672,10 @@ const monthName=ym=>{const m=/^(\d{4})-(\d{2})$/.exec(ym||"");return m?MONTHS_AZ
 
 
 /* ================= işçilər: şəxsi açarlar, rəhbər qiyməti, işçi paneli ================= */
+/* sign out on this device: name, key and role are cleared (reports stay on the device and are sent with the next sign-in) */
+function logout(){clearTimeout(syncTimer);state.me={name:"",url:state.me.url||CFG.serverUrl||"",key:"",role:"",personal:false};LS.set("ups.me",state.me);
+  state.tasks=[];state.taskMe="";state.ratings=null;state.itemRows=null;["ups.tasks","ups.taskMe","ups.seenTasks","ups.taskSig"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
+  state.cur=null;state.rep=null;state.online=null;state.syncErr="";$("#hTitle").innerHTML='UPS Servis Jurnalı<small>Servis hesabatları</small>';$("#hBack").hidden=true;toast("Hesabdan çıxdınız");renderWelcome()}
 function applyWho(o){if(!o)return;if(o.role)state.me.role=o.role;state.me.personal=!!o.personal;if(o.personal&&o.name)state.me.name=o.name;LS.set("ups.me",state.me)}
 /* how complete the report is: per device measurements filled (40%), checklist answered (40%), works answered (20%) */
 function fillOf(r){r=realOf(r);const keep=CUR_TYPE;let sum=0,n=0;
@@ -1696,7 +1704,7 @@ async function ratingCard(){const box=$("#rateBox");if(!box||state.me.role!=="ad
 async function workersCard(){const box=$("#wkBox");if(!box)return;
   const draw=res=>{const W=res.workers||[];
     box.innerHTML=`<h3>İşçilər və şəxsi açarlar</h3><p class="note" style="margin:0">Hər işçiyə (rəhbər də daxil) ayrıca açar verin. İşçi tətbiqdə <b>Ayarlar → Açar</b> sahəsinə öz açarını yazır — adı avtomatik gəlir və hesabatlarda dəqiq görünür. İşdən çıxanı <b>Blokla</b> — digərlərinə toxunulmur.</p>
-    ${W.length?`<div class="maptbl"><table class="ltbl"><tr><th style="text-align:left">Ad</th><th>Rol</th><th style="text-align:left">Açar</th><th style="text-align:left">E-poçt (tapşırıq bildirişi)</th><th>Vəziyyət</th><th></th></tr>${W.map(w=>`<tr${w.active===false?' style="opacity:.55"':""}><td>${esc(w.name)}</td><td class="c">${w.role==="admin"?"Rəhbər":"İşçi"}</td><td><code class="num" style="user-select:all">${esc(w.key)}</code></td><td><input data-wmail="${esc(w.id)}" value="${esc(w.email||"")}" placeholder="istəyə görə" style="min-height:34px;padding:5px 8px;min-width:150px"></td><td class="c">${w.active===false?'<span class="chip bad">bloklanıb</span>':'<span class="chip ok">aktiv</span>'}</td>
+    ${W.length?`<div class="maptbl"><table class="ltbl"><tr><th style="text-align:left">Ad</th><th>Rol</th><th style="text-align:left">Açar</th><th style="text-align:left">E-poçt (tapşırıq bildirişi)</th><th>Vəziyyət</th><th></th></tr>${W.map(w=>`<tr${w.active===false?' style="opacity:.55"':""}><td><input data-wname="${esc(w.id)}" value="${esc(w.name)}" style="min-height:34px;padding:5px 8px;min-width:140px" aria-label="Ad"></td><td class="c">${w.role==="admin"?"Rəhbər":"İşçi"}</td><td><code class="num" style="user-select:all">${esc(w.key)}</code></td><td><input data-wmail="${esc(w.id)}" value="${esc(w.email||"")}" placeholder="istəyə görə" style="min-height:34px;padding:5px 8px;min-width:150px"></td><td class="c">${w.active===false?'<span class="chip bad">bloklanıb</span>':'<span class="chip ok">aktiv</span>'}</td>
       <td class="c" style="white-space:nowrap"><button class="btn sm" data-wcopy="${esc(w.key)}">Kopyala</button> <button class="btn sm" data-wact="${esc(w.id)}">${w.active===false?"Aktiv et":"Blokla"}</button> <button class="btn sm" data-wkey="${esc(w.id)}">Yeni açar</button></td></tr>`).join("")}</table></div>`:""}
     <div class="grid2"><label class="f"><span>Yeni işçinin adı, soyadı</span><input id="wkName" placeholder="məs. Əliyev Murad"></label><label class="f"><span>Rol</span><select id="wkRole"><option value="worker">İşçi</option><option value="admin">Rəhbər</option></select></label></div>
     <div class="actions"><button class="btn" id="wkAdd">+ İşçi əlavə et</button></div>
@@ -1707,6 +1715,7 @@ async function workersCard(){const box=$("#wkBox");if(!box)return;
       try{draw(await api("worker_save",{w:{...w,active:w.active===false}}))}catch(e){toast("Alınmadı")}});
     box.querySelectorAll("[data-wkey]").forEach(b=>b.onclick=async()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Köhnə açar işləməyəcək — təsdiq";return}
       try{draw(await api("worker_newkey",{id:b.dataset.wkey}));toast("Yeni açar yaradıldı — işçiyə verin")}catch(e){toast("Alınmadı")}});
+    box.querySelectorAll("[data-wname]").forEach(i=>i.onchange=async()=>{const w=W2.find(x=>x.id===i.dataset.wname);const n=i.value.trim();if(!w||!n){i.value=w?w.name:"";return}try{draw(await api("worker_save",{w:{...w,name:n}}));toast("Ad dəyişdirildi — işçinin cihazında növbəti sinxronda yenilənəcək")}catch(e){toast("Alınmadı")}});
     box.querySelectorAll("[data-wmail]").forEach(i=>i.onchange=async()=>{const w=W2.find(x=>x.id===i.dataset.wmail);if(!w)return;try{await api("worker_save",{w:{...w,email:i.value.trim()}});toast("E-poçt saxlanıldı")}catch(e){toast("Alınmadı")}});
     $("#wkAdd").onclick=async()=>{const n=$("#wkName").value.trim();if(!n){toast("Adı yazın");return}try{draw(await api("worker_save",{w:{name:n,role:$("#wkRole").value}}));toast("İşçi əlavə olundu — açarını ona verin")}catch(e){toast("Alınmadı")}};
     $("#wkShared").onchange=async e=>{try{draw(await api("shared_off",{off:e.target.checked}));toast(e.target.checked?"Ortaq açar söndürüldü":"Ortaq açar yenidən aktivdir")}catch(err){toast("Alınmadı")}}};
