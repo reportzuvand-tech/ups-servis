@@ -585,8 +585,18 @@ const state={reports:{},remote:{},pending:new Set(),settings:{...DEFAULT_SETTING
   cur:null,plang:"az",tab:"svc",bi:0,dirty:false,saving:null,view:"home",online:null,syncing:false,syncErr:"",lastSync:0,q:""};
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
 const clone=o=>JSON.parse(JSON.stringify(o));
+/* ---- report storage on the device: IndexedDB (no size limit like localStorage, and only the changed report is written) ---- */
+const RDB={db:null,ok:true,
+  open(){if(this.db)return this.db;this.db=new Promise((res,rej)=>{try{const q=indexedDB.open("ups-data",1);q.onupgradeneeded=()=>q.result.createObjectStore("reports");q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}catch(e){rej(e)}});return this.db},
+  async all(){const db=await this.open();return new Promise((res,rej)=>{const out=[];const c=db.transaction("reports").objectStore("reports").openCursor();c.onsuccess=()=>{const k=c.result;if(k){out.push(k.value);k.continue()}else res(out)};c.onerror=()=>rej(c.error)})},
+  async put(list){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("reports","readwrite"),st=tx.objectStore("reports");list.forEach(r=>{if(r&&r.id)st.put(r,r.id)});tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})},
+  async del(ids){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("reports","readwrite"),st=tx.objectStore("reports");ids.forEach(id=>st.delete(id));tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}};
+async function loadReportsDB(){
+  try{const old=LS.get("ups.reports");const L=await RDB.all();L.forEach(r=>{if(r&&r.id)state.reports[r.id]=r});
+    if(Array.isArray(old)&&old.length){old.forEach(r=>{if(r&&r.id&&(!state.reports[r.id]||(state.reports[r.id].updatedAt||0)<(r.updatedAt||0)))state.reports[r.id]=r});await RDB.put(Object.values(state.reports))}
+    if(old)try{localStorage.removeItem("ups.reports")}catch(e){}}
+  catch(e){RDB.ok=false;(LS.get("ups.reports")||[]).forEach(r=>{if(r&&r.id)state.reports[r.id]=r})}}
 function loadLocal(){
-  (LS.get("ups.reports")||[]).forEach(r=>{if(r&&r.id)state.reports[r.id]=r});
   (LS.get("ups.pending")||[]).forEach(id=>state.pending.add(id));
   Object.assign(state.me,LS.get("ups.me")||{});
   if(!state.me.url)state.me.url=CFG.serverUrl||"";
@@ -595,16 +605,21 @@ function loadLocal(){
   (LS.get("ups.remote")||[]).forEach(s=>{if(s&&s.id)state.remote[s.id]=s});
   state.tasks=LS.get("ups.tasks")||[];state.taskMe=LS.get("ups.taskMe")||"";
 }
-function saveLocalReports(){if(!LS.set("ups.reports",Object.values(state.reports))){toast("Telefonun yaddaşı dolub: köhnə hesabatları silin");return false}return true}
+/* save to the device: given reports only (fast), or everything; deleted ids are removed */
+function saveLocalReports(list){if(!RDB.ok){if(!LS.set("ups.reports",Object.values(state.reports))){toast("Cihazın yaddaşı dolub: köhnə hesabatları silin");return false}return true}
+  const L=list?list.filter(Boolean):Object.values(state.reports);RDB.put(L).catch(()=>toast("Cihazın yaddaşına yazmaq alınmadı"));
+  if(!list){RDB.all().then(A=>{const gone=A.map(r=>r.id).filter(id=>!state.reports[id]);if(gone.length)RDB.del(gone)}).catch(()=>{})}return true}
 const savePending=()=>LS.set("ups.pending",[...state.pending]);
 const hasServer=()=>IS_GAS||!!(state.me.url&&state.me.key);
 
+const API_TIMEOUT={ping:12000,list:20000,tasks:15000,get:20000,parts:20000,ratings:15000,save:45000,photo:60000,pdf:90000};
 async function api(action,payload={}){
   const body={key:state.me.key,action,worker:state.me.name,...payload};
   if(IS_GAS)return new Promise((res,rej)=>google.script.run
     .withSuccessHandler(r=>{if(r&&r.ok)res(r);else{const e=new Error(r&&r.error||"server");e.server=true;e.data=r||{};rej(e)}})
     .withFailureHandler(e=>rej(e)).api(body));
-  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),60000);
+  if(navigator.onLine===false&&!/^https?:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(state.me.url||""))throw new Error("offline");
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),API_TIMEOUT[action]||30000);
   try{
     const res=await fetch(state.me.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),signal:ctl.signal,redirect:"follow"});
     let j;try{j=await res.json()}catch(e){throw new Error("bad_response")}
@@ -633,58 +648,66 @@ function applyRemoteToOpen(id){
   const y=window.scrollY;renderEditor();window.scrollTo(0,y);toast("Digər cihazdakı dəyişikliklər yükləndi")}
 document.addEventListener("focusout",()=>{if(pendingRemote&&state.cur)setTimeout(()=>applyRemoteToOpen(state.cur.id),300)});
 
-async function sync(){
+/* sync runs in the background and never blocks work: everything is kept on the device first.
+   The open report is sent when the editor is left (or the app goes to background); failures back off quietly. */
+let syncFail=0;
+function nextSyncDelay(){return Math.min(300000,15000*Math.pow(2,Math.max(0,syncFail-1)))}
+async function sync(opt={}){
   clearTimeout(syncTimer);
   if(state.syncing){scheduleSync(4000);return}
   if(!hasServer()){updateSyncBadge();return}
-  state.syncing=true;updateSyncBadge();
+  state.syncing=true;updateSyncBadge();let changed=false;
   try{
     for(const id of [...state.pending]){
       const r=state.reports[id];
       if(!r){state.pending.delete(id);continue}
-      if(state.cur&&state.cur.id===id&&(state.dirty||state.saving))continue;
+      if(state.cur&&state.cur.id===id&&(state.dirty||state.saving||(state.view==="edit"&&!opt.all&&Date.now()-(state.lastEdit||0)<60000)))continue;
       try{await uploadPhotos(r);const res=await api("save",{report:r,summary:summaryOf(r),blocks:blocksOf(r),items:itemsOf(r)});
-        state.pending.delete(id);state.remote[id]={...summaryOf(r),...(res.summary||{})}}
+        state.pending.delete(id);state.remote[id]={...summaryOf(r),...(res.summary||{})};savePending();changed=true}
       catch(e){
         if(e.server&&e.data&&e.data.error==="conflict"&&e.data.report){
-          state.reports[id]=e.data.report;state.pending.delete(id);applyRemoteToOpen(id);
+          state.reports[id]=e.data.report;state.pending.delete(id);saveLocalReports([e.data.report]);applyRemoteToOpen(id);
           toast("Bu hesabat başqa cihazda daha yeni dəyişdirilib — yeni versiya yükləndi")}
-        else if(e.server&&e.data&&e.data.error==="deleted"){delete state.reports[id];state.pending.delete(id);toast("Bir hesabat rəhbər tərəfindən silinib — bu cihazdan da çıxarıldı")}
+        else if(e.server&&e.data&&e.data.error==="deleted"){delete state.reports[id];state.pending.delete(id);RDB.del([id]).catch(()=>{});toast("Bir hesabat rəhbər tərəfindən silinib — bu cihazdan da çıxarıldı")}
         else if(e.server&&e.data&&e.data.error==="auth")throw e;
         else if(e.server){state.syncErr="Server xətası: "+e.message}
         else throw e}}
-    savePending();saveLocalReports();
+    savePending();
     const L=await api("list");const prevRemote=new Set(Object.keys(state.remote)),gone=new Set(L.deleted||[]);
+    const sigBefore=Object.values(state.remote).map(x=>x.id+":"+x.updatedAt).sort().join(",");
     state.remote={};(L.items||[]).forEach(s=>{s.cls=clsOfOverall(s.overall);state.remote[s.id]=s});
+    if(Object.values(state.remote).map(x=>x.id+":"+x.updatedAt).sort().join(",")!==sigBefore)changed=true;
     LS.set("ups.remote",Object.values(state.remote));
     /* reports deleted on the server (by the manager, from any device) disappear from this device too */
-    for(const id of Object.keys(state.reports)){if(state.pending.has(id)||state.remote[id])continue;if(state.cur&&state.cur.id===id)continue;
-      if(gone.has(id)||prevRemote.has(id))delete state.reports[id]}
+    const drop=[];for(const id of Object.keys(state.reports)){if(state.pending.has(id)||state.remote[id])continue;if(state.cur&&state.cur.id===id)continue;
+      if(gone.has(id)||prevRemote.has(id)){delete state.reports[id];drop.push(id)}}
+    if(drop.length){RDB.del(drop).catch(()=>{});changed=true}
     if(L.role)applyWho(L);
-    try{const TK=await api("tasks");state.tasks=TK.tasks||[];state.taskMe=TK.me||"";LS.set("ups.tasks",state.tasks);LS.set("ups.taskMe",state.taskMe);notifyTasks()}catch(e){}
     if(L.settings){state.settings={...DEFAULT_SETTINGS,...L.settings};LS.set("ups.settings",state.settings)}
-    for(const id in state.remote){const loc=state.reports[id];
-      if(loc&&!state.pending.has(id)&&(state.remote[id].updatedAt||0)>(loc.updatedAt||0)){
-        if(state.cur&&state.cur.id===id&&state.dirty)continue;
-        try{const g=await api("get",{id});state.reports[id]=g.report;applyRemoteToOpen(id)}catch(e){}}}
-    saveLocalReports();
-    state.online=true;state.lastSync=Date.now();state.syncErr="";scheduleReminders();
+    try{const TK=await api("tasks");const sig=JSON.stringify(state.tasks);state.tasks=TK.tasks||[];state.taskMe=TK.me||"";if(JSON.stringify(state.tasks)!==sig)changed=true;LS.set("ups.tasks",state.tasks);LS.set("ups.taskMe",state.taskMe);notifyTasks()}catch(e){}
+    /* keep a full copy of every report on the device, so that opening, lists and PDFs never need the internet */
+    const need=Object.keys(state.remote).filter(id=>{const loc=state.reports[id];return !state.pending.has(id)&&(!loc||(state.remote[id].updatedAt||0)>(loc.updatedAt||0))&&!(state.cur&&state.cur.id===id&&state.dirty)});
+    const got=[];for(const id of need.slice(0,opt.all?400:25)){try{const g=await api("get",{id});if(g.report){state.reports[id]=g.report;got.push(g.report);applyRemoteToOpen(id)}}catch(e){if(!e.server)break}}
+    if(got.length){saveLocalReports(got);changed=true}
+    state.online=true;state.lastSync=Date.now();state.syncErr="";syncFail=0;scheduleReminders();
+    if(need.length>got.length&&got.length)scheduleSync(3000);
   }catch(e){
-    state.online=false;
-    state.syncErr=e&&e.message==="auth"?"API açarı yanlışdır — Ayarlarda yoxlayın":e&&e.message==="bad_response"?"Server ünvanı yanlışdır — Ayarlarda yoxlayın":"İnternet yoxdur və ya server cavab vermir";
+    state.online=false;syncFail++;
+    state.syncErr=e&&e.message==="auth"?"API açarı yanlışdır — Ayarlarda yoxlayın":e&&e.message==="bad_response"?"Server ünvanı yanlışdır — Ayarlarda yoxlayın":"";
   }finally{
     state.syncing=false;updateSyncBadge();
-    if(state.pending.size)scheduleSync(30000);
-    if(state.view==="home"&&document.activeElement?.id!=="q")renderHome();
+    if(state.online===false)scheduleSync(nextSyncDelay());else if(state.pending.size)scheduleSync(30000);
+    if(changed&&state.view==="home"&&document.activeElement?.id!=="q"){const y=window.scrollY;renderHome();window.scrollTo(0,y)}
   }}
-window.addEventListener("online",()=>scheduleSync(500));
-setInterval(()=>{if(document.visibilityState==="visible")sync()},90000);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")scheduleSync(800)});
+window.addEventListener("online",()=>{syncFail=0;scheduleSync(500)});
+window.addEventListener("offline",()=>{state.online=false;updateSyncBadge()});
+setInterval(()=>{if(document.visibilityState==="visible"&&!state.syncing&&state.online!==false)sync()},120000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")scheduleSync(800);else{flush().then(()=>sync({all:false}))}});
 
 function updateSyncBadge(){const el=$("#syncState");if(!el)return;const n=state.pending.size;let t,c="";
   if(!hasServer()){t="Server qoşulmayıb";c="warn"}
   else if(state.syncing){t="sinxronlaşır…"}
-  else if(state.online===false){t=(n?n+" gözləyir · ":"")+"oflayn";c="warn"}
+  else if(state.online===false){t=(n?n+" gözləyir · ":"")+"oflayn — işləməyə davam edin";c="warn"}
   else if(n){t=n+" göndərilməyib";c="warn"}
   else if(state.online){t="sinxron ✓";c="ok"}
   else t="";
@@ -693,23 +716,23 @@ function updateSyncBadge(){const el=$("#syncState");if(!el)return;const n=state.
 async function persist(r){r=realOf(r);
   r.updatedAt=Date.now();r.by=state.me.name||r.by||"";
   state.reports[r.id]=r;
-  if(!saveLocalReports())throw new Error("local");
-  if(!r.sample){state.pending.add(r.id);savePending();scheduleSync()}updateSyncBadge()}
+  if(!saveLocalReports([r]))throw new Error("local");
+  if(!r.sample){state.pending.add(r.id);savePending()}updateSyncBadge()}
 async function removeReport(id){
   if(state.remote[id]){if(!hasServer())throw new Error("offline");await api("delete",{id});delete state.remote[id];LS.set("ups.remote",Object.values(state.remote))}
-  delete state.reports[id];state.pending.delete(id);savePending();saveLocalReports()}
+  delete state.reports[id];state.pending.delete(id);savePending();RDB.del([id]).catch(()=>{});if(!RDB.ok)saveLocalReports()}
 async function saveSettings(){
   LS.set("ups.settings",state.settings);LS.set("ups.me",state.me);
   if(hasServer()&&state.me.role==="admin"){const{co,coaddr,cotel,notify,interval,warn,fail,vwarn,vfail,vhigh,life}=state.settings;await api("settings",{settings:{co,coaddr,cotel,notify,interval,warn,fail,vwarn,vfail,vhigh,life}})}}
+/* the device copy is used at once (no waiting for the network); a newer server copy is fetched in the background */
 async function getFull(id){
   const loc=state.reports[id],rem=state.remote[id];
-  if(loc&&(state.pending.has(id)||!rem||(rem.updatedAt||0)<=(loc.updatedAt||0)))return loc;
-  if(!hasServer()){if(loc)return loc;throw new Error("offline")}
-  try{const g=await api("get",{id});state.reports[id]=g.report;saveLocalReports();return g.report}
-  catch(e){if(loc)return loc;throw e}}
+  if(loc){if(rem&&!state.pending.has(id)&&(rem.updatedAt||0)>(loc.updatedAt||0)&&hasServer())scheduleSync(500);return loc}
+  if(!hasServer())throw new Error("offline");
+  const g=await api("get",{id});state.reports[id]=g.report;saveLocalReports([g.report]);return g.report}
 
 let saveTimer=null;
-function markDirty(){state.dirty=true;$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
+function markDirty(){state.dirty=true;state.lastEdit=Date.now();$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
 async function flush(){
   clearTimeout(saveTimer);if(!state.cur||!state.dirty)return;
   if(state.saving){await state.saving;return flush()}
@@ -724,7 +747,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 function renderWelcome(){
   state.view="welcome";$("#tabs").hidden=true;$("#hBack").hidden=true;$("#hSettings").hidden=true;
   $("#hTitle").innerHTML='UPS Servis Jurnalı<small>İlk quraşdırma</small>';
-  const needServer=!IS_GAS&&!(CFG.serverUrl&&CFG.apiKey),needKey=IS_GAS||needServer;
+  const needServer=!IS_GAS&&!CFG.serverUrl,needKey=IS_GAS||!CFG.apiKey;
   $("#main").innerHTML=`<h2 class="sec">Xoş gəlmisiniz</h2><p class="hint">Adınız hesabatlarda “Servis mühəndisi” kimi yazılır və hər dəyişikliyin kim tərəfindən edildiyi serverdə qeyd olunur.</p>
   <div class="card"><label class="f"><span>Adınız, soyadınız</span><input id="wName" autocomplete="name" value="${esc(state.me.name)}"></label>
   ${needServer?`<label class="f"><span>Server ünvanı (rəhbərinizdən alın)</span><input id="wUrl" inputmode="url" placeholder="script.google.com/macros/s/…/exec" value="${esc(state.me.url)}"></label>`:""}
@@ -777,6 +800,7 @@ function renderHome(){
   let h=`<h2 class="sec">Servis hesabatları</h2><p class="hint">Bütün işçilərin hesabatları mərkəzi serverdə toplanır. İnternet olmayanda hesabat telefonda saxlanılır və bağlantı bərpa olunanda göndərilir.</p>
   <div class="actions" style="margin-bottom:14px"><button class="btn pri" id="bNew">+ Yeni servis</button><button class="btn" id="bTasks">Tapşırıqlar${myOpenTasks().length?` <span class="chip warn">${myOpenTasks().length}</span>`:""}</button><button class="btn" id="bPlan">Servis cədvəli</button><button class="btn" id="bLists">Detal siyahıları</button>${state.me.role==="admin"?'<button class="btn" id="bStaff">İşçi paneli</button>':""}${hasServer()?'<button class="btn" id="bSync">Yenilə</button>':""}${all.length?'<input id="q" type="search" placeholder="Axtar: müştəri, model, seriya №, işçi" style="flex:1;min-width:180px" value="'+esc(state.q||"")+'">':""}</div>`;
   if(state.syncErr)h+=`<div class="banner" style="margin:0 0 12px">${esc(state.syncErr)}</div>`;
+  else if(state.online===false&&hasServer())h+=`<p class="note" style="margin:0 0 10px">Server əlçatan deyil — işləməyə davam edin: hər şey cihazda saxlanılır və bağlantı bərpa olunanda avtomatik göndərilir${state.pending.size?" ("+state.pending.size+" hesabat gözləyir)":""}.</p>`;
   if(!hasServer())h+=`<div class="banner" style="margin:0 0 12px">Server qoşulmayıb: hesabatlar yalnız bu cihazda qalır. Ayarlarda server ünvanını və API açarını yazın.</div>`;
   h+=tasksBanner();
   h+=upcomingBanner();
@@ -796,7 +820,7 @@ function renderHome(){
     catch(err){b.disabled=false;b.textContent="🗑";b.dataset.confirm="";b.classList.remove("armed");toast(err&&err.message==="forbidden"?"Silmək üçün rəhbər açarı lazımdır":"Silmək alınmadı: internet bağlantısını yoxlayın")}});
   document.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{b.disabled=true;
     try{const r=await getFull(b.dataset.open);const n=normalize(clone(r));state.reports[n.id]=n;openReport(n)}
-    catch(e){b.disabled=false;toast("Hesabatı açmaq üçün internet lazımdır")}});
+    catch(e){b.disabled=false;toast("Bu hesabat hələ cihaza yüklənməyib — bağlantı olanda avtomatik yüklənəcək")}});
   window.scrollTo(0,0)}
 /* next service from an earlier report: customer + every device (passport data, battery set-up, measurement limits) are copied;
    measurements, checklist, works, photos, parts and notes start empty */
@@ -1060,7 +1084,7 @@ async function showHistory(){const box=$("#histBox"),id=state.cur.id;box.innerHT
     box.querySelectorAll("[data-rev]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="bərpa olunur…";
       try{await flush();const res=await api("restore",{id,rev:b.dataset.rev});const rep=normalize(res.report);
         await api("save",{report:rep,summary:summaryOf(rep),blocks:blocksOf(rep),items:itemsOf(rep),force:true});
-        state.reports[id]=rep;state.pending.delete(id);savePending();saveLocalReports();state.rep=rep;setActive(0);toast("Versiya bərpa edildi");sync();renderEditor()}
+        state.reports[id]=rep;state.pending.delete(id);savePending();saveLocalReports([rep]);state.rep=rep;setActive(0);toast("Versiya bərpa edildi");sync();renderEditor()}
       catch(e){b.disabled=false;b.textContent="Bərpa et";toast("Bərpa etmək alınmadı")}})}
   catch(e){box.innerHTML="";toast(e&&e.message==="forbidden"?"Bu bölmə yalnız rəhbər üçündür":"Versiyaları yükləmək alınmadı")}}
 function fitPaper(){const pw=$("#pw"),ps=$("#ps");if(!pw||!ps)return;const k=Math.min(1,pw.clientWidth/737);ps.style.transform=`scale(${k})`;pw.style.height=(ps.firstElementChild.offsetHeight*k)+"px"}
@@ -1291,11 +1315,11 @@ function blobToB64(blob){return new Promise((res,rej)=>{const r=new FileReader()
    Windows: a folder chosen once in Ayarlar; inside it every customer gets its own sub-folder (File System Access API).
    Phone: Documents/UPS Servis Hesabatları/<müştəri>/ and the share menu. Otherwise: the browser's download folder. */
 const safeName=x=>String(x||"").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g," ").trim().replace(/[. ]+$/,"").slice(0,80)||"Adsız müştəri";
-function idb(mode,fn){return new Promise((res,rej)=>{const o=indexedDB.open("ups-folder",1);o.onupgradeneeded=()=>o.result.createObjectStore("h");
+function fidb(mode,fn){return new Promise((res,rej)=>{const o=indexedDB.open("ups-folder",1);o.onupgradeneeded=()=>o.result.createObjectStore("h");
   o.onsuccess=()=>{const tx=o.result.transaction("h",mode),q=fn(tx.objectStore("h"));tx.oncomplete=()=>res(q&&q.result);tx.onerror=()=>rej(tx.error)};o.onerror=()=>rej(o.error)})}
 const canDir=()=>!IS_APP&&typeof window.showDirectoryPicker==="function"&&!state.noDir;
-async function getRoot(){try{return await idb("readonly",st=>st.get("root"))||null}catch(e){return null}}
-async function pickRoot(){const h=await showDirectoryPicker({id:"ups-servis",mode:"readwrite"});await idb("readwrite",st=>st.put(h,"root"));return h}
+async function getRoot(){try{return await fidb("readonly",st=>st.get("root"))||null}catch(e){return null}}
+async function pickRoot(){const h=await showDirectoryPicker({id:"ups-servis",mode:"readwrite"});await fidb("readwrite",st=>st.put(h,"root"));return h}
 /* called at the very start of a button click (the browser allows the folder dialog / permission question only then) */
 async function prepareFolder(){if(!canDir())return null;
   try{let root=await getRoot();if(!root){toast("Hesabatların saxlanacağı qovluğu seçin (bir dəfə)");root=await pickRoot()}
@@ -1503,7 +1527,7 @@ async function primeImgSizes(M){const srcs=[(M.header||{}).logo];M.blocks.forEac
   await Promise.all(srcs.filter(Boolean).map(s=>IMG_SIZES[s]?0:new Promise(res=>{const i=new Image();i.onload=()=>{IMG_SIZES[s]={w:i.naturalWidth,h:i.naturalHeight};res()};i.onerror=res;i.src=s})))}
 function loadScriptOnce(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 async function loadExcelJS(){if(window.ExcelJS)return true;const H="https:"+"/"+"/";
-  for(const u of [H+"cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js",H+"cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"]){try{await loadScriptOnce(u);if(window.ExcelJS)return true}catch(e){}}
+  for(const u of [...(IS_GAS?[]:["lib/exceljs.min.js"]),H+"cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js",H+"cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"]){try{await loadScriptOnce(u);if(window.ExcelJS)return true}catch(e){}}
   return false}
 
 async function exportXlsx(){const root=await prepareFolder();await flush();const btn=$("#bXls"),L=state.plang||"az";btn.disabled=true;btn.textContent="Excel hazırlanır…";
@@ -1535,17 +1559,11 @@ function itemsOf(r){r=realOf(r);const keep=CUR_TYPE,out=[];
     (d.parts||[]).filter(x=>x.name).forEach(x=>out.push([dl,sn,"Dəyişdirilib",x.name,x.code||"",x.qty||"",x.note||""]))});
   useType(keep);return out}
 /* all items: server sheet "Detallar" + this device's unsent reports; older reports are indexed once in the background */
-async function loadItems(onProg){let rows=[],have=new Set(),srvOk=false;
-  if(hasServer()){try{const res=await api("parts");rows=res.rows||[];srvOk=true;rows.forEach(x=>have.add(String(x[0])))}catch(e){if(!e.server)throw e}}
-  const loc=Object.values(state.reports).filter(r=>r&&!r.sample&&(state.pending.has(r.id)||!state.remote[r.id]));const locIds=new Set(loc.map(r=>r.id));
-  rows=rows.filter(x=>!locIds.has(String(x[0])));
-  loc.forEach(r0=>{const r=normalize(clone(r0)),s=summaryOf(r);itemsOf(r).forEach(it=>rows.push([r.id,s.repno||"",s.date||"",s.client||"",s.obj||"",...it]))});
-  if(hasServer()){const done=new Set(LS.get("ups.itemsDone")||[]);const miss=Object.keys(state.remote).filter(id=>!have.has(id)&&!locIds.has(id)&&!(srvOk&&done.has(id)));
-    let k=0;for(const id of miss){if(onProg)onProg(++k,miss.length);
-      try{const g=await api("get",{id});const r=normalize(clone(g.report)),s=summaryOf(r),its=itemsOf(r);
-        its.forEach(it=>rows.push([id,s.repno||"",s.date||"",s.client||"",s.obj||"",...it]));
-        if(srvOk){try{await api("items",{id,summary:s,items:its});done.add(id)}catch(e){}}}catch(e){}}
-    if(srvOk)LS.set("ups.itemsDone",[...done])}
+/* all items are computed from the reports kept on this device (works offline); reports not yet copied to the device come from the server sheet */
+async function loadItems(onProg){const rows=[],locIds=new Set();
+  Object.values(state.reports).forEach(r0=>{if(!r0||r0.sample)return;try{const r=normalize(clone(r0)),s=summaryOf(r);locIds.add(r.id);itemsOf(r).forEach(it=>rows.push([r.id,s.repno||"",s.date||"",s.client||"",s.obj||"",...it]))}catch(e){}});
+  const miss=Object.keys(state.remote).filter(id=>!locIds.has(id));
+  if(miss.length&&hasServer()&&state.online!==false){try{const res=await api("parts");(res.rows||[]).forEach(x=>{if(!locIds.has(String(x[0])))rows.push(x)})}catch(e){}}
   return rows.map(x=>({id:String(x[0]),repno:x[1],date:String(x[2]||"").slice(0,10),client:x[3]||"Adsız müştəri",obj:x[4],dev:x[5],sn:x[6],kind:x[7],name:x[8],code:x[9],qty:x[10],note:x[11]}))}
 const yearOf=d=>String(d||"").slice(0,4);
 function renderLists(){state.view="lists";$("#tabs").hidden=true;$("#hBack").hidden=false;$("#hSettings").hidden=true;
@@ -1860,6 +1878,11 @@ function openSignPad(kind){const r=realOf(state.rep);const isCl=kind==="cl";
     markDirty();close();toast(isCl?"Müştərinin imzası əlavə olundu":"Mühəndisin imzası əlavə olundu");const y=window.scrollY;renderEditor();window.scrollTo(0,y)};
   window.addEventListener("resize",size);requestAnimationFrame(size)}
 
+/* daily automatic backup of all reports into the chosen folder (Windows, when the folder permission is already given) */
+async function autoBackup(){try{if(!canDir()||LS.get("ups.lastBackup")===todayISO())return;const root=await getRoot();if(!root)return;
+  if(await root.queryPermission({mode:"readwrite"})!=="granted")return;const d=await root.getDirectoryHandle("_Yedek",{create:true});
+  const fh=await d.getFileHandle("UPS-servis-yedek-"+todayISO()+".json",{create:true}),w=await fh.createWritable();
+  await w.write(new Blob([JSON.stringify({app:"ups-servis",v:2,reports:Object.values(state.reports)})],{type:"application/json"}));await w.close();LS.set("ups.lastBackup",todayISO())}catch(e){}}
 /* ---------------- boot ---------------- */
 $("#hBack").onclick=async()=>{await flush();state.cur=null;state.rep=null;renderHome();sync()};
 $("#hSettings").onclick=renderSettings;
@@ -1876,7 +1899,7 @@ if(IS_APP){try{const AP=(Capacitor.Plugins&&Capacitor.Plugins.App)||Capacitor.re
   AP.addListener("resume",()=>scheduleSync(300));
   AP.addListener("backButton",async()=>{if(state.sigOpen){state.sigOpen();return}if(["edit","settings","lists","plan","staff","tasks"].includes(state.view)){await flush();state.cur=null;state.rep=null;renderHome();sync()}else AP.exitApp()})}catch(e){}}
 loadLocal();
-if(!state.me.name)renderWelcome();else{renderHome();sync()}
+(async()=>{await loadReportsDB();if(!state.me.name)renderWelcome();else{renderHome();sync();autoBackup()}})();
 </script>
 </body>
 </html>
