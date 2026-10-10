@@ -3,6 +3,10 @@
   "appName": "UPS Servis",
   "webDir": "www",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
   }
 }
