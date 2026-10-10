@@ -24,10 +24,13 @@ jobs:
       - name: Windows paketini yığ (proqram + lokal server)
         run: |
           P=pkg/UPS-Servis-Windows
-          mkdir -p $P/app
+          mkdir -p $P/app $P/server
           cp -r www/* $P/app/
-          cp -r server $P/server
-          cp windows/* $P/
+          if [ -f server/server.js ]; then cp server/server.js $P/server/; else cp server.js $P/server/; fi
+          for f in Qurasdir.bat Server-baslat.bat Server-avtostart.bat zuvand.ico; do
+            if [ -f windows/$f ]; then cp windows/$f $P/; else cp $f $P/; fi
+          done
+          ls -R pkg
 
       - uses: actions/upload-artifact@v4
         with:
