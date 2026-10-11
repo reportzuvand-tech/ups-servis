@@ -320,6 +320,12 @@ function devProxy(r,i){const d=r.devices[i];return new Proxy(r,{
   get(t,k){if(k==="__real")return t;if(k==="__dev")return d;if(k==="__di")return i;if(typeof k==="string"&&k in DEVKEYS)return d[DEVKEYS[k]];return t[k]},
   set(t,k,v){if(typeof k==="string"&&k in DEVKEYS)d[DEVKEYS[k]]=v;else t[k]=v;return true}})}
 const realOf=r=>(r&&r.__real)||r;
+/* ---- rəhbər təsdiqi: işçi işi bitirir → rəhbər / servis müdiri yoxlayır, lazım olsa düzəldir, təsdiqləyir.
+   Təsdiqlənmiş hesabat Satış və Anbar proqramına gedir (satış + anbardan çıxacaq hissələr); işçi onu artıq dəyişə bilmir. */
+const APPR_SINCE="2026-10-01";
+const apprOf=r=>{r=realOf(r);return r&&r.appr&&r.appr.at?r.appr:null};
+const lockedRep=r=>!!r&&!realOf(r).sample&&!!apprOf(r)&&state.me.role!=="admin";
+const needsAppr=s=>!s.appr&&(s.remote||s.pending)&&(!!s.sub||(s.date||"")>=APPR_SINCE);
 function devName(d){const i=d.info||{};return [i.brand,i.model].filter(Boolean).join(" ")}
 
 const TABS=[["svc","Servis"],["ups","UPS"],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],["bat","Akkum."],["blk","Bloklar"],["rep","Hesabat"]];
@@ -629,7 +635,7 @@ async function api(action,payload={}){
 
 function summaryOf(r){r=realOf(r);const A=analyzeReport(r),d0=r.devices[0]||{info:{}},i0=d0.info||{},n=r.devices.length;
   return {id:r.id,repno:r.svc.repno,date:r.svc.date,client:r.cl.name,obj:r.cl.obj,brand:i0.brand||"",model:(i0.model||"")+(n>1?" (+"+(n-1)+" cihaz)":""),sn:i0.sn||"",kva:i0.kva||"",
-  types:r.devices.map(d=>d.type).join(","),type:r.svc.type||"",devn:n,fill:fillOf(r),photos:r.devices.reduce((x,d)=>x+((d.photos||[]).length),0),creator:r.creator||"",eng:r.svc.eng,overall:A.overall,cls:A.cls,tested:A.tested,rep:A.rep,att:A.att,next:A.next,updatedAt:r.updatedAt,by:r.by||""}}
+  types:r.devices.map(d=>d.type).join(","),type:r.svc.type||"",devn:n,fill:fillOf(r),photos:r.devices.reduce((x,d)=>x+((d.photos||[]).length),0),creator:r.creator||"",eng:r.svc.eng,overall:A.overall,cls:A.cls,tested:A.tested,rep:A.rep,att:A.att,next:A.next,updatedAt:r.updatedAt,by:r.by||"",appr:r.appr&&r.appr.at?(r.appr.by||"✓"):"",sub:r.sub&&r.sub.at?(r.sub.by||"✓"):""}}
 function blocksOf(r){r=realOf(r);const keep=CUR_TYPE,out=[],ups=r.devices.map((d,i)=>i).filter(i=>TYPES[r.devices[i].type].hasBat);
   ups.forEach(i=>{useType(r.devices[i].type);const V=devProxy(r,i),a=analyze(V),p=Math.floor(num(V.bat.per))||1,pre=ups.length>1?"C"+(i+1)+"-":"";
     a.blocks.filter(b=>b.st).forEach(b=>out.push([pre+b.lab,b.s,b.i%p+1,b.v,b.r,b.t,b.st]))});
@@ -644,7 +650,7 @@ function applyRemoteToOpen(id){
   if(!state.cur||state.cur.id!==id||state.view!=="edit")return;
   if(state.dirty||state.saving)return;
   if(editorBusy()){pendingRemote=true;return}
-  pendingRemote=false;const nr=normalize(clone(state.reports[id]));state.reports[id]=nr;const di=state.di;state.rep=nr;setActive(Math.min(di,nr.devices.length-1));
+  pendingRemote=false;const nr=normalize(clone(state.reports[id]));state.reports[id]=nr;const di=state.di;state.rep=lockedRep(nr)?normalize(clone(nr)):nr;setActive(Math.min(di,nr.devices.length-1));
   const y=window.scrollY;renderEditor();window.scrollTo(0,y);toast("Digər cihazdakı dəyişikliklər yükləndi")}
 document.addEventListener("focusout",()=>{if(pendingRemote&&state.cur)setTimeout(()=>applyRemoteToOpen(state.cur.id),300)});
 
@@ -732,7 +738,7 @@ async function getFull(id){
   const g=await api("get",{id});state.reports[id]=g.report;saveLocalReports([g.report]);return g.report}
 
 let saveTimer=null;
-function markDirty(){state.dirty=true;state.lastEdit=Date.now();$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
+function markDirty(){if(state.rep&&lockedRep(state.rep))return;state.dirty=true;state.lastEdit=Date.now();$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
 async function flush(){
   clearTimeout(saveTimer);if(!state.cur||!state.dirty)return;
   if(state.saving){await state.saving;return flush()}
@@ -795,7 +801,7 @@ function renderHome(){
   $("#hTitle").innerHTML='UPS Servis Jurnalı<small>'+esc(state.me.name?state.me.name:"Servis hesabatları")+'</small>';
   updateSyncBadge();
   const q=(state.q||"").toLowerCase(),all=listItems();
-  const items=all.filter(s=>!q||[s.repno,s.client,s.obj,s.model,s.sn,s.eng].join(" ").toLowerCase().includes(q))
+  const items=all.filter(s=>(!q||[s.repno,s.client,s.obj,s.model,s.sn,s.eng].join(" ").toLowerCase().includes(q))&&(!(state.af&&state.me.role==="admin")||needsAppr(s)))
     .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updatedAt||0)-(a.updatedAt||0));
   let h=`<h2 class="sec">Servis hesabatları</h2><p class="hint">Bütün işçilərin hesabatları mərkəzi serverdə toplanır. İnternet olmayanda hesabat telefonda saxlanılır və bağlantı bərpa olunanda göndərilir.</p>
   <div class="actions" style="margin-bottom:14px"><button class="btn pri" id="bNew">+ Yeni servis</button><button class="btn" id="bTasks">Tapşırıqlar${myOpenTasks().length?` <span class="chip warn">${myOpenTasks().length}</span>`:""}</button><button class="btn" id="bPlan">Servis cədvəli</button><button class="btn" id="bLists">Detal siyahıları</button>${state.me.role==="admin"?'<button class="btn" id="bStaff">İşçi paneli</button>':""}${hasServer()?'<button class="btn" id="bSync">Yenilə</button>':""}${all.length?'<input id="q" type="search" placeholder="Axtar: müştəri, model, seriya №, işçi" style="flex:1;min-width:180px" value="'+esc(state.q||"")+'">':""}</div>`;
@@ -803,15 +809,17 @@ function renderHome(){
   else if(state.online===false&&hasServer())h+=`<p class="note" style="margin:0 0 10px">Server əlçatan deyil — işləməyə davam edin: hər şey cihazda saxlanılır və bağlantı bərpa olunanda avtomatik göndərilir${state.pending.size?" ("+state.pending.size+" hesabat gözləyir)":""}.</p>`;
   if(!hasServer())h+=`<div class="banner" style="margin:0 0 12px">Server qoşulmayıb: hesabatlar yalnız bu cihazda qalır. Ayarlarda server ünvanını və API açarını yazın.</div>`;
   h+=tasksBanner();
+  h+=apprBanner(all);
   h+=upcomingBanner();
   if(hasServer()&&state.me.role&&state.me.role!=="admin"&&all.some(x=>x.remote))h+=`<p class="note" style="margin:0 0 10px">Serverdəki hesabatları yalnız rəhbər silə bilər (🗑 düyməsi rəhbər açarı ilə görünür: Ayarlar → Açar).</p>`;
   if(!all.length)h+=`<div class="empty"><h3>Hələ hesabat yoxdur</h3><p class="note" style="margin:0">“Yeni servis” ilə ilk hesabatı başladın. Tətbiqi tanımaq üçün doldurulmuş nümunə də aça bilərsiniz (bu nümunə serverə göndərilməz).</p><button class="btn" id="bSample">Nümunə hesabatı aç</button></div>`;
   else h+=`<div class="rlist">`+items.map(s=>`<div class="rwrap${canDelItem(s)?" hasdel":""}"><button class="rcard" data-open="${esc(s.id)}"><span class="t">${esc(s.client||"Adsız müştəri")}</span><span class="chip ${s.cls||""}">${s.cls==="ok"?"Qənaətbəxş":s.cls==="warn"?"Diqqət":s.cls==="bad"?"Təcili":""}</span>
     <span class="m"><span class="no">${esc(s.repno||"№ yoxdur")}</span><span>${esc(fmtDate(s.date))}</span><span>${esc([s.brand,s.model].filter(Boolean).join(" "))}${s.kva?" · "+esc(s.kva)+" kVA":""}</span>${s.eng?`<span>${esc(s.eng)}</span>`:""}
-    ${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}</span></button>${canDelItem(s)?`<button class="rdel" data-del="${esc(s.id)}" title="Hesabatı sil" aria-label="Hesabatı sil">🗑</button>`:""}</div>`).join("")+`</div>`;
+    ${s.appr?'<span class="chip ok">təsdiqlənib</span>':s.sub?'<span class="chip warn">təsdiq gözləyir</span>':state.me.role==="admin"&&needsAppr(s)?'<span class="chip">təsdiqlənməyib</span>':""}${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}</span></button>${canDelItem(s)?`<button class="rdel" data-del="${esc(s.id)}" title="Hesabatı sil" aria-label="Hesabatı sil">🗑</button>`:""}</div>`).join("")+`</div>`;
   $("#main").innerHTML=h;
   $("#bNew").onclick=()=>openNew();$("#bTasks").onclick=()=>renderTasks();document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>{state.tkF="open";renderTasks(b.dataset.topen)});$("#bPlan").onclick=renderPlan;$("#bLists").onclick=()=>renderLists();const bst=$("#bStaff");if(bst)bst.onclick=renderStaff;
   const bsy=$("#bSync");if(bsy)bsy.onclick=()=>sync();
+  document.querySelectorAll("[data-af]").forEach(b=>b.onclick=()=>{state.af=b.dataset.af==="1";renderHome()});
   const bs=$("#bSample");if(bs)bs.onclick=()=>{const r=sampleReport(state.settings);r.sample=true;openReport(r)};
   const qi=$("#q");if(qi)qi.oninput=e=>{state.q=e.target.value;const p=e.target.selectionStart;renderHome();const n=$("#q");n.focus();n.setSelectionRange(p,p)};
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async e=>{e.stopPropagation();
@@ -866,7 +874,9 @@ function typePicker(title,hint,onPick,onBack){
   document.querySelectorAll("[data-tp]").forEach(b=>b.onclick=()=>onPick(b.dataset.tp));$("#tpBack").onclick=onBack;window.scrollTo(0,0)}
 function startReport(r){if(!r.svc.eng)r.svc.eng=state.me.name;if(!r.creator)r.creator=state.me.name;state.reports[r.id]=r;openReport(r);markDirty()}
 function setActive(i){const r=state.rep;state.di=Math.max(0,Math.min(i,r.devices.length-1));useType(r.devices[state.di].type);state.cur=devProxy(r,state.di);state.bi=0}
-function openReport(r){r=realOf(r);state.rep=r;setActive(0);state.view="edit";state.tab="svc";renderEditor()}
+function openReport(r){r=realOf(r);
+  /* an approved report opens for a worker as a view-only copy: nothing done on screen can reach the stored report */
+  if(lockedRep(r))r=normalize(clone(r));state.rep=r;setActive(0);state.view="edit";state.tab="svc";renderEditor()}
 
 /* ---------------- settings ---------------- */
 function renderSettings(){
@@ -878,7 +888,8 @@ function renderSettings(){
    <label class="f"><span>Adınız, soyadınız${state.me.personal?" (şəxsi açara bağlıdır)":""}</span><input id="meName" value="${esc(state.me.name)}"${state.me.personal?" readonly":""}></label>
    ${IS_GAS?"":`<label class="f"><span>Server ünvanı</span><input id="meUrl" inputmode="url" placeholder="script.google.com/macros/s/…/exec" value="${esc(state.me.url)}"></label>`}
    <label class="f"><span>Açar (işçi və ya rəhbər açarı)</span><input id="meKey" autocomplete="off" value="${esc(state.me.key)}"></label>
-   <div class="actions"><button class="btn sm" id="mePing">Bağlantını yoxla</button><span class="note" id="pingMsg"></span></div></div>
+   ${state.me.personal?'<p class="note" style="margin:0">Ad şəxsi açara bağlıdır və rəhbərin işçi siyahısından gəlir (Ayarlar → İşçilər). Başqa adla işləmək üçün <b>Hesabdan çıx</b> basın və öz açarınızla daxil olun.</p>':""}
+   <div class="actions"><button class="btn sm" id="mePing">Bağlantını yoxla</button><button class="btn sm danger" id="meOut">Hesabdan çıx</button><span class="note" id="pingMsg"></span></div></div>
   <p class="note">Rolunuz: <b>${hasServer()?(state.me.role==="admin"?"Rəhbər / servis müdiri":"İşçi"):"—"}</b>${ro?" · aşağıdakı ortaq ayarları yalnız rəhbər dəyişə bilər":""}</p>
   <div class="card"><h3>Servis şirkəti (bütün işçilər üçün ortaq)</h3>${f("co","Şirkət adı")}${f("coaddr","Ünvan")}${f("cotel","Telefon / e-poçt")}${f("notify","Planlı servis xəbərdarlığı üçün e-poçtlar (vergüllə)")}<p class="note" style="margin:0">Planlı servisə ${REMIND_DAYS} gün qalmış server bu ünvanlara e-poçt göndərir; işçilərin telefonunda isə bildiriş çıxır.</p>${f("interval","Servis intervalı, ay",{n:1})}</div>
   <div class="card"><h3>Akkumulyator hədləri (ortaq, yeni hesabatlar üçün)</h3><div class="grid2">${f("warn","R artımı — Diqqət, %",{n:1})}${f("fail","R artımı — Dəyişdirilməli, %",{n:1})}${f("vwarn","Blok V — Diqqət (aşağı)",{n:1})}${f("vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${f("vhigh","Blok V — Diqqət (yuxarı)",{n:1})}${f("life","İstismar müddəti, il",{n:1})}</div>
@@ -893,6 +904,9 @@ function renderSettings(){
   <div class="card" style="margin-top:16px"><h3>Yedək nüsxə</h3><p class="note" style="margin:0">Bu cihazdakı bütün hesabatları bir .json faylına saxlayın və ya həmin fayldan bərpa edin.</p>
   <div class="actions"><button class="btn" id="bkSave">Yedək faylı saxla</button><label class="btn" style="display:inline-flex;align-items:center">Yedəkdən bərpa et<input type="file" id="bkLoad" accept=".json,application/json" hidden></label></div></div>`;
   const readMe=()=>{state.me.name=$("#meName").value.trim();if($("#meKey").value.trim()!==state.me.key)state.me.role="";if($("#meUrl"))state.me.url=$("#meUrl").value.trim();state.me.key=$("#meKey").value.trim();LS.set("ups.me",state.me)};
+  $("#meOut").onclick=()=>{const b=$("#meOut");
+    if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=state.pending.size?state.pending.size+" hesabat göndərilməyib — yenə də çıxılsın?":"Çıxılsın? Təsdiq üçün yenidən basın";return}
+    logout()};
   $("#mePing").onclick=async()=>{readMe();$("#pingMsg").textContent="yoxlanılır…";
     try{const pg=await api("ping");applyWho(pg);$("#pingMsg").textContent="Bağlantı işləyir ✓ · "+(pg.personal?"şəxsi açar: "+pg.name+" · ":"")+"rol: "+(pg.role==="admin"?"rəhbər":"işçi");sync()}catch(e){$("#pingMsg").textContent=e.message==="auth"?"API açarı yanlışdır":"Serverə qoşulmaq alınmadı"}};
   $("#sSave").onclick=async()=>{readMe();document.querySelectorAll("[data-s]").forEach(i=>{const k=i.dataset.s;state.settings[k]=["interval","warn","fail","vwarn","vfail","vhigh","life"].includes(k)?(num(i.value)??DEFAULT_SETTINGS[k]):i.value.trim()});
@@ -910,7 +924,10 @@ function fld(path,label,o={}){const v=getP(state.cur,path)??"";const id="f-"+pat
   if(o.sel)return `<label class="f"><span>${label}</span><select id="${id}" data-path="${path}"><option value=""></option>${o.sel.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</select></label>`;
   if(o.area)return `<label class="f"><span>${label}</span><textarea id="${id}" data-path="${path}" placeholder="${esc(o.ph||"")}">${esc(v)}</textarea></label>`;
   const t=o.date?'type="date"':o.n?'type="text" inputmode="decimal" class="num"':'type="text"';
-  return `<label class="f"><span>${label}</span><input ${t} id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}" autocomplete="off"></label>`}
+  const dl=o.list&&o.list.length?`<datalist id="${id}-dl">${o.list.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>`:"";
+  return `<label class="f"><span>${label}</span><input ${t} id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}" autocomplete="off"${dl?` list="${id}-dl"`:""}>${dl}${o.note?`<small class="note">${o.note}</small>`:""}</label>`}
+/* intermediaries used before — offered when the bill goes to a contractor instead of the client */
+function payerList(){const m={};Object.values(state.reports).forEach(r=>{const p=r&&r.cl&&String(r.cl.payer||"").trim();if(p)m[p]=1});return Object.keys(m).sort((a,b)=>a.localeCompare(b,"az"))}
 function tabsFor(){const T=TYPES[CUR_TYPE];return [["svc","Servis"],["ups",T.short],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],...(T.hasBat?[["bat","Akkum."],["blk","Bloklar"]]:[]),["foto","Şəkillər"],["rep","Hesabat"]]}
 function devBar(){const R=state.rep;return `<div class="devbar" role="group" aria-label="Cihazlar">${R.devices.map((d,i)=>`<button class="dchip" data-dev="${i}" aria-pressed="${i===state.di}"><span class="k">${i+1}</span>${esc(TYPES[d.type].short)}${devName(d)?" · "+esc(devName(d)):""}</button>`).join("")}<button class="dchip" id="addDev">+ Cihaz</button></div>`}
 function renderEditor(){
@@ -928,10 +945,10 @@ function renderEditor(){
   const ad=$("#addDev");if(ad)ad.onclick=()=>typePicker("Əlavə cihaz","Bu müştəridə servis etdiyiniz növbəti cihazı seçin. O, eyni hesabata əlavə olunacaq.",tp=>{state.rep.devices.push(blankDevice(state.settings,tp));setActive(state.rep.devices.length-1);state.tab="ups";markDirty();renderEditor()},()=>renderEditor());
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.go;renderEditor();window.scrollTo(0,0)});
   (AFTER[state.tab]||(()=>{}))();
-  live();
+  live();applyLock();
 }
-document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur)return;setP(state.cur,p,e.target.value);markDirty();live()});
-document.addEventListener("change",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur)return;setP(state.cur,p,e.target.value);markDirty();live()});
+document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);markDirty();live()});
+document.addEventListener("change",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);markDirty();live()});
 function live(){if(!state.cur)return;const a=analyze(state.cur);
   document.querySelectorAll("[data-live]").forEach(el=>{const k=el.dataset.live;let v="",c="";
     if(k.startsWith("m")){v=a.ms[+k.slice(1)];c=stCls(v)}
@@ -945,7 +962,7 @@ const SECTIONS={
   <div class="card"><h3>Servis</h3><div class="grid2">${fld("svc.repno","Hesabat №",{ph:"SR-2026-0143"})}${fld("svc.date","Servis tarixi",{date:1})}</div>
   ${fld("svc.type","Servis növü",{sel:SVC_TYPES})}<div class="grid2">${fld("svc.eng","Servis mühəndisi")}${isDiag(state.rep)?"":fld("svc.interval","Növbəti servis intervalı, ay",{n:1})}</div>${isDiag(state.rep)?`<p class="note" style="margin:0">Diaqnostika: müştəri servis müqaviləsində deyil — növbəti servis planlanmır və servis cədvəlinə düşmür.</p>`:""}
   <div class="note">Növbəti servis: <b data-live="next"></b></div></div>
-  <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
+  <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.payer","Hesab kimə (vasitəçi / podratçı şirkət)",{list:payerList(),ph:"boş = müştərinin özü",note:"İş vasitəçi şirkət vasitəsilə görülürsə, onun adını yazın — Satış və Anbarda hesab ona yazılır. Hesabatda (PDF) görünmür."})}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
   <div class="grid2">${fld("cl.person","Əlaqədar şəxs")}${fld("cl.tel","Telefon")}</div>${fld("cl.sign","İmza üçün müştəri nümayəndəsi")}</div>
   <div class="card"><h3>Müştərinin cihazları (${state.rep.devices.length})</h3>
   <div class="dlist">${state.rep.devices.map((d,i)=>`<div class="drow"><span class="k">${i+1}</span><span class="dn"><b>${esc(TYPES[d.type].title)}</b>${devName(d)||d.info.sn||isPar(d)?`<small>${esc([devName(d),d.info.sn?"SN "+d.info.sn:"",isPar(d)?"paralel"+(parText(d)?": "+parText(d):""):""].filter(Boolean).join(" · "))}</small>`:""}</span>
@@ -1013,6 +1030,7 @@ const SECTIONS={
    <div class="seg langseg" role="group" aria-label="Hesabatın dili"><span class="note" style="align-self:center;margin-right:4px">Dil:</span>${LANGS.map(([k,l])=>`<button type="button" class="s-idle" data-lang="${k}" aria-pressed="${(state.plang||"az")===k}">${l}</button>`).join("")}</div></div>
   ${r.sample?'<div class="banner" style="margin:0 0 12px">Bu nümunədir: serverə göndərilmir.</div>':""}
   ${!canDelete(r)&&state.remote[r.id]?'<p class="note">Serverdəki hesabatı yalnız servis müdiri / rəhbər silə bilər. Dəyişikliklərin əvvəlki versiyaları serverdə saxlanılır.</p>':""}
+  ${apprCard()}
   ${state.me.role==="admin"&&!realOf(state.rep).sample?'<div class="card" id="rateBox"></div>':""}
   <div id="delConfirm" hidden class="card"><b>Bu hesabat ${state.remote[r.id]?"mərkəzi bazadan ":""}silinsin?</b>${state.remote[r.id]?'<p class="note" style="margin:0">Son versiya “_Versiyalar” qovluğunda qalır, lazım olsa bərpa etmək olar.</p>':""}<div class="actions"><button class="btn danger" id="bDelYes">Bəli, sil</button><button class="btn" id="bDelNo">Ləğv et</button></div></div>
   <div id="histBox"></div>
@@ -1063,7 +1081,7 @@ const AFTER={
    if(n){markDirty();$("#pasteBox").value="";renderProbe();renderGrid();toast(n+" blok dolduruldu")}else toast("Rəqəm tapılmadı: hər sətirdə ən azı iki qiymət olmalıdır")}},
  rep(){fitPaper();ensurePhotos(state.cur).then(n=>{if(n&&state.tab==="rep"){$("#ps").innerHTML=paperHTML(state.cur,null,state.plang||"az");fitPaper()}});
   $("#bPdf").onclick=exportPdf;$("#bPrint").onclick=printReport;$("#bXls").onclick=exportXlsx;
-  ratingCard();
+  ratingCard();bindAppr();
   document.querySelectorAll("[data-sign]").forEach(b=>b.onclick=()=>openSignPad(b.dataset.sign));
   document.querySelectorAll("[data-signdel]").forEach(b=>b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Silinsin?";return}
     const r=realOf(state.rep);if(r.sig)delete r.sig[b.dataset.signdel];markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
@@ -1077,6 +1095,37 @@ const AFTER={
     if(L!=="az"&&freeTexts(state.cur).length){b.textContent="…";await ensureTranslations(state.cur,L);b.textContent=LANGS.find(x=>x[0]===L)[1]}
     $("#ps").innerHTML=paperHTML(state.cur,analyze(state.cur),L);fitPaper()})}
 };
+function apprBanner(all){const P=all.filter(needsAppr);if(state.me.role!=="admin"||(!P.length&&!state.af))return "";
+  const S=P.filter(s=>s.sub).length;
+  return `<div class="card remind" role="status"><h3>${state.af?"Yalnız təsdiq gözləyən hesabatlar göstərilir":"Təsdiq gözləyən hesabatlar: "+P.length}</h3><p class="note" style="margin:0">${S?S+" hesabatı işçi “iş bitdi” kimi göndərib. ":""}Hesabatı açın → “Hesabat” bölməsi → yoxlayın, lazım olsa düzəldin və “Təsdiq et” basın. Təsdiqdən sonra iş Satış və Anbar proqramına gedir.</p>
+   <div class="actions"><button class="btn sm${state.af?"":" pri"}" data-af="${state.af?"0":"1"}">${state.af?"Hamısını göstər":"Təsdiq gözləyənləri göstər"}</button></div></div>`}
+function apprParts(r){r=realOf(r);const L=[];(r.devices||[]).forEach(d=>(d.parts||[]).forEach(p=>{if(p&&String(p.name||p.code||"").trim())L.push(p)}));return L}
+function apprCard(){const r=realOf(state.rep);if(!r||r.sample)return "";const A=apprOf(r),adm=state.me.role==="admin",P=apprParts(r);
+  const parts=P.length?`<div class="maptbl"><table class="ltbl"><tr><th style="text-align:left">Dəyişdirilən hissə</th><th style="text-align:left">Kod</th><th>Say</th></tr>${P.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.code||"")}</td><td class="c">${esc(p.qty||"1")}</td></tr>`).join("")}</table></div>`:'<p class="note" style="margin:0">Dəyişdirilən hissə yazılmayıb — Satışa yalnız xidmət haqqı gedəcək.</p>';
+  if(A)return `<div class="card" id="apprBox" style="border-left:4px solid var(--ok)"><h3>✓ Təsdiqlənib</h3><p class="note" style="margin:0">${esc(A.by||"")} · ${esc(fmtDT(A.at))}. İş Satış və Anbar proqramına göndərilir (server 15 dəqiqədən bir yoxlayır). ${adm?"Təsdiqdən sonrakı düzəlişlər Satışdakı sənədə avtomatik keçmir — orada düzəldin.":"Hesabatı artıq yalnız rəhbər dəyişə bilər."}</p>
+   ${adm?'<div class="actions"><button class="btn sm ghost" id="apprUndo">Təsdiqi geri al</button></div>':""}</div>`;
+  const bill=`<p style="margin:6px 0"><b>Hesab:</b> ${esc(String(r.cl.payer||"").trim()||r.cl.name||"—")}${String(r.cl.payer||"").trim()?` <span class="note">(obyekt: ${esc(r.cl.name||"")})</span>`:""} · <b>Növ:</b> ${esc(r.svc.type||"—")}${r.svc.type&&!/planl/i.test(r.svc.type)?' <span class="note">— müqavilə səfəri sayılmır, Satışda qaralama kimi qiymətləndirilir</span>':""}</p>`;
+  if(adm)return `<div class="card" id="apprBox" style="border-left:4px solid var(--warn)"><h3>Rəhbər təsdiqi</h3>${bill}<p class="note" style="margin:0">${r.sub&&r.sub.at?`<b>${esc(r.sub.by||"İşçi")}</b> işi ${esc(fmtDT(r.sub.at))} bitmiş kimi göndərib. `:""}Hesabatı yoxlayın, lazım olsa istənilən bölmədə düzəliş edin (xüsusilə “Görülən işlər” → dəyişdirilən hissələr: anbardan bunlar çıxılacaq). Təsdiqdən sonra iş Satış və Anbar proqramına gedir, işçi hesabatı artıq dəyişə bilmir.</p>
+   ${parts}<div class="actions"><button class="btn pri" id="apprGo">✓ Yoxladım — təsdiq et</button></div></div>`;
+  if(r.sub&&r.sub.at)return `<div class="card" id="apprBox"><h3>Rəhbərin təsdiqini gözləyir</h3><p class="note" style="margin:0">${esc(fmtDT(r.sub.at))} göndərildi. Rəhbər / servis müdiri yoxlayıb təsdiq edəndən sonra iş Satış və Anbar proqramına gedir.</p><div class="actions"><button class="btn sm ghost" id="subUndo">Geri götür (düzəliş edəcəm)</button></div></div>`;
+  return `<div class="card" id="apprBox"><h3>İş bitdi?</h3><p class="note" style="margin:0">Hesabatı doldurub imzaladıqdan sonra rəhbərə / servis müdirinə yoxlamağa göndərin. Təsdiqdən sonra hesabatı yalnız rəhbər dəyişə bilər.</p>${parts}<div class="actions"><button class="btn pri" id="subGo">İş bitdi — rəhbərə yoxlamağa göndər</button></div></div>`}
+async function setAppr(kind,on){await flush();const r=realOf(state.rep);
+  if(kind==="appr"){if(on)r.appr={by:state.me.name||"Rəhbər",at:Date.now()};else delete r.appr}
+  else{if(on)r.sub={by:state.me.name||"",at:Date.now()};else delete r.sub}
+  try{await persist(r)}catch(e){toast("Cihaza yazmaq alınmadı");return}
+  state.dirty=false;toast(kind==="appr"?(on?"Təsdiqləndi — Satış və Anbara göndərilir":"Təsdiq geri alındı"):(on?"Rəhbərə göndərildi":"Geri götürüldü"));
+  sync({all:true});const y=window.scrollY;renderEditor();window.scrollTo(0,y)}
+function bindAppr(){const two=(id,fn,txt)=>{const b=$("#"+id);if(b)b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=txt;return}b.disabled=true;fn()}};
+  two("apprGo",()=>setAppr("appr",true),"Təsdiq edilsin? Yenidən basın");
+  two("apprUndo",()=>setAppr("appr",false),"Geri alınsın? Yenidən basın");
+  two("subGo",()=>setAppr("sub",true),"Göndərilsin? Yenidən basın");
+  const u=$("#subUndo");if(u)u.onclick=()=>setAppr("sub",false)}
+/* an approved report is read-only for workers: everything except navigation, PDF, print, Excel and language is disabled */
+function applyLock(){if(!lockedRep(state.rep))return;const m=$("#main");if(!m)return;const A=apprOf(state.rep);
+  m.insertAdjacentHTML("afterbegin",`<div class="banner" style="margin:0 0 12px">Bu hesabat ${esc(A.by||"rəhbər")} tərəfindən təsdiqlənib — yalnız baxmaq olar. Dəyişiklik lazımdırsa, rəhbərə / servis müdirinə deyin.</div>`);
+  m.querySelectorAll("input,textarea,select").forEach(e=>{e.disabled=true});
+  m.querySelectorAll("button").forEach(b=>{if(b.dataset.go||b.dataset.dev||b.dataset.lang||b.dataset.dedit||["bPdf","bPrint","bXls","bHist","svcCopy"].includes(b.id))return;b.disabled=true});
+  const ad=$("#addDev");if(ad)ad.disabled=true;const fk=$("#flukeCard");if(fk)fk.hidden=true;m.querySelectorAll(".drop").forEach(d=>{d.style.pointerEvents="none";d.ondrop=e=>e.preventDefault()})}
 function canDelete(r){if(r.sample)return true;if(state.remote[r.id])return state.me.role==="admin";return true}
 async function showHistory(){const box=$("#histBox"),id=state.cur.id;box.innerHTML='<div class="card"><p class="note" style="margin:0">Versiyalar yüklənir…</p></div>';
   try{const h=await api("history",{id});
@@ -1668,6 +1717,10 @@ const monthName=ym=>{const m=/^(\d{4})-(\d{2})$/.exec(ym||"");return m?MONTHS_AZ
 
 
 /* ================= işçilər: şəxsi açarlar, rəhbər qiyməti, işçi paneli ================= */
+/* sign out on this device: name, key and role are cleared (reports stay on the device and are sent with the next sign-in) */
+function logout(){clearTimeout(syncTimer);state.me={name:"",url:state.me.url||CFG.serverUrl||"",key:"",role:"",personal:false};LS.set("ups.me",state.me);
+  state.tasks=[];state.taskMe="";state.ratings=null;state.itemRows=null;["ups.tasks","ups.taskMe","ups.seenTasks","ups.taskSig"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
+  state.cur=null;state.rep=null;state.online=null;state.syncErr="";$("#hTitle").innerHTML='UPS Servis Jurnalı<small>Servis hesabatları</small>';$("#hBack").hidden=true;toast("Hesabdan çıxdınız");renderWelcome()}
 function applyWho(o){if(!o)return;if(o.role)state.me.role=o.role;state.me.personal=!!o.personal;if(o.personal&&o.name)state.me.name=o.name;LS.set("ups.me",state.me)}
 /* how complete the report is: per device measurements filled (40%), checklist answered (40%), works answered (20%) */
 function fillOf(r){r=realOf(r);const keep=CUR_TYPE;let sum=0,n=0;
@@ -1696,7 +1749,7 @@ async function ratingCard(){const box=$("#rateBox");if(!box||state.me.role!=="ad
 async function workersCard(){const box=$("#wkBox");if(!box)return;
   const draw=res=>{const W=res.workers||[];
     box.innerHTML=`<h3>İşçilər və şəxsi açarlar</h3><p class="note" style="margin:0">Hər işçiyə (rəhbər də daxil) ayrıca açar verin. İşçi tətbiqdə <b>Ayarlar → Açar</b> sahəsinə öz açarını yazır — adı avtomatik gəlir və hesabatlarda dəqiq görünür. İşdən çıxanı <b>Blokla</b> — digərlərinə toxunulmur.</p>
-    ${W.length?`<div class="maptbl"><table class="ltbl"><tr><th style="text-align:left">Ad</th><th>Rol</th><th style="text-align:left">Açar</th><th style="text-align:left">E-poçt (tapşırıq bildirişi)</th><th>Vəziyyət</th><th></th></tr>${W.map(w=>`<tr${w.active===false?' style="opacity:.55"':""}><td>${esc(w.name)}</td><td class="c">${w.role==="admin"?"Rəhbər":"İşçi"}</td><td><code class="num" style="user-select:all">${esc(w.key)}</code></td><td><input data-wmail="${esc(w.id)}" value="${esc(w.email||"")}" placeholder="istəyə görə" style="min-height:34px;padding:5px 8px;min-width:150px"></td><td class="c">${w.active===false?'<span class="chip bad">bloklanıb</span>':'<span class="chip ok">aktiv</span>'}</td>
+    ${W.length?`<div class="maptbl"><table class="ltbl"><tr><th style="text-align:left">Ad</th><th>Rol</th><th style="text-align:left">Açar</th><th style="text-align:left">E-poçt (tapşırıq bildirişi)</th><th>Vəziyyət</th><th></th></tr>${W.map(w=>`<tr${w.active===false?' style="opacity:.55"':""}><td><input data-wname="${esc(w.id)}" value="${esc(w.name)}" style="min-height:34px;padding:5px 8px;min-width:140px" aria-label="Ad"></td><td class="c">${w.role==="admin"?"Rəhbər":"İşçi"}</td><td><code class="num" style="user-select:all">${esc(w.key)}</code></td><td><input data-wmail="${esc(w.id)}" value="${esc(w.email||"")}" placeholder="istəyə görə" style="min-height:34px;padding:5px 8px;min-width:150px"></td><td class="c">${w.active===false?'<span class="chip bad">bloklanıb</span>':'<span class="chip ok">aktiv</span>'}</td>
       <td class="c" style="white-space:nowrap"><button class="btn sm" data-wcopy="${esc(w.key)}">Kopyala</button> <button class="btn sm" data-wact="${esc(w.id)}">${w.active===false?"Aktiv et":"Blokla"}</button> <button class="btn sm" data-wkey="${esc(w.id)}">Yeni açar</button></td></tr>`).join("")}</table></div>`:""}
     <div class="grid2"><label class="f"><span>Yeni işçinin adı, soyadı</span><input id="wkName" placeholder="məs. Əliyev Murad"></label><label class="f"><span>Rol</span><select id="wkRole"><option value="worker">İşçi</option><option value="admin">Rəhbər</option></select></label></div>
     <div class="actions"><button class="btn" id="wkAdd">+ İşçi əlavə et</button></div>
@@ -1707,6 +1760,7 @@ async function workersCard(){const box=$("#wkBox");if(!box)return;
       try{draw(await api("worker_save",{w:{...w,active:w.active===false}}))}catch(e){toast("Alınmadı")}});
     box.querySelectorAll("[data-wkey]").forEach(b=>b.onclick=async()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Köhnə açar işləməyəcək — təsdiq";return}
       try{draw(await api("worker_newkey",{id:b.dataset.wkey}));toast("Yeni açar yaradıldı — işçiyə verin")}catch(e){toast("Alınmadı")}});
+    box.querySelectorAll("[data-wname]").forEach(i=>i.onchange=async()=>{const w=W2.find(x=>x.id===i.dataset.wname);const n=i.value.trim();if(!w||!n){i.value=w?w.name:"";return}try{draw(await api("worker_save",{w:{...w,name:n}}));toast("Ad dəyişdirildi — işçinin cihazında növbəti sinxronda yenilənəcək")}catch(e){toast("Alınmadı")}});
     box.querySelectorAll("[data-wmail]").forEach(i=>i.onchange=async()=>{const w=W2.find(x=>x.id===i.dataset.wmail);if(!w)return;try{await api("worker_save",{w:{...w,email:i.value.trim()}});toast("E-poçt saxlanıldı")}catch(e){toast("Alınmadı")}});
     $("#wkAdd").onclick=async()=>{const n=$("#wkName").value.trim();if(!n){toast("Adı yazın");return}try{draw(await api("worker_save",{w:{name:n,role:$("#wkRole").value}}));toast("İşçi əlavə olundu — açarını ona verin")}catch(e){toast("Alınmadı")}};
     $("#wkShared").onchange=async e=>{try{draw(await api("shared_off",{off:e.target.checked}));toast(e.target.checked?"Ortaq açar söndürüldü":"Ortaq açar yenidən aktivdir")}catch(err){toast("Alınmadı")}}};
