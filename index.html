@@ -242,13 +242,14 @@ const SVR_TECH=["Tiristor","IGBT","Digər"];
 const PANEL_TYPES=["Əsas paylayıcı panel","Paylayıcı panel","ATS paneli","Kompensasiya paneli","Generator paneli","Digər"];
 const CHK_OPTS=[["Yaxşı","s-ok"],["Qeyd var","s-warn"],["Nasaz","s-bad"],["Yoxlanılmadı","s-idle"],["Tətbiq olunmur","s-idle"]];
 const MAXB=480;
+const UPS_PF=["0,8","0,9","1"];
 const TYPES={
  ups:{title:"UPS cihazı",short:"UPS",label:"UPS (fasiləsiz enerji mənbəyi)",hasBat:true,
-  info:[["brand","Marka"],["model","Model"],["sn","Seriya №"],["kva","Güc, kVA",{n:1}],["kw","Güc, kW",{n:1}],["topo","Topologiya",{sel:TOPO}],["phase","Faza (giriş/çıxış)",{sel:PHASE}],["fw","Firmware"],["inst","Quraşdırma tarixi",{date:1}],["hours","İş saatı / sayğac"]],
+  info:[["brand","Marka"],["model","Model"],["sn","Seriya №"],["kva","Güc, kVA",{n:1}],["kw","Güc, kW",{n:1}],["pf","Güc əmsalı (PF)",{sel:UPS_PF}],["topo","Topologiya",{sel:TOPO}],["phase","Faza (giriş/çıxış)",{sel:PHASE}],["fw","Firmware"],["inst","Quraşdırma tarixi",{date:1}],["hours","İş saatı / sayğac"]],
   meas:[["Giriş gərginliyi (F–N)","V",207,253,3],["Giriş gərginliyi (F–F)","V",360,440,3],["Giriş cərəyanı","A",null,null,3],
-   ["Giriş tezliyi","Hz",49.5,50.5,1],["Bypass gərginliyi (F–N)","V",207,253,3],["Çıxış gərginliyi (F–N)","V",225,235,3],
-   ["Çıxış cərəyanı","A",null,null,3],["Çıxış tezliyi","Hz",49.9,50.1,1],["Yük səviyyəsi","%",0,80,3],
-   ["Çıxış aktiv gücü","kW",null,null,1],["DC şin gərginliyi","V",null,null,1],["Akkumulyator ümumi gərginliyi","V",null,null,1],
+   ["Bypass gərginliyi (F–N)","V",207,253,3],["Çıxış gərginliyi (F–N)","V",225,235,3],
+   ["Çıxış cərəyanı","A",null,null,3],["Yük səviyyəsi","%",0,80,3],
+   ["Çıxış aktiv gücü","kW",null,null,1],["DC şin gərginliyi (+)","V",null,null,1],["DC şin gərginliyi (−)","V",null,null,1],["Akkumulyator ümumi gərginliyi","V",null,null,1],
    ["Akkumulyator şarj cərəyanı","A",null,null,1],["Neytral–Yer gərginliyi (N–PE)","V",0,3,1],["Otaq temperaturu","°C",15,25,1],
    ["UPS daxili temperatur","°C",null,40,1]],
   chk:["UPS-in ümumi vizual vəziyyəti","Ekran / panel göstəriciləri və alarmlar","Hadisə jurnalı (event log)","Soyutma ventilyatorları","Hava filtrləri","Güc kabelləri və klemmələr (bərkidilmə)","Termal yoxlama (termokamera)","DC kondensatorlar (şişmə / axma)","AC filtr kondensatorları","Rektifikator / şarj bloku","İnvertor bloku","Statik bypass","Bypass-a keçid və geri qayıdış testi","Akkumulyator kabineti / rəfi və bağlantılar","Akkumulyator açarı / qoruyucular","EPO (təcili söndürmə) funksiyası","Rabitə (SNMP / Modbus / quru kontaktlar)","Otaq şəraiti (temperatur, toz, havalandırma)"],
@@ -302,6 +303,8 @@ const TYPES={
    ["Gərginlik çökmələri (dips), say","—",null,null,1],["Gərginlik artmaları (swells), say","—",null,null,1],["Kəsilmələr, say","—",null,null,1],["Tranzientlər, say","—",null,null,1],["Neytral–Yer gərginliyi (N–PE)","V",0,3,1]],
   chk:["Analizatorun qoşulması və təhlükəsizlik","Faza ardıcıllığı (fırlanma)","Cərəyan kleşlərinin istiqaməti","Gərginliyin stabilliyi","Harmoniklər","Gərginlik çökmələri / kəsilmələr","Tranzientlər","Fazaların yüklənmə balansı","Neytral cərəyanı / neytralın yüklənməsi","Güc əmsalı (kompensasiya ehtiyacı)","Ölçmə məlumatları kompüterə yükləndi (Energy Analyze Plus)"],
   works:["Analizatorun quraşdırılması və konfiqurasiyası","Uzunmüddətli qeydiyyat (logging)","Məlumatların yüklənməsi və təhlili","Qrafiklərin və cədvəllərin hazırlanması","Nəticə və tövsiyələrin hazırlanması"]}};
+/* UPS measurements before the 2026-10 change (frequencies removed, DC bus split into + and −): saved reports are mapped by name */
+const UPS_MEAS_V1=["Giriş gərginliyi (F–N)","Giriş gərginliyi (F–F)","Giriş cərəyanı","Giriş tezliyi","Bypass gərginliyi (F–N)","Çıxış gərginliyi (F–N)","Çıxış cərəyanı","Çıxış tezliyi","Yük səviyyəsi","Çıxış aktiv gücü","DC şin gərginliyi","Akkumulyator ümumi gərginliyi","Akkumulyator şarj cərəyanı","Neytral–Yer gərginliyi (N–PE)","Otaq temperaturu","UPS daxili temperatur"];
 const TYPE_ORDER=["ups","avr","svr","gen","panel","rect","pfc","pq"];
 let MEAS=TYPES.ups.meas,CHK=TYPES.ups.chk,WORKS=TYPES.ups.works,IDX_LOAD=8,IDX_ROOM=14,CUR_TYPE="ups";
 function useType(tp){const T=TYPES[tp]||TYPES.ups;CUR_TYPE=TYPES[tp]?tp:"ups";MEAS=T.meas;CHK=T.chk;WORKS=T.works;
@@ -315,7 +318,7 @@ function devPhases(V){const u=(V&&V.ups)||{};let pin=3,pout=3;const ph=String(u.
 function mPh(V,j){const m=MEAS[j];if(!m)return 0;const P=devPhases(V),side=/^Giriş/.test(m[0])?P.pin:P.pout;
   if(side===1&&/\(F–F\)|asimmetriya/i.test(m[0]))return 0;return m[4]===3?(side===1?1:3):1}
 function chkHidden(V,j){const P=devPhases(V);return P.pout===1&&/^(Faza ardıcıllığı|Fazaların yüklənmə balansı)/.test(CHK[j]||"")}
-const DEVKEYS={bad:"bad",par:"par",ups:"info",meas:"meas",chk:"chk",works:"works",wExtra:"wExtra",bat:"bat",dis:"dis",photos:"photos",parts:"parts",devType:"type"};
+const DEVKEYS={loc:"loc",bad:"bad",par:"par",ups:"info",meas:"meas",chk:"chk",works:"works",wExtra:"wExtra",bat:"bat",dis:"dis",photos:"photos",parts:"parts",devType:"type"};
 function devProxy(r,i){const d=r.devices[i];return new Proxy(r,{
   get(t,k){if(k==="__real")return t;if(k==="__dev")return d;if(k==="__di")return i;if(typeof k==="string"&&k in DEVKEYS)return d[DEVKEYS[k]];return t[k]},
   set(t,k,v){if(typeof k==="string"&&k in DEVKEYS)d[DEVKEYS[k]]=v;else t[k]=v;return true}})}
@@ -327,6 +330,10 @@ const apprOf=r=>{r=realOf(r);return r&&r.appr&&r.appr.at?r.appr:null};
 const lockedRep=r=>!!r&&!realOf(r).sample&&!!apprOf(r)&&state.me.role!=="admin";
 const needsAppr=s=>!s.appr&&(s.remote||s.pending)&&(!!s.sub||(s.date||"")>=APPR_SINCE);
 function devName(d){const i=d.info||{};return [i.brand,i.model].filter(Boolean).join(" ")}
+/* places already used for this client's devices (this report + earlier reports of the same client) */
+function locList(){const R=realOf(state.rep),cn=String(R&&R.cl&&R.cl.name||"").trim().toLowerCase(),m={};
+  const add=r=>(r&&r.devices||[]).forEach(d=>{const l=String(d&&d.loc||"").trim();if(l)m[l]=1});add(R);
+  if(cn)Object.values(state.reports).forEach(r=>{if(r&&r.cl&&String(r.cl.name||"").trim().toLowerCase()===cn)add(r)});return Object.keys(m).sort((a,b)=>a.localeCompare(b,"az"))}
 
 const TABS=[["svc","Servis"],["ups","UPS"],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],["bat","Akkum."],["blk","Bloklar"],["rep","Hesabat"]];
 
@@ -349,7 +356,7 @@ const newId=()=>"r-"+Date.now().toString(36)+"-"+Math.random().toString(36).slic
 
 /* ---------------- model ---------------- */
 const DEFAULT_SETTINGS={notify:"",co:"",coaddr:"",cotel:"",eng:"",interval:6,warn:25,fail:50,vwarn:13.2,vfail:12.6,vhigh:14.0,life:5};
-function blankDevice(S,tp){const T=TYPES[tp]||TYPES.ups;const info={};T.info.forEach(([k,,o])=>{info[k]=o&&o.sel&&k!=="ptype"&&k!=="tech"?(o.sel.includes("3/3")?"3/3":o.sel[0]):""});
+function blankDevice(S,tp){const T=TYPES[tp]||TYPES.ups;const info={};T.info.forEach(([k,,o])=>{info[k]=o&&o.sel&&k!=="ptype"&&k!=="tech"&&k!=="pf"?(o.sel.includes("3/3")?"3/3":o.sel[0]):""});
   return {did:"d"+Math.random().toString(36).slice(2,8),type:TYPES[tp]?tp:"ups",info,
     meas:T.meas.map(m=>({v:["","",""],min:m[2]==null?"":String(m[2]),max:m[3]==null?"":String(m[3])})),
     chk:T.chk.map(()=>({s:"",n:""})),works:T.works.map(()=>""),wExtra:"",
@@ -368,6 +375,8 @@ function normDevice(d){const S=state.settings,tp=TYPES[d&&d.type]?d.type:"ups",T
   o.dis=Object.assign(blankDevice(S,tp).dis,(d&&d.dis)||{});
   o.par=Object.assign({mode:"",grp:"",pos:""},(d&&d.par)||{});
   if(!Array.isArray(o.bad))o.bad=[];
+  if(tp==="ups"&&Array.isArray(o.meas)&&o.meas.length===UPS_MEAS_V1.length&&T.meas.length!==UPS_MEAS_V1.length){const nm=blankDevice(S,tp).meas;
+    UPS_MEAS_V1.forEach((lab,i)=>{const j=T.meas.findIndex(m=>m[0]===(lab==="DC şin gərginliyi"?"DC şin gərginliyi (+)":lab));if(j>=0&&o.meas[i])nm[j]=o.meas[i]});o.meas=nm}
   if(!Array.isArray(o.meas)||o.meas.length!==T.meas.length)o.meas=blankDevice(S,tp).meas;
   if(!Array.isArray(o.chk)||o.chk.length!==T.chk.length)o.chk=T.chk.map((_,i)=>(d&&d.chk&&d.chk[i])||{s:"",n:""});
   if(!Array.isArray(o.works)||o.works.length!==T.works.length)o.works=T.works.map((_,i)=>(d&&d.works&&d.works[i])||"");
@@ -386,7 +395,7 @@ function sampleReport(S){
   r.svc.repno="NÜMUNƏ-001";r.svc.eng=S.eng||"M. Məmmədov";
   Object.assign(r.cl,{name:"NÜMUNƏ — Test xəstəxanası",obj:"Bina A, UPS otağı -1",addr:"Bakı ş.",person:"E. Əliyev",tel:"+994 50 000 00 00",sign:"E. Əliyev"});
   Object.assign(r.ups,{brand:"Nümunə",model:"XYZ-500",sn:"SN123456789",kva:"500",kw:"500",fw:"v2.14",inst:"2021-03-15"});
-  const ex=[[229,231,228],[398,400,397],[402,395,410],[50.02],[229,231,228],[230,230.4,229.8],[380,365,391],[50],[52,50,54],[258],[545],[545],[2.1],[1.2],[27],[34]];
+  const ex=[[229,231,228],[398,400,397],[402,395,410],[229,231,228],[230,230.4,229.8],[380,365,391],[52,50,54],[258],[272],[-272],[545],[2.1],[1.2],[27],[34]];
   r.meas.forEach((m,i)=>m.v=[0,1,2].map(j=>ex[i][j]!==undefined?String(ex[i][j]):""));
   r.chk.forEach(c=>c.s="Yaxşı");r.chk[3]={s:"Qeyd var",n:"Ventilyator #3 səs-küylüdür"};r.chk[17]={s:"Qeyd var",n:"Otaq temperaturu 27 °C"};
   r.works=WORKS.map((_,i)=>i===4?"Xeyr":"Bəli");
@@ -413,7 +422,7 @@ en:{"[Şirkət adı]":"[Company name]","Hesabat №":"Report No.","Tarix:":"Date
  "1. Müştəri və servis məlumatları":"1. Customer and service details","Müştəri":"Customer","Əlaqədar şəxs":"Contact person","Obyekt":"Site","Telefon":"Phone","Ünvan":"Address","Servis mühəndisi":"Service engineer","Servis tarixi":"Service date","Növbəti servis":"Next service",
  "2. UPS cihazı":"2. UPS unit","Marka":"Brand","Model":"Model","Seriya №":"Serial No.","Firmware":"Firmware","Güc":"Power","Faza (giriş/çıxış)":"Phases (in/out)","Topologiya":"Topology","Quraşdırma tarixi":"Installation date",
  "3. Ölçmə nəticələri":"3. Measurement results","Parametr":"Parameter","Vahid":"Unit","Norma":"Limits","Nəticə":"Result",
- "Giriş gərginliyi (F–N)":"Input voltage (L–N)","Giriş gərginliyi (F–F)":"Input voltage (L–L)","Giriş cərəyanı":"Input current","Giriş tezliyi":"Input frequency","Bypass gərginliyi (F–N)":"Bypass voltage (L–N)","Çıxış gərginliyi (F–N)":"Output voltage (L–N)","Çıxış cərəyanı":"Output current","Çıxış tezliyi":"Output frequency","Yük səviyyəsi":"Load level","Çıxış aktiv gücü":"Output active power","DC şin gərginliyi":"DC bus voltage","Akkumulyator ümumi gərginliyi":"Total battery voltage","Akkumulyator şarj cərəyanı":"Battery charging current","Neytral–Yer gərginliyi (N–PE)":"Neutral–Earth voltage (N–PE)","Otaq temperaturu":"Room temperature","UPS daxili temperatur":"UPS internal temperature",
+ "Giriş gərginliyi (F–N)":"Input voltage (L–N)","Giriş gərginliyi (F–F)":"Input voltage (L–L)","Giriş cərəyanı":"Input current","Giriş tezliyi":"Input frequency","Bypass gərginliyi (F–N)":"Bypass voltage (L–N)","Çıxış gərginliyi (F–N)":"Output voltage (L–N)","Çıxış cərəyanı":"Output current","Çıxış tezliyi":"Output frequency","Yük səviyyəsi":"Load level","Çıxış aktiv gücü":"Output active power","DC şin gərginliyi":"DC bus voltage","DC şin gərginliyi (+)":"DC bus voltage (+)","DC şin gərginliyi (−)":"DC bus voltage (−)","orta uc":"centre tap","Güc əmsalı (PF)":"Power factor (PF)","Akkumulyator ümumi gərginliyi":"Total battery voltage","Akkumulyator şarj cərəyanı":"Battery charging current","Neytral–Yer gərginliyi (N–PE)":"Neutral–Earth voltage (N–PE)","Otaq temperaturu":"Room temperature","UPS daxili temperatur":"UPS internal temperature",
  "Normal":"Normal","Norma xaricində":"Out of range","Qeydə alındı":"Recorded","Diqqət":"Attention","Dəyişdirilməli":"Replace","Yaxşı":"Good","Qeyd var":"Remark","Nasaz":"Faulty","Yoxlanılmadı":"Not checked","Tətbiq olunmur":"N/A","Bəli":"Yes","Xeyr":"No",
  "4. Vizual və funksional yoxlama":"4. Visual and functional inspection","Yoxlanılan bənd":"Inspection item","Qeyd":"Note",
  "UPS-in ümumi vizual vəziyyəti":"General visual condition of the UPS","Ekran / panel göstəriciləri və alarmlar":"Display / panel indicators and alarms","Hadisə jurnalı (event log)":"Event log","Soyutma ventilyatorları":"Cooling fans","Hava filtrləri":"Air filters","Güc kabelləri və klemmələr (bərkidilmə)":"Power cables and terminals (tightening)","Termal yoxlama (termokamera)":"Thermal inspection (thermal camera)","DC kondensatorlar (şişmə / axma)":"DC capacitors (bulging / leakage)","AC filtr kondensatorları":"AC filter capacitors","Rektifikator / şarj bloku":"Rectifier / charger","İnvertor bloku":"Inverter","Statik bypass":"Static bypass","Bypass-a keçid və geri qayıdış testi":"Transfer to bypass and return test","Akkumulyator kabineti / rəfi və bağlantılar":"Battery cabinet / rack and connections","Akkumulyator açarı / qoruyucular":"Battery breaker / fuses","EPO (təcili söndürmə) funksiyası":"EPO (emergency power off) function","Rabitə (SNMP / Modbus / quru kontaktlar)":"Communication (SNMP / Modbus / dry contacts)","Otaq şəraiti (temperatur, toz, havalandırma)":"Room conditions (temperature, dust, ventilation)",
@@ -432,7 +441,7 @@ ru:{"[Şirkət adı]":"[Название компании]","Hesabat №":"От�
  "1. Müştəri və servis məlumatları":"1. Данные клиента и обслуживания","Müştəri":"Клиент","Əlaqədar şəxs":"Контактное лицо","Obyekt":"Объект","Telefon":"Телефон","Ünvan":"Адрес","Servis mühəndisi":"Сервисный инженер","Servis tarixi":"Дата обслуживания","Növbəti servis":"Следующее обслуживание",
  "2. UPS cihazı":"2. ИБП","Marka":"Марка","Model":"Модель","Seriya №":"Серийный №","Firmware":"Прошивка","Güc":"Мощность","Faza (giriş/çıxış)":"Фазы (вход/выход)","Topologiya":"Топология","Quraşdırma tarixi":"Дата установки",
  "3. Ölçmə nəticələri":"3. Результаты измерений","Parametr":"Параметр","Vahid":"Ед.","Norma":"Норма","Nəticə":"Результат",
- "Giriş gərginliyi (F–N)":"Входное напряжение (Ф–N)","Giriş gərginliyi (F–F)":"Входное напряжение (Ф–Ф)","Giriş cərəyanı":"Входной ток","Giriş tezliyi":"Входная частота","Bypass gərginliyi (F–N)":"Напряжение байпаса (Ф–N)","Çıxış gərginliyi (F–N)":"Выходное напряжение (Ф–N)","Çıxış cərəyanı":"Выходной ток","Çıxış tezliyi":"Выходная частота","Yük səviyyəsi":"Уровень нагрузки","Çıxış aktiv gücü":"Выходная активная мощность","DC şin gərginliyi":"Напряжение шины DC","Akkumulyator ümumi gərginliyi":"Общее напряжение батареи","Akkumulyator şarj cərəyanı":"Ток заряда батареи","Neytral–Yer gərginliyi (N–PE)":"Напряжение нейтраль–земля (N–PE)","Otaq temperaturu":"Температура в помещении","UPS daxili temperatur":"Внутренняя температура ИБП",
+ "Giriş gərginliyi (F–N)":"Входное напряжение (Ф–N)","Giriş gərginliyi (F–F)":"Входное напряжение (Ф–Ф)","Giriş cərəyanı":"Входной ток","Giriş tezliyi":"Входная частота","Bypass gərginliyi (F–N)":"Напряжение байпаса (Ф–N)","Çıxış gərginliyi (F–N)":"Выходное напряжение (Ф–N)","Çıxış cərəyanı":"Выходной ток","Çıxış tezliyi":"Выходная частота","Yük səviyyəsi":"Уровень нагрузки","Çıxış aktiv gücü":"Выходная активная мощность","DC şin gərginliyi":"Напряжение шины DC","DC şin gərginliyi (+)":"Напряжение шины DC (+)","DC şin gərginliyi (−)":"Напряжение шины DC (−)","orta uc":"средняя точка","Güc əmsalı (PF)":"Коэффициент мощности (PF)","Akkumulyator ümumi gərginliyi":"Общее напряжение батареи","Akkumulyator şarj cərəyanı":"Ток заряда батареи","Neytral–Yer gərginliyi (N–PE)":"Напряжение нейтраль–земля (N–PE)","Otaq temperaturu":"Температура в помещении","UPS daxili temperatur":"Внутренняя температура ИБП",
  "Normal":"Норма","Norma xaricində":"Вне нормы","Qeydə alındı":"Зафиксировано","Diqqət":"Внимание","Dəyişdirilməli":"Требует замены","Yaxşı":"Хорошо","Qeyd var":"Есть замечание","Nasaz":"Неисправно","Yoxlanılmadı":"Не проверено","Tətbiq olunmur":"Не применимо","Bəli":"Да","Xeyr":"Нет",
  "4. Vizual və funksional yoxlama":"4. Визуальный и функциональный осмотр","Yoxlanılan bənd":"Проверяемый пункт","Qeyd":"Примечание",
  "UPS-in ümumi vizual vəziyyəti":"Общее визуальное состояние ИБП","Ekran / panel göstəriciləri və alarmlar":"Индикация дисплея / панели и аварии","Hadisə jurnalı (event log)":"Журнал событий","Soyutma ventilyatorları":"Вентиляторы охлаждения","Hava filtrləri":"Воздушные фильтры","Güc kabelləri və klemmələr (bərkidilmə)":"Силовые кабели и клеммы (затяжка)","Termal yoxlama (termokamera)":"Тепловизионный контроль","DC kondensatorlar (şişmə / axma)":"Конденсаторы DC (вздутие / утечка)","AC filtr kondensatorları":"Конденсаторы AC-фильтра","Rektifikator / şarj bloku":"Выпрямитель / зарядное устройство","İnvertor bloku":"Инвертор","Statik bypass":"Статический байпас","Bypass-a keçid və geri qayıdış testi":"Тест перехода на байпас и обратно","Akkumulyator kabineti / rəfi və bağlantılar":"Батарейный шкаф / стеллаж и соединения","Akkumulyator açarı / qoruyucular":"Батарейный автомат / предохранители","EPO (təcili söndürmə) funksiyası":"Функция EPO (аварийное отключение)","Rabitə (SNMP / Modbus / quru kontaktlar)":"Связь (SNMP / Modbus / сухие контакты)","Otaq şəraiti (temperatur, toz, havalandırma)":"Условия в помещении (температура, пыль, вентиляция)",
@@ -533,7 +542,7 @@ async function ensureTranslations(r,L){if(L==="az")return true;
   catch(e){toast("Sərbəst mətnlər tərcümə olunmadı (internet?) — qalan hissə tərcümə edildi");return false}}
 
 /* ---------------- calculations ---------------- */
-function measStatus(r,i){const m=r.meas[i],n=mPh(r,i);if(!n)return "";const vals=m.v.slice(0,n).map(num).filter(x=>x!==null);
+function measStatus(r,i){const m=r.meas[i],n=mPh(r,i);if(!n)return "";const neg=/\(−\)/.test((MEAS[i]||[""])[0]);const vals=m.v.slice(0,n).map(num).filter(x=>x!==null).map(v=>neg?Math.abs(v):v);
   if(!vals.length)return "";const mn=num(m.min),mx=num(m.max);
   if(vals.some(v=>(mn!==null&&v<mn)||(mx!==null&&v>mx)))return "Norma xaricində";
   return (mn===null&&mx===null)?"Qeydə alındı":"Normal"}
@@ -833,6 +842,7 @@ function renderHome(){
 /* next service from an earlier report: customer + every device (passport data, battery set-up, measurement limits) are copied;
    measurements, checklist, works, photos, parts and notes start empty */
 /* parallel operation (UPS, stabilizers, generators, rectifiers, compensators working together) */
+Object.assign(DICT.en,{"Yerləşdiyi yer":"Location"});Object.assign(DICT.ru,{"Yerləşdiyi yer":"Расположение"});
 Object.assign(DICT.en,{"Paralel iş":"Parallel operation","Paralel sistemlər":"Parallel systems","Tək işləyir (paralel deyil)":"Single unit (not parallel)","Paralel — ehtiyat (N+1)":"Parallel — redundant (N+1)","Paralel — güc artırma":"Parallel — capacity","Paralel — isti ehtiyat (hot standby)":"Parallel — hot standby"});
 Object.assign(DICT.ru,{"Paralel iş":"Параллельная работа","Paralel sistemlər":"Параллельные системы","Tək işləyir (paralel deyil)":"Одиночный (не параллельно)","Paralel — ehtiyat (N+1)":"Параллельно — резервирование (N+1)","Paralel — güc artırma":"Параллельно — наращивание мощности","Paralel — isti ehtiyat (hot standby)":"Параллельно — горячий резерв"});
 const PAR_MODES=["Tək işləyir (paralel deyil)","Paralel — ehtiyat (N+1)","Paralel — güc artırma","Paralel — isti ehtiyat (hot standby)"];
@@ -847,7 +857,7 @@ function dupDevice(i){const R=state.rep,src=R.devices[i],d=clone(src);
   R.devices.splice(i+1,0,d);setActive(i+1);markDirty();return d}
 function nextFrom(src){src=realOf(src);const r=blankReport(state.settings);r.cl=clone(src.cl);
   r.svc.type=src.svc.type||r.svc.type;r.svc.interval=src.svc.interval||r.svc.interval;
-  r.devices=src.devices.map(d=>{const nd=blankDevice(state.settings,d.type);nd.info=clone(d.info);nd.par=clone(d.par||nd.par);nd.bat={...clone(d.bat),blocks:[]};
+  r.devices=src.devices.map(d=>{const nd=blankDevice(state.settings,d.type);nd.info=clone(d.info);nd.loc=d.loc||"";nd.par=clone(d.par||nd.par);nd.bat={...clone(d.bat),blocks:[]};
     nd.meas.forEach((m,i)=>{if(d.meas[i]){m.min=d.meas[i].min;m.max=d.meas[i].max}});return nd});return r}
 function startCopy(src){const r=nextFrom(src);startReport(r);state.tab="svc";renderEditor();window.scrollTo(0,0);
   toast("Köçürüldü: "+r.devices.length+" cihaz. Cihaz siyahısını yoxlayın, dəyişiklik varsa düzəldin.")}
@@ -872,7 +882,7 @@ function typePicker(title,hint,onPick,onBack){
   $("#main").innerHTML=`<h2 class="sec">${esc(title)}</h2><p class="hint">${esc(hint)}</p><div class="tpick">${TYPE_ORDER.map(k=>`<button class="tcard" data-tp="${k}"><b>${esc(TYPES[k].label)}</b><span class="note">${esc(TYPES[k].chk.length)} yoxlama bəndi · ${esc(TYPES[k].meas.length)} ölçmə${TYPES[k].hasBat?" · akkumulyator testi":""}</span></button>`).join("")}</div>
   <button class="btn ghost" id="tpBack" style="margin-top:12px">← Geri</button>`;
   document.querySelectorAll("[data-tp]").forEach(b=>b.onclick=()=>onPick(b.dataset.tp));$("#tpBack").onclick=onBack;window.scrollTo(0,0)}
-function startReport(r){if(!r.svc.eng)r.svc.eng=state.me.name;if(!r.creator)r.creator=state.me.name;state.reports[r.id]=r;openReport(r);markDirty()}
+function startReport(r){applyRepNo(r,true);if(!r.svc.eng)r.svc.eng=state.me.name;if(!r.creator)r.creator=state.me.name;state.reports[r.id]=r;openReport(r);markDirty()}
 function setActive(i){const r=state.rep;state.di=Math.max(0,Math.min(i,r.devices.length-1));useType(r.devices[state.di].type);state.cur=devProxy(r,state.di);state.bi=0}
 function openReport(r){r=realOf(r);
   /* an approved report opens for a worker as a view-only copy: nothing done on screen can reach the stored report */
@@ -928,7 +938,7 @@ function fld(path,label,o={}){const v=getP(state.cur,path)??"";const id="f-"+pat
   return `<label class="f"><span>${label}</span><input ${t} id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}" autocomplete="off"${dl?` list="${id}-dl"`:""}>${dl}${o.note?`<small class="note">${o.note}</small>`:""}</label>`}
 /* intermediaries used before — offered when the bill goes to a contractor instead of the client */
 function payerList(){const m={};Object.values(state.reports).forEach(r=>{const p=r&&r.cl&&String(r.cl.payer||"").trim();if(p)m[p]=1});return Object.keys(m).sort((a,b)=>a.localeCompare(b,"az"))}
-function tabsFor(){const T=TYPES[CUR_TYPE];return [["svc","Servis"],["ups",T.short],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],...(T.hasBat?[["bat","Akkum."],["blk","Bloklar"]]:[]),["foto","Şəkillər"],["rep","Hesabat"]]}
+function tabsFor(){const T=TYPES[CUR_TYPE];return [["svc","Servis"],["ups",T.short],...(T.hasBat?[["bat","Akkum."]]:[]),["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],...(T.hasBat?[["blk","Bloklar"]]:[]),["foto","Şəkillər"],["rep","Hesabat"]]}
 function devBar(){const R=state.rep;return `<div class="devbar" role="group" aria-label="Cihazlar">${R.devices.map((d,i)=>`<button class="dchip" data-dev="${i}" aria-pressed="${i===state.di}"><span class="k">${i+1}</span>${esc(TYPES[d.type].short)}${devName(d)?" · "+esc(devName(d)):""}</button>`).join("")}<button class="dchip" id="addDev">+ Cihaz</button></div>`}
 function renderEditor(){
   const TABS=tabsFor();if(!TABS.some(x=>x[0]===state.tab))state.tab="ups";
@@ -937,6 +947,7 @@ function renderEditor(){
   $("#tabs").innerHTML=TABS.map(([k,l],i)=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${k===state.tab}"><span class="n">${i+1}</span>${l}</button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;renderEditor();window.scrollTo(0,0)});
   const sel=document.querySelector('.tab[aria-selected="true"]');if(sel)sel.scrollIntoView({inline:"center",block:"nearest"});
+  if(state.tab==="meas"&&CUR_TYPE==="ups")autoLimits(state.cur);
   const body=SECTIONS[state.tab]();
   const i=TABS.findIndex(t=>t[0]===state.tab);
   const nav=`<div class="nextbar">${i>0?`<button class="btn" data-go="${TABS[i-1][0]}">← ${TABS[i-1][1]}</button>`:"<span></span>"}${i<TABS.length-1?`<button class="btn pri" data-go="${TABS[i+1][0]}">${TABS[i+1][1]} →</button>`:""}</div>`;
@@ -948,31 +959,63 @@ function renderEditor(){
   live();applyLock();
 }
 document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);markDirty();live()});
-document.addEventListener("change",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);markDirty();live()});
+document.addEventListener("change",e=>{if(e.target.id==="batMid"&&state.cur&&!lockedRep(state.rep)){state.cur.bat.mid=e.target.checked;autoLimits(state.cur);markDirty();live();return}
+  const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);
+  {const mm=/^meas\.(\d+)\.(min|max)$/.exec(p);if(mm)state.cur.meas[+mm[1]].man=1}
+  if(/^(ups\.(kva|kw|pf|phase)|bat\.(per|str|nom|ah))$/.test(p)){if(p==="ups.pf"||p==="ups.kva"){const u=state.cur.ups,k=num(u.kva),f=num(String(u.pf||"").replace(",","."));if(k&&f&&!num(u.kw)){u.kw=String(Math.round(k*f*10)/10);const el=document.getElementById("f-ups-kw");if(el)el.value=u.kw}}autoLimits(state.cur)}
+  if(p==="svc.repno"){const R=realOf(state.rep);R.svc.repnoAuto=!String(e.target.value).trim();if(R.svc.repnoAuto){applyRepNo(R);e.target.value=R.svc.repno}}
+  else if(p==="svc.type"||p==="svc.date"||p==="svc.interval"){const R=realOf(state.rep);applyRepNo(R);const f=document.getElementById("f-svc-repno");if(f)f.value=R.svc.repno||""}
+  markDirty();live()});
+/* norm limits worked out from the UPS power, power factor, phases and the battery string (limits typed by hand are kept) */
+function upsNominal(V){const u=V.ups||{},S=num(u.kva),pf=num(String(u.pf||"").replace(",","."))||(num(u.kw)&&S?num(u.kw)/S:null)||0.9,P=num(u.kw)||(S?S*pf:null),ph=devPhases(V);
+  const b=V.bat||{},per=Math.floor(num(b.per)||0),cells=Math.max(1,Math.round((num(b.nom)||12)/2)),half=b.mid?Math.floor(per/2):per;
+  return {S,P,pf,ph,iout:S?S*1000/(ph.pout===3?Math.sqrt(3)*400:230):null,iin:P?P*1000/(0.94*(ph.pin===3?Math.sqrt(3)*400:230))*1.1:null,
+    vb:half>0?[half*cells*2.23,half*cells*2.30]:null,ich:num(b.ah)>0?0.1*num(b.ah)*Math.max(1,Math.floor(num(b.str)||1)):null,half,per,mid:!!b.mid}}
+function autoLimits(V){if(!V||CUR_TYPE!=="ups"||!V.meas)return;const N=upsNominal(V),r1=x=>x==null?"":String(Math.round(x*10)/10),r0=x=>x==null?"":String(Math.round(x));
+  const set=(lab,mn,mx)=>{const j=MEAS.findIndex(m=>m[0]===lab);if(j<0||!V.meas[j]||V.meas[j].man)return;if(mn!==undefined)V.meas[j].min=mn;if(mx!==undefined)V.meas[j].max=mx;
+    const a=document.getElementById("mn-"+j),b=document.getElementById("mx-"+j);if(a)a.value=V.meas[j].min;if(b)b.value=V.meas[j].max};
+  set("Giriş cərəyanı","",r1(N.iin));set("Çıxış cərəyanı","",r1(N.iout));set("Çıxış aktiv gücü","",r1(N.P));
+  set("Akkumulyator ümumi gərginliyi",N.vb?r0(N.vb[0]):"",N.vb?r0(N.vb[1]):"");
+  set("DC şin gərginliyi (+)",N.vb?r0(N.vb[0]*0.95):"",N.vb?r0(N.vb[1]*1.05):"");set("DC şin gərginliyi (−)",N.vb?r0(N.vb[0]*0.95):"",N.vb?r0(N.vb[1]*1.05):"");
+  set("Akkumulyator şarj cərəyanı","",r1(N.ich))}
+/* automatic report number: KOD-YYYYMMDD-NN — the code from the kind of work, the date of the work, NN = which work of that day (01, 02, 03 …).
+   RSH rüblük · ASH aylıq · YSH yarımillik · İSH illik servis · TSH təmir / qəza · DSH diaqnostika / akkumulyator testi · QSH quraşdırma.
+   A number typed by hand is kept; clearing the field brings the automatic one back. */
+function repPrefix(r){const t=String(r.svc.type||""),iv=num(r.svc.interval);
+  if(/Diaq|testi/i.test(t))return "DSH";if(/Təmir|Qəza/i.test(t))return "TSH";if(/Quraşdırma/i.test(t))return "QSH";
+  return iv>0&&iv<=1?"ASH":iv>=12?"İSH":iv>=6?"YSH":"RSH"}
+function applyRepNo(r,fresh){if(!r||!r.svc)return;const cur=String(r.svc.repno||"").trim();if(cur&&r.svc.repnoAuto!==true)return;
+  const d=String(r.svc.date||todayISO()).replace(/-/g,"").slice(0,8),pre=repPrefix(r),re=/^[A-ZƏİ]{3}-(\d{8})-(\d{2,})$/,m0=cur.match(re);
+  if(m0&&m0[1]===d&&!fresh){r.svc.repno=pre+"-"+d+"-"+m0[2];r.svc.repnoAuto=true;return}
+  let mx=0;const seen=x=>{const m=String(x||"").match(re);if(m&&m[1]===d)mx=Math.max(mx,+m[2])};
+  Object.values(state.reports||{}).forEach(x=>{if(x&&x.id!==r.id&&x.svc)seen(x.svc.repno)});Object.values(state.remote||{}).forEach(x=>{if(x&&x.id!==r.id)seen(x.repno)});
+  r.svc.repno=pre+"-"+d+"-"+String(mx+1).padStart(2,"0");r.svc.repnoAuto=true}
 function live(){if(!state.cur)return;const a=analyze(state.cur);
   document.querySelectorAll("[data-live]").forEach(el=>{const k=el.dataset.live;let v="",c="";
     if(k.startsWith("m")){v=a.ms[+k.slice(1)];c=stCls(v)}
     else if(k==="next")v=a.next?fmtDate(a.next):"—";
     else if(k==="age")v=a.age!==null?a.age.toFixed(1)+" il":"—";
-    else if(k==="tot")v=a.tot+" blok";
+    else if(k==="tot")v=a.tot+" blok"+(state.cur.bat.mid&&num(state.cur.bat.per)>1?" · orta uc: "+Math.floor(num(state.cur.bat.per)/2)+" + "+(Math.floor(num(state.cur.bat.per))-Math.floor(num(state.cur.bat.per)/2)):"");
+    else if(k==="batnorm"){const N=upsNominal(state.cur);v=N.vb?Math.round(N.vb[0])+" … "+Math.round(N.vb[1])+" V ("+N.half+" blok"+(N.mid?", yarı qrup — UPS ekranındakı kimi":"")+")":"blok sayını yazın"}
     else if(k==="ref")v=a.ref?fmt(a.ref)+" mΩ"+(num(state.cur.bat.ref)>0?"":" (median)"):"—";
     el.textContent=v;if(el.classList.contains("chip"))el.className="chip "+c})}
 const SECTIONS={
  svc(){return `<h2 class="sec">Servis və müştəri</h2><p class="hint">Hesabat nömrəsi, tarix və müştəri məlumatları.</p>
-  <div class="card"><h3>Servis</h3><div class="grid2">${fld("svc.repno","Hesabat №",{ph:"SR-2026-0143"})}${fld("svc.date","Servis tarixi",{date:1})}</div>
+  <div class="card"><h3>Servis</h3><div class="grid2">${fld("svc.repno","Hesabat №",{ph:"avtomatik, məs. RSH-20261013-01"})}${fld("svc.date","Servis tarixi",{date:1})}</div>
   ${fld("svc.type","Servis növü",{sel:SVC_TYPES})}<div class="grid2">${fld("svc.eng","Servis mühəndisi")}${isDiag(state.rep)?"":fld("svc.interval","Növbəti servis intervalı, ay",{n:1})}</div>${isDiag(state.rep)?`<p class="note" style="margin:0">Diaqnostika: müştəri servis müqaviləsində deyil — növbəti servis planlanmır və servis cədvəlinə düşmür.</p>`:""}
   <div class="note">Növbəti servis: <b data-live="next"></b></div></div>
   <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.payer","Hesab kimə (vasitəçi / podratçı şirkət)",{list:payerList(),ph:"boş = müştərinin özü",note:"İş vasitəçi şirkət vasitəsilə görülürsə, onun adını yazın — Satış və Anbarda hesab ona yazılır. Hesabatda (PDF) görünmür."})}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
   <div class="grid2">${fld("cl.person","Əlaqədar şəxs")}${fld("cl.tel","Telefon")}</div>${fld("cl.sign","İmza üçün müştəri nümayəndəsi")}</div>
   <div class="card"><h3>Müştərinin cihazları (${state.rep.devices.length})</h3>
-  <div class="dlist">${state.rep.devices.map((d,i)=>`<div class="drow"><span class="k">${i+1}</span><span class="dn"><b>${esc(TYPES[d.type].title)}</b>${devName(d)||d.info.sn||isPar(d)?`<small>${esc([devName(d),d.info.sn?"SN "+d.info.sn:"",isPar(d)?"paralel"+(parText(d)?": "+parText(d):""):""].filter(Boolean).join(" · "))}</small>`:""}</span>
+  <div class="dlist">${state.rep.devices.map((d,i)=>`<div class="drow"><span class="k">${i+1}</span><span class="dn"><b>${esc(TYPES[d.type].title)}</b>${devName(d)||d.info.sn||isPar(d)||d.loc?`<small>${esc([devName(d),d.info.sn?"SN "+d.info.sn:"",d.loc?"📍 "+d.loc:"",isPar(d)?"paralel"+(parText(d)?": "+parText(d):""):""].filter(Boolean).join(" · "))}</small>`:""}</span>
     <button class="btn sm" data-dedit="${i}">Düzəlt</button><button class="btn sm" data-ddup="${i}" title="Kopyala" aria-label="Kopyala">⧉</button>${state.rep.devices.length>1?`<button class="btn sm danger" data-ddel="${i}">Sil</button>`:""}</div>`).join("")}</div>
   <button class="btn" id="svcAddDev">+ Cihaz əlavə et</button></div>
   ${state.rep.devices.some(d=>devName(d)||d.info.sn)||state.rep.cl.name?`<div class="card"><h3>Növbəti servis</h3><p class="note" style="margin:0">Bu hesabatın müştəri və cihaz siyahısından yeni hesabat yaradılır. Ölçmələr, yoxlama, görülən işlər və şəkillər boş başlayır; bu hesabat dəyişmir.</p>
   <button class="btn" id="svcCopy">⧉ Növbəti servis üçün kopyala</button></div>`:""}`},
  upsUPS(){return `<h2 class="sec">UPS cihazı</h2><p class="hint">Cihazın pasport məlumatları.</p><div class="card">
   <div class="grid2">${fld("ups.brand","Marka")}${fld("ups.model","Model")}</div>${fld("ups.sn","Seriya №")}
-  <div class="grid2">${fld("ups.kva","Nominal güc, kVA",{n:1})}${fld("ups.kw","Nominal güc, kW",{n:1})}</div>
+  <div class="grid3">${fld("ups.kva","Nominal güc, kVA",{n:1})}${fld("ups.pf","Güc əmsalı (PF)",{sel:UPS_PF})}${fld("ups.kw","Nominal güc, kW",{n:1})}</div>
+  <p class="note" style="margin:0">Güc və PF yazılanda “Ölçmə” bölməsində cərəyan, güc və DC hədləri avtomatik təyin olunur.</p>
   <div class="grid2">${fld("ups.topo","Topologiya",{sel:TOPO})}${fld("ups.phase","Faza (giriş/çıxış)",{sel:PHASE})}</div>
   <div class="grid2">${fld("ups.fw","Firmware")}${fld("ups.inst","Quraşdırma tarixi",{date:1})}</div>${fld("ups.hours","İş saatı / sayğac")}</div>`},
  meas(){return `<h2 class="sec">Ölçmə nəticələri</h2><p class="hint">Üçfazalı parametrlərdə L1–L3, digərlərində bir qiymət. Faza sayı cihazın məlumatlarından götürülür (birfazalıda yalnız L1). Nəticə norma hədlərinə görə dərhal göstərilir.</p><div class="card">`+
@@ -994,7 +1037,9 @@ const SECTIONS={
   <div class="card"><h3>Mühəndisin qeydləri</h3>${fld("notes","Texniki qeydlər",{area:1})}${fld("recs","Əlavə tövsiyələr",{area:1})}</div>`},
  bat(){return `<h2 class="sec">Akkumulyatorlar</h2><p class="hint">Qrup və blok sayını yazın — “Bloklar” bölməsində nömrələr avtomatik yaranır (maks. ${MAXB} blok).</p>
   <div class="card"><h3>Dəst</h3>${fld("bat.brand","Marka / model")}<div class="grid2">${fld("bat.type","Tip",{sel:BTYPE})}${fld("bat.ah","Tutum, Ah",{n:1})}</div>
-  <div class="grid2">${fld("bat.per","Bir qrupdakı blok sayı",{n:1})}${fld("bat.str","Qrup sayı",{n:1})}</div><div class="note">Cəmi: <b data-live="tot"></b></div>
+  <div class="grid2">${fld("bat.per","Bir qrupdakı blok sayı",{n:1})}${fld("bat.str","Qrup (qol) sayı",{n:1})}</div><div class="note">Cəmi: <b data-live="tot"></b></div>
+  <label class="f" style="display:flex;gap:8px;align-items:center;grid-template-columns:none"><input type="checkbox" id="batMid" style="width:auto;min-height:0" ${state.cur.bat.mid?"checked":""}><span>Orta uc (neytral) var — qrup dövrəyə iki yarı (±) kimi qoşulur, məs. 60 = 30 + 30</span></label>
+  <div class="note">Akkumulyator gərginliyinin norması: <b data-live="batnorm"></b></div>
   <div class="grid2">${fld("bat.nom","Blokun nominal gərginliyi, V",{n:1})}${fld("bat.dev","Ölçü cihazı",{ph:"Hioki BT3554"})}</div>
   <div class="grid2">${fld("bat.inst","Quraşdırma tarixi",{date:1})}${fld("bat.life","İstismar müddəti, il",{n:1})}</div><div class="note">Yaşı: <b data-live="age"></b></div></div>
   <div class="card"><h3>Qiymətləndirmə hədləri</h3>${fld("bat.ref","Referans daxili müqavimət, mΩ",{n:1,ph:"boş = ölçmələrin medianı"})}<div class="note">İstifadə olunan referans: <b data-live="ref"></b></div>
@@ -1049,7 +1094,9 @@ SECTIONS.ups=function(){const T=TYPES[CUR_TYPE],R=state.rep;
    ${fld("par.mode","Rejim",{sel:PAR_MODES})}<div class="grid2">${fld("par.grp","Paralel sistemin adı",{ph:"məs. Sistem A"})}${fld("par.pos","Sistemdə №",{ph:"məs. 1/2"})}</div></div>`:"";
   const dupCard=`<div class="card"><h3>Eyni cihazdan daha biri var?</h3><p class="note" style="margin:0">Bu cihazın bütün məlumatları (pasport, paralel iş, akkumulyator quruluşu, ölçmələr, yoxlama, işlər) yeni cihaza köçürülür. Seriya №, şəkillər və akkumulyator blok ölçmələri boş qalır — fərqli olanları düzəldin.</p>
    <button class="btn" id="dupDev">⧉ Bu cihazı kopyala</button></div>`;
-  return body+parCard+dupCard+(R.devices.length>1?`<div class="card"><button class="btn sm danger" id="rmDev">Bu cihazı hesabatdan çıxar</button><div id="rmConf" hidden><p style="margin:0 0 8px"><b>${state.di+1}-ci cihaz və onun bütün ölçmələri bu hesabatdan silinsin?</b></p><div class="actions"><button class="btn danger" id="rmYes">Bəli, çıxar</button><button class="btn" id="rmNo">Ləğv et</button></div></div></div>`:"")};
+  /* where the device stands: branch / building / floor / room (shown on the report and used by Satış for per-branch prices) */
+  const locCard=`<div class="card"><h3>Yerləşdiyi yer</h3>${fld("loc","Filial / bina / mərtəbə / otaq",{list:locList(),ph:"məs. Nərimanov filialı, 2-ci mərtəbə, server otağı",note:"Müştərinin hansı filialında və hansı otaqda yerləşir — hesabatda cihaz məlumatlarında göstərilir."})}</div>`;
+  return locCard+body+parCard+dupCard+(R.devices.length>1?`<div class="card"><button class="btn sm danger" id="rmDev">Bu cihazı hesabatdan çıxar</button><div id="rmConf" hidden><p style="margin:0 0 8px"><b>${state.di+1}-ci cihaz və onun bütün ölçmələri bu hesabatdan silinsin?</b></p><div class="actions"><button class="btn danger" id="rmYes">Bəli, çıxar</button><button class="btn" id="rmNo">Ləğv et</button></div></div></div>`:"")};
 const AFTER={
  svc(){const st=$("#f-svc-type");if(st)st.addEventListener("change",()=>setTimeout(()=>{const y=window.scrollY;renderEditor();window.scrollTo(0,y)},0));
   document.querySelectorAll("[data-ddup]").forEach(b=>b.onclick=()=>{const i=+b.dataset.ddup;dupDevice(i);state.tab="svc";toast("Cihaz "+(i+1)+" kopyalandı → Cihaz "+(i+2));const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
@@ -1218,6 +1265,7 @@ let REPORT_TITLE="UPS TEXNİKİ SERVİS HESABATI";
 function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=CUR_TYPE,S=state.settings,dash=v=>v?esc(v):"—",T=CT[PL]||CT.az;
   const pc=s=>s==="Normal"||s==="Yaxşı"?"p-ok":s==="Diqqət"||s==="Qeyd var"?"p-warn":s==="Dəyişdirilməli"||s==="Nasaz"||s==="Norma xaricində"?"p-bad":"";
   const parRow=d=>isPar(d)?[[["Paralel iş",esc(t(d.par.mode))+(parText(d)?" — "+esc(parText(d)):"")]]]:[];
+  const locRow=d=>String(d.loc||"").trim()?[[["Yerləşdiyi yer",esc(d.loc)]]]:[];
   const parSummary=()=>{const G={};r.devices.forEach((d,i)=>{if(!isPar(d))return;const k=(d.par.grp||"").trim()||t(d.par.mode);(G[k]=G[k]||{mode:d.par.mode,ix:[]}).ix.push(i+1)});
     const ks=Object.keys(G);if(!ks.length)return [];
     return [[["Paralel sistemlər",ks.map(k=>`${esc(k)}: ${G[k].ix.map(n=>t("Cihaz")+" "+n).join(" + ")}${k===t(G[k].mode)?"":" ("+esc(t(G[k].mode))+")"}`).join("; ")]]]};
@@ -1237,11 +1285,11 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
   A.devs.forEach(({d,i,V,a})=>{useType(d.type);const u=V.ups;let k=0;
     const head=title=>multi?`<h5>${n}.${++k}. ${t(title)}</h5>`:`<h4>${n++}. ${t(title)}</h4>`;
     const norm=j=>{const m=V.meas[j],mn=m.min,mx=m.max;return !mn&&!mx?"—":!mn?"≤ "+esc(mx):!mx?"≥ "+esc(mn):esc(mn)+" – "+esc(mx)};
-    let band="";if(multi){h+=i>0?'<div class="pb"></div>':"";band=`<h4 class="devh"><span>${n}. ${t("Cihaz")} ${i+1}: ${t(TYPES[d.type].title)}${devName(d)?" — "+esc(devName(d)):""}</span><b class="${ovc(a.cls)}">${t(a.overall)}</b></h4>`}
+    let band="";if(multi){h+=i>0?'<div class="pb"></div>':"";band=`<h4 class="devh"><span>${n}. ${t("Cihaz")} ${i+1}: ${t(TYPES[d.type].title)}${devName(d)?" — "+esc(devName(d)):""}${d.loc?" · "+esc(d.loc):""}</span><b class="${ovc(a.cls)}">${t(a.overall)}</b></h4>`}
     /* device data */
-    if(d.type==="ups")h+=W(band+head(multi?"Cihaz məlumatları":"UPS cihazı")+kv([[["Marka",dash(u.brand)],["Model",dash(u.model)]],[["Seriya №",dash(u.sn)],["Firmware",dash(u.fw)]],[["Güc",(u.kva?esc(u.kva)+" kVA":"")+(u.kw?" / "+esc(u.kw)+" kW":"")||"—"],["Faza (giriş/çıxış)",dash(u.phase)]],[["Topologiya",tv(u.topo)],["Quraşdırma tarixi",dash(fmtDate(u.inst))]]].concat(parRow(d))));
+    if(d.type==="ups")h+=W(band+head(multi?"Cihaz məlumatları":"UPS cihazı")+kv(locRow(d).concat([[["Marka",dash(u.brand)],["Model",dash(u.model)]],[["Seriya №",dash(u.sn)],["Firmware",dash(u.fw)]],[["Güc",(u.kva?esc(u.kva)+" kVA":"")+(u.kw?" / "+esc(u.kw)+" kW":"")||"—"],["Faza (giriş/çıxış)",dash(u.phase)]],[["Topologiya",tv(u.topo)],["Quraşdırma tarixi",dash(fmtDate(u.inst))]]]).concat(parRow(d))));
     else{const F=TYPES[d.type].info.map(([key,lab,o])=>[lab,o&&o.date?dash(fmtDate(u[key])):o&&o.sel?tv(u[key]):dash(u[key])]);const rows=[];for(let x=0;x<F.length;x+=2)rows.push(F.slice(x,x+2));
-      h+=W(band+head(multi?"Cihaz məlumatları":TYPES[d.type].title)+kv(rows.concat(parRow(d))))}
+      h+=W(band+head(multi?"Cihaz məlumatları":TYPES[d.type].title)+kv(locRow(d).concat(rows,parRow(d))))}
     const mIdx=MEAS.map((m,j)=>j).filter(j=>mPh(V,j)>0&&V.meas[j].v.slice(0,mPh(V,j)).some(x=>String(x??"").trim()!==""));
     const tri=mIdx.some(j=>mPh(V,j)===3);
     if(mIdx.length)h+=W(head("Ölçmə nəticələri")+`<table class="${tri?"m3":"m1"}"><tr><th style="text-align:left">${t("Parametr")}</th>${tri?"<th>L1</th><th>L2</th><th>L3</th>":"<th>L1</th>"}<th>${t("Vahid")}</th><th>${t("Norma")}</th><th>${t("Nəticə")}</th></tr>`+
@@ -1252,7 +1300,7 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
     const wIdx=WORKS.map((w,j)=>j).filter(j=>V.works[j]==="Bəli");
     if(wIdx.length||V.wExtra)h+=W(head("Görülən işlər")+(wIdx.length?`<table>`+wIdx.map((j,q)=>[WORKS[j],j,q]).map(([w,j,q])=>`<tr><td class="c" style="width:4%">${q+1}</td><td>${esc(t(w))}</td><td class="c" style="width:14%">${tv(V.works[j])}</td></tr>`).join("")+`</table>`:"")+`${V.wExtra?`<p><i>${t("Əlavə:")} ${esc(ft(V.wExtra))}</i></p>`:""}`);
     if(TYPES[d.type].hasBat){const B=V.bat,p=Math.floor(num(B.per))||0,ns=p?Math.ceil(a.tot/p):0;
-      h+=(multi?"":'<div class="pb"></div>')+W(head("Akkumulyatorlar")+kv([[["Marka / model",dash(B.brand)],["Tip",tv(B.type)]],[["Konfiqurasiya",a.tot?esc(T.cfg(B.str,B.per,a.tot)):"—"],["Tutum",B.ah?esc(B.ah)+" Ah":"—"]],[["Quraşdırma tarixi",dash(fmtDate(B.inst))],["Yaşı",a.age!==null?a.age.toFixed(1)+" "+t("il"):"—"]],[["Ölçü cihazı",dash(B.dev)],["Referans R",a.ref?fmt(a.ref)+" mΩ":"—"]]])+
+      h+=(multi?"":'<div class="pb"></div>')+W(head("Akkumulyatorlar")+kv([[["Marka / model",dash(B.brand)],["Tip",tv(B.type)]],[["Konfiqurasiya",a.tot?esc(T.cfg(B.str,B.per,a.tot))+(B.mid&&num(B.per)>1?" · "+esc(t("orta uc"))+" ("+Math.floor(num(B.per)/2)+" + "+(Math.floor(num(B.per))-Math.floor(num(B.per)/2))+")":""):"—"],["Tutum",B.ah?esc(B.ah)+" Ah":"—"]],[["Quraşdırma tarixi",dash(fmtDate(B.inst))],["Yaşı",a.age!==null?a.age.toFixed(1)+" "+t("il"):"—"]],[["Ölçü cihazı",dash(B.dev)],["Referans R",a.ref?fmt(a.ref)+" mΩ":"—"]]])+
       `<table style="margin-top:6px"><tr><td class="k">${t("Ölçülmüş blok")}</td><td>${a.tested.length}</td><td class="k">${t("Orta R, mΩ")}</td><td>${a.rv.length?fmt(a.rv.reduce((x,y)=>x+y,0)/a.rv.length):"—"}</td><td class="k">${t("Min / maks R")}</td><td>${a.rv.length?fmt(Math.min(...a.rv))+" / "+fmt(Math.max(...a.rv)):"—"}</td></tr>
       <tr><td class="k">${t("Orta blok V")}</td><td>${a.vv.length?fmt(a.vv.reduce((x,y)=>x+y,0)/a.vv.length):"—"}</td><td class="k">${t("Min / maks V")}</td><td>${a.vv.length?fmt(Math.min(...a.vv))+" / "+fmt(Math.max(...a.vv)):"—"}</td><td class="k">${t("Normal / Diqqət / Dəyiş.")}</td><td><span class="p-ok">&nbsp;${a.tested.length-a.att.length-a.rep.length}&nbsp;</span> / <span class="p-warn">&nbsp;${a.att.length}&nbsp;</span> / <span class="p-bad">&nbsp;${a.rep.length}&nbsp;</span></td></tr></table>
       ${a.strings.length?`<table style="margin-top:6px"><tr><th style="text-align:left">${t("Qrup")}</th><th>${t("Blok sayı")}</th><th>${t("Cəmi V")}</th><th>${t("Orta R, mΩ")}</th><th>${t("Maks R")}</th><th>${t("Diqqət")}</th><th>${t("Dəyişdirilməli")}</th></tr>${a.strings.map(g=>`<tr><td>${t("Qrup")} ${g.s}</td><td class="c">${g.n}</td><td class="c num">${g.sumV?g.sumV.toFixed(1):"—"}</td><td class="c num">${fmt(g.avgR)}</td><td class="c num">${fmt(g.maxR)}</td><td class="c ${g.att?"p-warn":""}">${g.att}</td><td class="c ${g.rep?"p-bad":""}">${g.rep}</td></tr>`).join("")}</table>`:""}
@@ -1597,7 +1645,7 @@ async function exportXlsx(){const root=await prepareFolder();await flush();const
 /* ================= detal siyahıları: yararsız və dəyişdirilmiş detallar (müştəri / il üzrə) ================= */
 Object.assign(DICT.en,{"Diaqnostika":"Diagnostics","Servis növü":"Service type","planlanmır (diaqnostika)":"not planned (diagnostics)","TEXNİKİ DİAQNOSTİKA HESABATI":"TECHNICAL DIAGNOSTICS REPORT","UPS TEXNİKİ DİAQNOSTİKA HESABATI":"UPS TECHNICAL DIAGNOSTICS REPORT","Yararsız / dəyişdirilməli detallar":"Defective parts (to be replaced)","Detal":"Part","Səbəb / qeyd":"Reason / note"});
 Object.assign(DICT.ru,{"Diaqnostika":"Диагностика","Servis növü":"Вид работ","planlanmır (diaqnostika)":"не планируется (диагностика)","TEXNİKİ DİAQNOSTİKA HESABATI":"ОТЧЁТ О ТЕХНИЧЕСКОЙ ДИАГНОСТИКЕ","UPS TEXNİKİ DİAQNOSTİKA HESABATI":"ОТЧЁТ О ТЕХНИЧЕСКОЙ ДИАГНОСТИКЕ ИБП","Yararsız / dəyişdirilməli detallar":"Неисправные детали (к замене)","Detal":"Деталь","Səbəb / qeyd":"Причина / примечание"});
-function devLabel(d,i){return (i+1)+". "+TYPES[d.type].title+(devName(d)?" — "+devName(d):"")}
+function devLabel(d,i){return (i+1)+". "+TYPES[d.type].title+(devName(d)?" — "+devName(d):"")+(d.loc?" ("+d.loc+")":"")}
 /* one row per item: [cihaz, seriya №, növ, detal, kod, say, qeyd]; "Yararsız" = checklist "Nasaz", battery blocks to replace,
    defective parts typed in "İşlər"; "Dəyişdirilib" = replaced / installed parts */
 function itemsOf(r){r=realOf(r);const keep=CUR_TYPE,out=[];
