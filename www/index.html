@@ -159,6 +159,9 @@ ul.concl{margin:0;padding-left:18px;display:grid;gap:6px}
 .paper .logo{height:52px;width:auto;display:block;margin-bottom:2px}
 .paper .co{font:700 18px var(--f-disp);color:var(--paper-head);text-transform:uppercase}
 .paper .coi{font-size:9.5px;color:#55605C}
+.paper.act{font:12px/1.5 "Times New Roman",Georgia,serif}.paper.act h1{font:700 16px "Times New Roman",serif;text-align:center;letter-spacing:.06em}
+.paper.act table.actsig{width:100%;border:0!important}.paper.act table.actsig td{border:0!important;background:none!important;vertical-align:top;padding:2px 0;width:50%}
+.paper.act .acttx{text-align:justify;text-indent:28px;margin:8px 0}.paper.act table.acttb{width:100%;border-collapse:collapse}.paper.act table.acttb th,.paper.act table.acttb td{border:1px solid #333;padding:4px 6px}.paper.act table.acttb .c{text-align:center}
 .paper .meta{text-align:right;font-size:10.5px}
 .paper h1{font:700 19px var(--f-disp);text-align:center;margin:14px 0 2px;color:var(--paper-head);letter-spacing:.04em}
 .paper .sub{text-align:center;color:#55605C;font-style:italic;margin-bottom:10px}
@@ -242,13 +245,14 @@ const SVR_TECH=["Tiristor","IGBT","Digər"];
 const PANEL_TYPES=["Əsas paylayıcı panel","Paylayıcı panel","ATS paneli","Kompensasiya paneli","Generator paneli","Digər"];
 const CHK_OPTS=[["Yaxşı","s-ok"],["Qeyd var","s-warn"],["Nasaz","s-bad"],["Yoxlanılmadı","s-idle"],["Tətbiq olunmur","s-idle"]];
 const MAXB=480;
+const UPS_PF=["0,8","0,9","1"];
 const TYPES={
  ups:{title:"UPS cihazı",short:"UPS",label:"UPS (fasiləsiz enerji mənbəyi)",hasBat:true,
-  info:[["brand","Marka"],["model","Model"],["sn","Seriya №"],["kva","Güc, kVA",{n:1}],["kw","Güc, kW",{n:1}],["topo","Topologiya",{sel:TOPO}],["phase","Faza (giriş/çıxış)",{sel:PHASE}],["fw","Firmware"],["inst","Quraşdırma tarixi",{date:1}],["hours","İş saatı / sayğac"]],
+  info:[["brand","Marka"],["model","Model"],["sn","Seriya №"],["kva","Güc, kVA",{n:1}],["kw","Güc, kW",{n:1}],["pf","Güc əmsalı (PF)",{sel:UPS_PF}],["topo","Topologiya",{sel:TOPO}],["phase","Faza (giriş/çıxış)",{sel:PHASE}],["fw","Firmware"],["inst","Quraşdırma tarixi",{date:1}],["hours","İş saatı / sayğac"]],
   meas:[["Giriş gərginliyi (F–N)","V",207,253,3],["Giriş gərginliyi (F–F)","V",360,440,3],["Giriş cərəyanı","A",null,null,3],
-   ["Giriş tezliyi","Hz",49.5,50.5,1],["Bypass gərginliyi (F–N)","V",207,253,3],["Çıxış gərginliyi (F–N)","V",225,235,3],
-   ["Çıxış cərəyanı","A",null,null,3],["Çıxış tezliyi","Hz",49.9,50.1,1],["Yük səviyyəsi","%",0,80,3],
-   ["Çıxış aktiv gücü","kW",null,null,1],["DC şin gərginliyi","V",null,null,1],["Akkumulyator ümumi gərginliyi","V",null,null,1],
+   ["Bypass gərginliyi (F–N)","V",207,253,3],["Çıxış gərginliyi (F–N)","V",225,235,3],
+   ["Çıxış cərəyanı","A",null,null,3],["Yük səviyyəsi","%",0,80,3],
+   ["Çıxış aktiv gücü","kW",null,null,1],["DC şin gərginliyi (+)","V",null,null,1],["DC şin gərginliyi (−)","V",null,null,1],["Akkumulyator ümumi gərginliyi","V",null,null,1],
    ["Akkumulyator şarj cərəyanı","A",null,null,1],["Neytral–Yer gərginliyi (N–PE)","V",0,3,1],["Otaq temperaturu","°C",15,25,1],
    ["UPS daxili temperatur","°C",null,40,1]],
   chk:["UPS-in ümumi vizual vəziyyəti","Ekran / panel göstəriciləri və alarmlar","Hadisə jurnalı (event log)","Soyutma ventilyatorları","Hava filtrləri","Güc kabelləri və klemmələr (bərkidilmə)","Termal yoxlama (termokamera)","DC kondensatorlar (şişmə / axma)","AC filtr kondensatorları","Rektifikator / şarj bloku","İnvertor bloku","Statik bypass","Bypass-a keçid və geri qayıdış testi","Akkumulyator kabineti / rəfi və bağlantılar","Akkumulyator açarı / qoruyucular","EPO (təcili söndürmə) funksiyası","Rabitə (SNMP / Modbus / quru kontaktlar)","Otaq şəraiti (temperatur, toz, havalandırma)"],
@@ -302,6 +306,8 @@ const TYPES={
    ["Gərginlik çökmələri (dips), say","—",null,null,1],["Gərginlik artmaları (swells), say","—",null,null,1],["Kəsilmələr, say","—",null,null,1],["Tranzientlər, say","—",null,null,1],["Neytral–Yer gərginliyi (N–PE)","V",0,3,1]],
   chk:["Analizatorun qoşulması və təhlükəsizlik","Faza ardıcıllığı (fırlanma)","Cərəyan kleşlərinin istiqaməti","Gərginliyin stabilliyi","Harmoniklər","Gərginlik çökmələri / kəsilmələr","Tranzientlər","Fazaların yüklənmə balansı","Neytral cərəyanı / neytralın yüklənməsi","Güc əmsalı (kompensasiya ehtiyacı)","Ölçmə məlumatları kompüterə yükləndi (Energy Analyze Plus)"],
   works:["Analizatorun quraşdırılması və konfiqurasiyası","Uzunmüddətli qeydiyyat (logging)","Məlumatların yüklənməsi və təhlili","Qrafiklərin və cədvəllərin hazırlanması","Nəticə və tövsiyələrin hazırlanması"]}};
+/* UPS measurements before the 2026-10 change (frequencies removed, DC bus split into + and −): saved reports are mapped by name */
+const UPS_MEAS_V1=["Giriş gərginliyi (F–N)","Giriş gərginliyi (F–F)","Giriş cərəyanı","Giriş tezliyi","Bypass gərginliyi (F–N)","Çıxış gərginliyi (F–N)","Çıxış cərəyanı","Çıxış tezliyi","Yük səviyyəsi","Çıxış aktiv gücü","DC şin gərginliyi","Akkumulyator ümumi gərginliyi","Akkumulyator şarj cərəyanı","Neytral–Yer gərginliyi (N–PE)","Otaq temperaturu","UPS daxili temperatur"];
 const TYPE_ORDER=["ups","avr","svr","gen","panel","rect","pfc","pq"];
 let MEAS=TYPES.ups.meas,CHK=TYPES.ups.chk,WORKS=TYPES.ups.works,IDX_LOAD=8,IDX_ROOM=14,CUR_TYPE="ups";
 function useType(tp){const T=TYPES[tp]||TYPES.ups;CUR_TYPE=TYPES[tp]?tp:"ups";MEAS=T.meas;CHK=T.chk;WORKS=T.works;
@@ -315,12 +321,22 @@ function devPhases(V){const u=(V&&V.ups)||{};let pin=3,pout=3;const ph=String(u.
 function mPh(V,j){const m=MEAS[j];if(!m)return 0;const P=devPhases(V),side=/^Giriş/.test(m[0])?P.pin:P.pout;
   if(side===1&&/\(F–F\)|asimmetriya/i.test(m[0]))return 0;return m[4]===3?(side===1?1:3):1}
 function chkHidden(V,j){const P=devPhases(V);return P.pout===1&&/^(Faza ardıcıllığı|Fazaların yüklənmə balansı)/.test(CHK[j]||"")}
-const DEVKEYS={bad:"bad",par:"par",ups:"info",meas:"meas",chk:"chk",works:"works",wExtra:"wExtra",bat:"bat",dis:"dis",photos:"photos",parts:"parts",devType:"type"};
+const DEVKEYS={x:"x",loc:"loc",bad:"bad",par:"par",ups:"info",meas:"meas",chk:"chk",works:"works",wExtra:"wExtra",bat:"bat",dis:"dis",photos:"photos",parts:"parts",devType:"type"};
 function devProxy(r,i){const d=r.devices[i];return new Proxy(r,{
   get(t,k){if(k==="__real")return t;if(k==="__dev")return d;if(k==="__di")return i;if(typeof k==="string"&&k in DEVKEYS)return d[DEVKEYS[k]];return t[k]},
   set(t,k,v){if(typeof k==="string"&&k in DEVKEYS)d[DEVKEYS[k]]=v;else t[k]=v;return true}})}
 const realOf=r=>(r&&r.__real)||r;
+/* ---- rəhbər təsdiqi: işçi işi bitirir → rəhbər / servis müdiri yoxlayır, lazım olsa düzəldir, təsdiqləyir.
+   Təsdiqlənmiş hesabat Satış və Anbar proqramına gedir (satış + anbardan çıxacaq hissələr); işçi onu artıq dəyişə bilmir. */
+const APPR_SINCE="2026-10-01";
+const apprOf=r=>{r=realOf(r);return r&&r.appr&&r.appr.at?r.appr:null};
+const lockedRep=r=>!!r&&!realOf(r).sample&&!!apprOf(r)&&state.me.role!=="admin";
+const needsAppr=s=>!s.appr&&(s.remote||s.pending)&&(!!s.sub||(s.date||"")>=APPR_SINCE);
 function devName(d){const i=d.info||{};return [i.brand,i.model].filter(Boolean).join(" ")}
+/* places already used for this client's devices (this report + earlier reports of the same client) */
+function locList(){const R=realOf(state.rep),cn=String(R&&R.cl&&R.cl.name||"").trim().toLowerCase(),m={};
+  const add=r=>(r&&r.devices||[]).forEach(d=>{const l=String(d&&d.loc||"").trim();if(l)m[l]=1});add(R);
+  if(cn)Object.values(state.reports).forEach(r=>{if(r&&r.cl&&String(r.cl.name||"").trim().toLowerCase()===cn)add(r)});return Object.keys(m).sort((a,b)=>a.localeCompare(b,"az"))}
 
 const TABS=[["svc","Servis"],["ups","UPS"],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],["bat","Akkum."],["blk","Bloklar"],["rep","Hesabat"]];
 
@@ -343,13 +359,13 @@ const newId=()=>"r-"+Date.now().toString(36)+"-"+Math.random().toString(36).slic
 
 /* ---------------- model ---------------- */
 const DEFAULT_SETTINGS={notify:"",co:"",coaddr:"",cotel:"",eng:"",interval:6,warn:25,fail:50,vwarn:13.2,vfail:12.6,vhigh:14.0,life:5};
-function blankDevice(S,tp){const T=TYPES[tp]||TYPES.ups;const info={};T.info.forEach(([k,,o])=>{info[k]=o&&o.sel&&k!=="ptype"&&k!=="tech"?(o.sel.includes("3/3")?"3/3":o.sel[0]):""});
+function blankDevice(S,tp){const T=TYPES[tp]||TYPES.ups;const info={};T.info.forEach(([k,,o])=>{info[k]=o&&o.sel&&k!=="ptype"&&k!=="tech"&&k!=="pf"?(o.sel.includes("3/3")?"3/3":o.sel[0]):""});
   return {did:"d"+Math.random().toString(36).slice(2,8),type:TYPES[tp]?tp:"ups",info,
     meas:T.meas.map(m=>({v:["","",""],min:m[2]==null?"":String(m[2]),max:m[3]==null?"":String(m[3])})),
     chk:T.chk.map(()=>({s:"",n:""})),works:T.works.map(()=>""),wExtra:"",
     bat:{brand:"",type:BTYPE[0],nom:"12",ah:"",per:"",str:"",inst:"",life:String(S.life),dev:"",ref:"",
       warn:String(S.warn),fail:String(S.fail),vwarn:String(S.vwarn),vfail:String(S.vfail),vhigh:String(S.vhigh),blocks:[]},
-    dis:{res:"",load:"",time:"",v0:"",v1:""},photos:[],parts:[],bad:[],par:{mode:"",grp:"",pos:""}}}
+    dis:{res:"",load:"",time:"",v0:"",v1:""},photos:[],parts:[],bad:[],par:{mode:"",grp:"",pos:""},x:{}}}
 function blankReport(S,tp){
   return {kind:"report",id:newId(),createdAt:Date.now(),updatedAt:Date.now(),
     svc:{repno:"",date:todayISO(),type:SVC_TYPES[0],eng:S.eng||"",interval:String(S.interval??6)},
@@ -359,9 +375,12 @@ const LEGACY=["ups","meas","chk","works","wExtra","bat","dis"];
 function normDevice(d){const S=state.settings,tp=TYPES[d&&d.type]?d.type:"ups",T=TYPES[tp],b=blankDevice(S,tp);
   const o=Object.assign(b,d||{});o.type=tp;o.info=Object.assign(blankDevice(S,tp).info,(d&&d.info)||{});
   o.bat=Object.assign(blankDevice(S,tp).bat,(d&&d.bat)||{});if(!Array.isArray(o.bat.blocks))o.bat.blocks=[];
+  o.bat.blocks.forEach(b=>{if(b&&typeof b.v==="string"&&/^\s*[-−–]/.test(b.v))b.v=b.v.replace(/^\s*[-−–]\s*/,"");else if(b&&typeof b.v==="number"&&b.v<0)b.v=-b.v});
   o.dis=Object.assign(blankDevice(S,tp).dis,(d&&d.dis)||{});
   o.par=Object.assign({mode:"",grp:"",pos:""},(d&&d.par)||{});
-  if(!Array.isArray(o.bad))o.bad=[];
+  if(!Array.isArray(o.bad))o.bad=[];o.x=Object.assign({},(d&&d.x)||{});
+  if(tp==="ups"&&Array.isArray(o.meas)&&o.meas.length===UPS_MEAS_V1.length&&T.meas.length!==UPS_MEAS_V1.length){const nm=blankDevice(S,tp).meas;
+    UPS_MEAS_V1.forEach((lab,i)=>{const j=T.meas.findIndex(m=>m[0]===(lab==="DC şin gərginliyi"?"DC şin gərginliyi (+)":lab));if(j>=0&&o.meas[i])nm[j]=o.meas[i]});o.meas=nm}
   if(!Array.isArray(o.meas)||o.meas.length!==T.meas.length)o.meas=blankDevice(S,tp).meas;
   if(!Array.isArray(o.chk)||o.chk.length!==T.chk.length)o.chk=T.chk.map((_,i)=>(d&&d.chk&&d.chk[i])||{s:"",n:""});
   if(!Array.isArray(o.works)||o.works.length!==T.works.length)o.works=T.works.map((_,i)=>(d&&d.works&&d.works[i])||"");
@@ -380,7 +399,7 @@ function sampleReport(S){
   r.svc.repno="NÜMUNƏ-001";r.svc.eng=S.eng||"M. Məmmədov";
   Object.assign(r.cl,{name:"NÜMUNƏ — Test xəstəxanası",obj:"Bina A, UPS otağı -1",addr:"Bakı ş.",person:"E. Əliyev",tel:"+994 50 000 00 00",sign:"E. Əliyev"});
   Object.assign(r.ups,{brand:"Nümunə",model:"XYZ-500",sn:"SN123456789",kva:"500",kw:"500",fw:"v2.14",inst:"2021-03-15"});
-  const ex=[[229,231,228],[398,400,397],[402,395,410],[50.02],[229,231,228],[230,230.4,229.8],[380,365,391],[50],[52,50,54],[258],[545],[545],[2.1],[1.2],[27],[34]];
+  const ex=[[229,231,228],[398,400,397],[402,395,410],[229,231,228],[230,230.4,229.8],[380,365,391],[52,50,54],[258],[272],[-272],[545],[2.1],[1.2],[27],[34]];
   r.meas.forEach((m,i)=>m.v=[0,1,2].map(j=>ex[i][j]!==undefined?String(ex[i][j]):""));
   r.chk.forEach(c=>c.s="Yaxşı");r.chk[3]={s:"Qeyd var",n:"Ventilyator #3 səs-küylüdür"};r.chk[17]={s:"Qeyd var",n:"Otaq temperaturu 27 °C"};
   r.works=WORKS.map((_,i)=>i===4?"Xeyr":"Bəli");
@@ -407,7 +426,7 @@ en:{"[Şirkət adı]":"[Company name]","Hesabat №":"Report No.","Tarix:":"Date
  "1. Müştəri və servis məlumatları":"1. Customer and service details","Müştəri":"Customer","Əlaqədar şəxs":"Contact person","Obyekt":"Site","Telefon":"Phone","Ünvan":"Address","Servis mühəndisi":"Service engineer","Servis tarixi":"Service date","Növbəti servis":"Next service",
  "2. UPS cihazı":"2. UPS unit","Marka":"Brand","Model":"Model","Seriya №":"Serial No.","Firmware":"Firmware","Güc":"Power","Faza (giriş/çıxış)":"Phases (in/out)","Topologiya":"Topology","Quraşdırma tarixi":"Installation date",
  "3. Ölçmə nəticələri":"3. Measurement results","Parametr":"Parameter","Vahid":"Unit","Norma":"Limits","Nəticə":"Result",
- "Giriş gərginliyi (F–N)":"Input voltage (L–N)","Giriş gərginliyi (F–F)":"Input voltage (L–L)","Giriş cərəyanı":"Input current","Giriş tezliyi":"Input frequency","Bypass gərginliyi (F–N)":"Bypass voltage (L–N)","Çıxış gərginliyi (F–N)":"Output voltage (L–N)","Çıxış cərəyanı":"Output current","Çıxış tezliyi":"Output frequency","Yük səviyyəsi":"Load level","Çıxış aktiv gücü":"Output active power","DC şin gərginliyi":"DC bus voltage","Akkumulyator ümumi gərginliyi":"Total battery voltage","Akkumulyator şarj cərəyanı":"Battery charging current","Neytral–Yer gərginliyi (N–PE)":"Neutral–Earth voltage (N–PE)","Otaq temperaturu":"Room temperature","UPS daxili temperatur":"UPS internal temperature",
+ "Giriş gərginliyi (F–N)":"Input voltage (L–N)","Giriş gərginliyi (F–F)":"Input voltage (L–L)","Giriş cərəyanı":"Input current","Giriş tezliyi":"Input frequency","Bypass gərginliyi (F–N)":"Bypass voltage (L–N)","Çıxış gərginliyi (F–N)":"Output voltage (L–N)","Çıxış cərəyanı":"Output current","Çıxış tezliyi":"Output frequency","Yük səviyyəsi":"Load level","Çıxış aktiv gücü":"Output active power","DC şin gərginliyi":"DC bus voltage","DC şin gərginliyi (+)":"DC bus voltage (+)","DC şin gərginliyi (−)":"DC bus voltage (−)","orta uc":"centre tap","Güc əmsalı (PF)":"Power factor (PF)","Akkumulyator ümumi gərginliyi":"Total battery voltage","Akkumulyator şarj cərəyanı":"Battery charging current","Neytral–Yer gərginliyi (N–PE)":"Neutral–Earth voltage (N–PE)","Otaq temperaturu":"Room temperature","UPS daxili temperatur":"UPS internal temperature",
  "Normal":"Normal","Norma xaricində":"Out of range","Qeydə alındı":"Recorded","Diqqət":"Attention","Dəyişdirilməli":"Replace","Yaxşı":"Good","Qeyd var":"Remark","Nasaz":"Faulty","Yoxlanılmadı":"Not checked","Tətbiq olunmur":"N/A","Bəli":"Yes","Xeyr":"No",
  "4. Vizual və funksional yoxlama":"4. Visual and functional inspection","Yoxlanılan bənd":"Inspection item","Qeyd":"Note",
  "UPS-in ümumi vizual vəziyyəti":"General visual condition of the UPS","Ekran / panel göstəriciləri və alarmlar":"Display / panel indicators and alarms","Hadisə jurnalı (event log)":"Event log","Soyutma ventilyatorları":"Cooling fans","Hava filtrləri":"Air filters","Güc kabelləri və klemmələr (bərkidilmə)":"Power cables and terminals (tightening)","Termal yoxlama (termokamera)":"Thermal inspection (thermal camera)","DC kondensatorlar (şişmə / axma)":"DC capacitors (bulging / leakage)","AC filtr kondensatorları":"AC filter capacitors","Rektifikator / şarj bloku":"Rectifier / charger","İnvertor bloku":"Inverter","Statik bypass":"Static bypass","Bypass-a keçid və geri qayıdış testi":"Transfer to bypass and return test","Akkumulyator kabineti / rəfi və bağlantılar":"Battery cabinet / rack and connections","Akkumulyator açarı / qoruyucular":"Battery breaker / fuses","EPO (təcili söndürmə) funksiyası":"EPO (emergency power off) function","Rabitə (SNMP / Modbus / quru kontaktlar)":"Communication (SNMP / Modbus / dry contacts)","Otaq şəraiti (temperatur, toz, havalandırma)":"Room conditions (temperature, dust, ventilation)",
@@ -426,7 +445,7 @@ ru:{"[Şirkət adı]":"[Название компании]","Hesabat №":"От�
  "1. Müştəri və servis məlumatları":"1. Данные клиента и обслуживания","Müştəri":"Клиент","Əlaqədar şəxs":"Контактное лицо","Obyekt":"Объект","Telefon":"Телефон","Ünvan":"Адрес","Servis mühəndisi":"Сервисный инженер","Servis tarixi":"Дата обслуживания","Növbəti servis":"Следующее обслуживание",
  "2. UPS cihazı":"2. ИБП","Marka":"Марка","Model":"Модель","Seriya №":"Серийный №","Firmware":"Прошивка","Güc":"Мощность","Faza (giriş/çıxış)":"Фазы (вход/выход)","Topologiya":"Топология","Quraşdırma tarixi":"Дата установки",
  "3. Ölçmə nəticələri":"3. Результаты измерений","Parametr":"Параметр","Vahid":"Ед.","Norma":"Норма","Nəticə":"Результат",
- "Giriş gərginliyi (F–N)":"Входное напряжение (Ф–N)","Giriş gərginliyi (F–F)":"Входное напряжение (Ф–Ф)","Giriş cərəyanı":"Входной ток","Giriş tezliyi":"Входная частота","Bypass gərginliyi (F–N)":"Напряжение байпаса (Ф–N)","Çıxış gərginliyi (F–N)":"Выходное напряжение (Ф–N)","Çıxış cərəyanı":"Выходной ток","Çıxış tezliyi":"Выходная частота","Yük səviyyəsi":"Уровень нагрузки","Çıxış aktiv gücü":"Выходная активная мощность","DC şin gərginliyi":"Напряжение шины DC","Akkumulyator ümumi gərginliyi":"Общее напряжение батареи","Akkumulyator şarj cərəyanı":"Ток заряда батареи","Neytral–Yer gərginliyi (N–PE)":"Напряжение нейтраль–земля (N–PE)","Otaq temperaturu":"Температура в помещении","UPS daxili temperatur":"Внутренняя температура ИБП",
+ "Giriş gərginliyi (F–N)":"Входное напряжение (Ф–N)","Giriş gərginliyi (F–F)":"Входное напряжение (Ф–Ф)","Giriş cərəyanı":"Входной ток","Giriş tezliyi":"Входная частота","Bypass gərginliyi (F–N)":"Напряжение байпаса (Ф–N)","Çıxış gərginliyi (F–N)":"Выходное напряжение (Ф–N)","Çıxış cərəyanı":"Выходной ток","Çıxış tezliyi":"Выходная частота","Yük səviyyəsi":"Уровень нагрузки","Çıxış aktiv gücü":"Выходная активная мощность","DC şin gərginliyi":"Напряжение шины DC","DC şin gərginliyi (+)":"Напряжение шины DC (+)","DC şin gərginliyi (−)":"Напряжение шины DC (−)","orta uc":"средняя точка","Güc əmsalı (PF)":"Коэффициент мощности (PF)","Akkumulyator ümumi gərginliyi":"Общее напряжение батареи","Akkumulyator şarj cərəyanı":"Ток заряда батареи","Neytral–Yer gərginliyi (N–PE)":"Напряжение нейтраль–земля (N–PE)","Otaq temperaturu":"Температура в помещении","UPS daxili temperatur":"Внутренняя температура ИБП",
  "Normal":"Норма","Norma xaricində":"Вне нормы","Qeydə alındı":"Зафиксировано","Diqqət":"Внимание","Dəyişdirilməli":"Требует замены","Yaxşı":"Хорошо","Qeyd var":"Есть замечание","Nasaz":"Неисправно","Yoxlanılmadı":"Не проверено","Tətbiq olunmur":"Не применимо","Bəli":"Да","Xeyr":"Нет",
  "4. Vizual və funksional yoxlama":"4. Визуальный и функциональный осмотр","Yoxlanılan bənd":"Проверяемый пункт","Qeyd":"Примечание",
  "UPS-in ümumi vizual vəziyyəti":"Общее визуальное состояние ИБП","Ekran / panel göstəriciləri və alarmlar":"Индикация дисплея / панели и аварии","Hadisə jurnalı (event log)":"Журнал событий","Soyutma ventilyatorları":"Вентиляторы охлаждения","Hava filtrləri":"Воздушные фильтры","Güc kabelləri və klemmələr (bərkidilmə)":"Силовые кабели и клеммы (затяжка)","Termal yoxlama (termokamera)":"Тепловизионный контроль","DC kondensatorlar (şişmə / axma)":"Конденсаторы DC (вздутие / утечка)","AC filtr kondensatorları":"Конденсаторы AC-фильтра","Rektifikator / şarj bloku":"Выпрямитель / зарядное устройство","İnvertor bloku":"Инвертор","Statik bypass":"Статический байпас","Bypass-a keçid və geri qayıdış testi":"Тест перехода на байпас и обратно","Akkumulyator kabineti / rəfi və bağlantılar":"Батарейный шкаф / стеллаж и соединения","Akkumulyator açarı / qoruyucular":"Батарейный автомат / предохранители","EPO (təcili söndürmə) funksiyası":"Функция EPO (аварийное отключение)","Rabitə (SNMP / Modbus / quru kontaktlar)":"Связь (SNMP / Modbus / сухие контакты)","Otaq şəraiti (temperatur, toz, havalandırma)":"Условия в помещении (температура, пыль, вентиляция)",
@@ -527,13 +546,14 @@ async function ensureTranslations(r,L){if(L==="az")return true;
   catch(e){toast("Sərbəst mətnlər tərcümə olunmadı (internet?) — qalan hissə tərcümə edildi");return false}}
 
 /* ---------------- calculations ---------------- */
-function measStatus(r,i){const m=r.meas[i],n=mPh(r,i);if(!n)return "";const vals=m.v.slice(0,n).map(num).filter(x=>x!==null);
+function measStatus(r,i){const m=r.meas[i],n=mPh(r,i);if(!n)return "";const neg=/\(−\)/.test((MEAS[i]||[""])[0]);const vals=m.v.slice(0,n).map(num).filter(x=>x!==null).map(v=>neg?Math.abs(v):v);
   if(!vals.length)return "";const mn=num(m.min),mx=num(m.max);
   if(vals.some(v=>(mn!==null&&v<mn)||(mx!==null&&v>mx)))return "Norma xaricində";
   return (mn===null&&mx===null)?"Qeydə alındı":"Normal"}
 const batTotal=r=>{const p=num(r.bat.per),s=num(r.bat.str);return p>0&&s>0?Math.min(MAXB,Math.floor(p)*Math.floor(s)):0};
 function refEff(r){const x=num(r.bat.ref);if(x>0)return x;const rs=r.bat.blocks.slice(0,batTotal(r)).map(b=>num(b&&b.r)).filter(v=>v!==null);return median(rs)}
-function blockStatus(r,b,ref){if(!b)return "";const v=num(b.v),R=num(b.r);if(v===null&&R===null)return "";
+const bV=b=>{const v=num(b&&b.v);return v===null?null:Math.abs(v)};
+function blockStatus(r,b,ref){if(!b)return "";const v=bV(b),R=num(b.r);if(v===null&&R===null)return "";
   const B=r.bat,dev=(R!==null&&ref)?R/ref-1:null,w=num(B.warn)/100,f=num(B.fail)/100,vw=num(B.vwarn),vf=num(B.vfail),vh=num(B.vhigh);
   if((dev!==null&&f!==null&&!isNaN(f)&&dev>=f)||(v!==null&&vf!==null&&v<vf))return "Dəyişdirilməli";
   if((dev!==null&&w!==null&&!isNaN(w)&&dev>=w)||(v!==null&&vw!==null&&v<vw)||(v!==null&&vh!==null&&v>vh))return "Diqqət";
@@ -541,7 +561,7 @@ function blockStatus(r,b,ref){if(!b)return "";const v=num(b.v),R=num(b.r);if(v==
 const lbl=(r,i)=>{const p=Math.floor(num(r.bat.per))||1;return "Q"+(Math.floor(i/p)+1)+"-B"+String(i%p+1).padStart(2,"0")};
 function analyze(r){
   const tot=batTotal(r),ref=refEff(r),blocks=[];
-  for(let i=0;i<tot;i++){const b=r.bat.blocks[i]||{};blocks.push({i,lab:lbl(r,i),s:Math.floor(i/(Math.floor(num(r.bat.per))||1))+1,v:num(b.v),r:num(b.r),t:num(b.t),st:blockStatus(r,b,ref),dev:(num(b.r)!==null&&ref)?num(b.r)/ref-1:null})}
+  for(let i=0;i<tot;i++){const b=r.bat.blocks[i]||{};blocks.push({i,lab:lbl(r,i),s:Math.floor(i/(Math.floor(num(r.bat.per))||1))+1,v:bV(b),r:num(b.r),t:num(b.t),st:blockStatus(r,b,ref),dev:(num(b.r)!==null&&ref)?num(b.r)/ref-1:null})}
   const tested=blocks.filter(b=>b.st);const rv=blocks.map(b=>b.r).filter(x=>x!==null),vv=blocks.map(b=>b.v).filter(x=>x!==null);
   const rep=tested.filter(b=>b.st==="Dəyişdirilməli"),att=tested.filter(b=>b.st==="Diqqət");
   const ms=MEAS.map((_,i)=>measStatus(r,i));const out=MEAS.map((m,i)=>ms[i]==="Norma xaricində"?m[0]:null).filter(Boolean);
@@ -629,7 +649,7 @@ async function api(action,payload={}){
 
 function summaryOf(r){r=realOf(r);const A=analyzeReport(r),d0=r.devices[0]||{info:{}},i0=d0.info||{},n=r.devices.length;
   return {id:r.id,repno:r.svc.repno,date:r.svc.date,client:r.cl.name,obj:r.cl.obj,brand:i0.brand||"",model:(i0.model||"")+(n>1?" (+"+(n-1)+" cihaz)":""),sn:i0.sn||"",kva:i0.kva||"",
-  types:r.devices.map(d=>d.type).join(","),type:r.svc.type||"",devn:n,fill:fillOf(r),photos:r.devices.reduce((x,d)=>x+((d.photos||[]).length),0),creator:r.creator||"",eng:r.svc.eng,overall:A.overall,cls:A.cls,tested:A.tested,rep:A.rep,att:A.att,next:A.next,updatedAt:r.updatedAt,by:r.by||""}}
+  types:r.devices.map(d=>d.type).join(","),type:r.svc.type||"",devn:n,fill:fillOf(r),photos:r.devices.reduce((x,d)=>x+((d.photos||[]).length),0),creator:r.creator||"",eng:r.svc.eng,overall:A.overall,cls:A.cls,tested:A.tested,rep:A.rep,att:A.att,next:A.next,updatedAt:r.updatedAt,by:r.by||"",appr:r.appr&&r.appr.at?(r.appr.by||"✓"):"",sub:r.sub&&r.sub.at?(r.sub.by||"✓"):""}}
 function blocksOf(r){r=realOf(r);const keep=CUR_TYPE,out=[],ups=r.devices.map((d,i)=>i).filter(i=>TYPES[r.devices[i].type].hasBat);
   ups.forEach(i=>{useType(r.devices[i].type);const V=devProxy(r,i),a=analyze(V),p=Math.floor(num(V.bat.per))||1,pre=ups.length>1?"C"+(i+1)+"-":"";
     a.blocks.filter(b=>b.st).forEach(b=>out.push([pre+b.lab,b.s,b.i%p+1,b.v,b.r,b.t,b.st]))});
@@ -644,7 +664,7 @@ function applyRemoteToOpen(id){
   if(!state.cur||state.cur.id!==id||state.view!=="edit")return;
   if(state.dirty||state.saving)return;
   if(editorBusy()){pendingRemote=true;return}
-  pendingRemote=false;const nr=normalize(clone(state.reports[id]));state.reports[id]=nr;const di=state.di;state.rep=nr;setActive(Math.min(di,nr.devices.length-1));
+  pendingRemote=false;const nr=normalize(clone(state.reports[id]));state.reports[id]=nr;const di=state.di;state.rep=lockedRep(nr)?normalize(clone(nr)):nr;setActive(Math.min(di,nr.devices.length-1));
   const y=window.scrollY;renderEditor();window.scrollTo(0,y);toast("Digər cihazdakı dəyişikliklər yükləndi")}
 document.addEventListener("focusout",()=>{if(pendingRemote&&state.cur)setTimeout(()=>applyRemoteToOpen(state.cur.id),300)});
 
@@ -713,7 +733,7 @@ function updateSyncBadge(){const el=$("#syncState");if(!el)return;const n=state.
   else t="";
   el.textContent=t;el.className="sync "+c;el.title=state.syncErr||""}
 
-async function persist(r){r=realOf(r);
+async function persist(r){r=realOf(r);if(r&&r.svc&&!String(r.svc.repno||"").trim()&&!(r.appr&&r.appr.at)&&!r.sample)applyRepNo(r,true);
   r.updatedAt=Date.now();r.by=state.me.name||r.by||"";
   state.reports[r.id]=r;
   if(!saveLocalReports([r]))throw new Error("local");
@@ -732,7 +752,7 @@ async function getFull(id){
   const g=await api("get",{id});state.reports[id]=g.report;saveLocalReports([g.report]);return g.report}
 
 let saveTimer=null;
-function markDirty(){state.dirty=true;state.lastEdit=Date.now();$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
+function markDirty(){if(state.rep&&lockedRep(state.rep))return;state.dirty=true;state.lastEdit=Date.now();$("#saveState").textContent="dəyişiklik…";clearTimeout(saveTimer);saveTimer=setTimeout(flush,1000)}
 async function flush(){
   clearTimeout(saveTimer);if(!state.cur||!state.dirty)return;
   if(state.saving){await state.saving;return flush()}
@@ -795,23 +815,37 @@ function renderHome(){
   $("#hTitle").innerHTML='UPS Servis Jurnalı<small>'+esc(state.me.name?state.me.name:"Servis hesabatları")+'</small>';
   updateSyncBadge();
   const q=(state.q||"").toLowerCase(),all=listItems();
-  const items=all.filter(s=>!q||[s.repno,s.client,s.obj,s.model,s.sn,s.eng].join(" ").toLowerCase().includes(q))
+  /* folders: in work / approved; copies of the same job (same client, date and device) are folded under one card */
+  const HF=state.hf||"work",inF=s=>HF==="all"||(HF==="done"?!!s.appr:!s.appr);
+  const cnt={work:all.filter(s=>!s.appr).length,done:all.filter(s=>s.appr).length,all:all.length};
+  const base=all.filter(s=>(!q||[s.repno,s.client,s.obj,s.model,s.sn,s.eng].join(" ").toLowerCase().includes(q))&&(!(state.af&&state.me.role==="admin")||needsAppr(s))&&inF(s))
     .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updatedAt||0)-(a.updatedAt||0));
+  const dkey=s=>[String(s.client||"").trim().toLowerCase(),s.date||"",String(s.sn||"").trim().toLowerCase()||String(s.model||"").trim().toLowerCase(),s.type||""].join("|");
+  const score=s=>(s.appr?1e6:0)+(s.sub?1e5:0)+(s.fill||0)*100+((s.updatedAt||0)/1e13);
+  const groups={};base.forEach(s=>{const k=dkey(s);(groups[k]=groups[k]||[]).push(s)});
+  const dupOf={},items=[];base.forEach(s=>{const g=groups[dkey(s)];if(g.length<2){items.push(s);return}const best=g.slice().sort((a,b)=>score(b)-score(a))[0];
+    if(best===s){items.push(s);dupOf[s.id]=g.filter(x=>x!==s)}else if(state.showDup)items.push(Object.assign({},s,{isDup:1}))});
+  const nDup=base.length-Object.keys(groups).length;
   let h=`<h2 class="sec">Servis hesabatları</h2><p class="hint">Bütün işçilərin hesabatları mərkəzi serverdə toplanır. İnternet olmayanda hesabat telefonda saxlanılır və bağlantı bərpa olunanda göndərilir.</p>
   <div class="actions" style="margin-bottom:14px"><button class="btn pri" id="bNew">+ Yeni servis</button><button class="btn" id="bTasks">Tapşırıqlar${myOpenTasks().length?` <span class="chip warn">${myOpenTasks().length}</span>`:""}</button><button class="btn" id="bPlan">Servis cədvəli</button><button class="btn" id="bLists">Detal siyahıları</button>${state.me.role==="admin"?'<button class="btn" id="bStaff">İşçi paneli</button>':""}${hasServer()?'<button class="btn" id="bSync">Yenilə</button>':""}${all.length?'<input id="q" type="search" placeholder="Axtar: müştəri, model, seriya №, işçi" style="flex:1;min-width:180px" value="'+esc(state.q||"")+'">':""}</div>`;
   if(state.syncErr)h+=`<div class="banner" style="margin:0 0 12px">${esc(state.syncErr)}</div>`;
   else if(state.online===false&&hasServer())h+=`<p class="note" style="margin:0 0 10px">Server əlçatan deyil — işləməyə davam edin: hər şey cihazda saxlanılır və bağlantı bərpa olunanda avtomatik göndərilir${state.pending.size?" ("+state.pending.size+" hesabat gözləyir)":""}.</p>`;
   if(!hasServer())h+=`<div class="banner" style="margin:0 0 12px">Server qoşulmayıb: hesabatlar yalnız bu cihazda qalır. Ayarlarda server ünvanını və API açarını yazın.</div>`;
   h+=tasksBanner();
+  h+=apprBanner(all);
   h+=upcomingBanner();
   if(hasServer()&&state.me.role&&state.me.role!=="admin"&&all.some(x=>x.remote))h+=`<p class="note" style="margin:0 0 10px">Serverdəki hesabatları yalnız rəhbər silə bilər (🗑 düyməsi rəhbər açarı ilə görünür: Ayarlar → Açar).</p>`;
+  if(all.length)h+=`<div class="seg filters" style="margin-bottom:10px">${[["work","İşdə"],["done","Təsdiqlənmiş"],["all","Hamısı"]].map(([k,l])=>`<button data-hf="${k}" aria-pressed="${HF===k}">${l} <span class="note">${cnt[k]}</span></button>`).join("")}</div>
+    ${nDup?`<p class="note" style="margin:0 0 10px">${nDup} təkrar (eyni müştəri, tarix və cihaz üzrə kopya) ${state.showDup?"göstərilir":"gizlədilib — hər işin ən tam variantı görünür"}. <button class="btn sm" id="bDup">${state.showDup?"Təkrarları gizlət":"Təkrarları göstər"}</button></p>`:""}`;
   if(!all.length)h+=`<div class="empty"><h3>Hələ hesabat yoxdur</h3><p class="note" style="margin:0">“Yeni servis” ilə ilk hesabatı başladın. Tətbiqi tanımaq üçün doldurulmuş nümunə də aça bilərsiniz (bu nümunə serverə göndərilməz).</p><button class="btn" id="bSample">Nümunə hesabatı aç</button></div>`;
   else h+=`<div class="rlist">`+items.map(s=>`<div class="rwrap${canDelItem(s)?" hasdel":""}"><button class="rcard" data-open="${esc(s.id)}"><span class="t">${esc(s.client||"Adsız müştəri")}</span><span class="chip ${s.cls||""}">${s.cls==="ok"?"Qənaətbəxş":s.cls==="warn"?"Diqqət":s.cls==="bad"?"Təcili":""}</span>
     <span class="m"><span class="no">${esc(s.repno||"№ yoxdur")}</span><span>${esc(fmtDate(s.date))}</span><span>${esc([s.brand,s.model].filter(Boolean).join(" "))}${s.kva?" · "+esc(s.kva)+" kVA":""}</span>${s.eng?`<span>${esc(s.eng)}</span>`:""}
-    ${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}</span></button>${canDelItem(s)?`<button class="rdel" data-del="${esc(s.id)}" title="Hesabatı sil" aria-label="Hesabatı sil">🗑</button>`:""}</div>`).join("")+`</div>`;
+    ${dupOf[s.id]?`<span class="chip warn">+${dupOf[s.id].length} təkrar</span>`:""}${s.isDup?'<span class="chip bad">təkrar</span>':""}${s.appr?'<span class="chip ok">təsdiqlənib</span>':s.sub?'<span class="chip warn">təsdiq gözləyir</span>':state.me.role==="admin"&&needsAppr(s)?'<span class="chip">təsdiqlənməyib</span>':""}${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}</span></button>${canDelItem(s)?`<button class="rdel" data-del="${esc(s.id)}" title="Hesabatı sil" aria-label="Hesabatı sil">🗑</button>`:""}</div>`).join("")+`</div>`;
   $("#main").innerHTML=h;
   $("#bNew").onclick=()=>openNew();$("#bTasks").onclick=()=>renderTasks();document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>{state.tkF="open";renderTasks(b.dataset.topen)});$("#bPlan").onclick=renderPlan;$("#bLists").onclick=()=>renderLists();const bst=$("#bStaff");if(bst)bst.onclick=renderStaff;
   const bsy=$("#bSync");if(bsy)bsy.onclick=()=>sync();
+  document.querySelectorAll("[data-af]").forEach(b=>b.onclick=()=>{state.af=b.dataset.af==="1";renderHome()});
+  document.querySelectorAll("[data-hf]").forEach(b=>b.onclick=()=>{state.hf=b.dataset.hf;renderHome()});const bd=$("#bDup");if(bd)bd.onclick=()=>{state.showDup=!state.showDup;renderHome()};
   const bs=$("#bSample");if(bs)bs.onclick=()=>{const r=sampleReport(state.settings);r.sample=true;openReport(r)};
   const qi=$("#q");if(qi)qi.oninput=e=>{state.q=e.target.value;const p=e.target.selectionStart;renderHome();const n=$("#q");n.focus();n.setSelectionRange(p,p)};
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async e=>{e.stopPropagation();
@@ -825,6 +859,7 @@ function renderHome(){
 /* next service from an earlier report: customer + every device (passport data, battery set-up, measurement limits) are copied;
    measurements, checklist, works, photos, parts and notes start empty */
 /* parallel operation (UPS, stabilizers, generators, rectifiers, compensators working together) */
+Object.assign(DICT.en,{"Yerləşdiyi yer":"Location"});Object.assign(DICT.ru,{"Yerləşdiyi yer":"Расположение"});
 Object.assign(DICT.en,{"Paralel iş":"Parallel operation","Paralel sistemlər":"Parallel systems","Tək işləyir (paralel deyil)":"Single unit (not parallel)","Paralel — ehtiyat (N+1)":"Parallel — redundant (N+1)","Paralel — güc artırma":"Parallel — capacity","Paralel — isti ehtiyat (hot standby)":"Parallel — hot standby"});
 Object.assign(DICT.ru,{"Paralel iş":"Параллельная работа","Paralel sistemlər":"Параллельные системы","Tək işləyir (paralel deyil)":"Одиночный (не параллельно)","Paralel — ehtiyat (N+1)":"Параллельно — резервирование (N+1)","Paralel — güc artırma":"Параллельно — наращивание мощности","Paralel — isti ehtiyat (hot standby)":"Параллельно — горячий резерв"});
 const PAR_MODES=["Tək işləyir (paralel deyil)","Paralel — ehtiyat (N+1)","Paralel — güc artırma","Paralel — isti ehtiyat (hot standby)"];
@@ -839,7 +874,7 @@ function dupDevice(i){const R=state.rep,src=R.devices[i],d=clone(src);
   R.devices.splice(i+1,0,d);setActive(i+1);markDirty();return d}
 function nextFrom(src){src=realOf(src);const r=blankReport(state.settings);r.cl=clone(src.cl);
   r.svc.type=src.svc.type||r.svc.type;r.svc.interval=src.svc.interval||r.svc.interval;
-  r.devices=src.devices.map(d=>{const nd=blankDevice(state.settings,d.type);nd.info=clone(d.info);nd.par=clone(d.par||nd.par);nd.bat={...clone(d.bat),blocks:[]};
+  r.devices=src.devices.map(d=>{const nd=blankDevice(state.settings,d.type);nd.info=clone(d.info);nd.loc=d.loc||"";nd.par=clone(d.par||nd.par);nd.bat={...clone(d.bat),blocks:[]};
     nd.meas.forEach((m,i)=>{if(d.meas[i]){m.min=d.meas[i].min;m.max=d.meas[i].max}});return nd});return r}
 function startCopy(src){const r=nextFrom(src);startReport(r);state.tab="svc";renderEditor();window.scrollTo(0,0);
   toast("Köçürüldü: "+r.devices.length+" cihaz. Cihaz siyahısını yoxlayın, dəyişiklik varsa düzəldin.")}
@@ -864,9 +899,11 @@ function typePicker(title,hint,onPick,onBack){
   $("#main").innerHTML=`<h2 class="sec">${esc(title)}</h2><p class="hint">${esc(hint)}</p><div class="tpick">${TYPE_ORDER.map(k=>`<button class="tcard" data-tp="${k}"><b>${esc(TYPES[k].label)}</b><span class="note">${esc(TYPES[k].chk.length)} yoxlama bəndi · ${esc(TYPES[k].meas.length)} ölçmə${TYPES[k].hasBat?" · akkumulyator testi":""}</span></button>`).join("")}</div>
   <button class="btn ghost" id="tpBack" style="margin-top:12px">← Geri</button>`;
   document.querySelectorAll("[data-tp]").forEach(b=>b.onclick=()=>onPick(b.dataset.tp));$("#tpBack").onclick=onBack;window.scrollTo(0,0)}
-function startReport(r){if(!r.svc.eng)r.svc.eng=state.me.name;if(!r.creator)r.creator=state.me.name;state.reports[r.id]=r;openReport(r);markDirty()}
+function startReport(r){applyRepNo(r,true);if(!r.svc.eng)r.svc.eng=state.me.name;if(!r.creator)r.creator=state.me.name;state.reports[r.id]=r;openReport(r);markDirty()}
 function setActive(i){const r=state.rep;state.di=Math.max(0,Math.min(i,r.devices.length-1));useType(r.devices[state.di].type);state.cur=devProxy(r,state.di);state.bi=0}
-function openReport(r){r=realOf(r);state.rep=r;setActive(0);state.view="edit";state.tab="svc";renderEditor()}
+function openReport(r){r=realOf(r);
+  /* an approved report opens for a worker as a view-only copy: nothing done on screen can reach the stored report */
+  if(lockedRep(r))r=normalize(clone(r));state.rep=r;setActive(0);state.view="edit";state.tab="svc";renderEditor()}
 
 /* ---------------- settings ---------------- */
 function renderSettings(){
@@ -881,6 +918,7 @@ function renderSettings(){
    ${state.me.personal?'<p class="note" style="margin:0">Ad şəxsi açara bağlıdır və rəhbərin işçi siyahısından gəlir (Ayarlar → İşçilər). Başqa adla işləmək üçün <b>Hesabdan çıx</b> basın və öz açarınızla daxil olun.</p>':""}
    <div class="actions"><button class="btn sm" id="mePing">Bağlantını yoxla</button><button class="btn sm danger" id="meOut">Hesabdan çıx</button><span class="note" id="pingMsg"></span></div></div>
   <p class="note">Rolunuz: <b>${hasServer()?(state.me.role==="admin"?"Rəhbər / servis müdiri":"İşçi"):"—"}</b>${ro?" · aşağıdakı ortaq ayarları yalnız rəhbər dəyişə bilər":""}</p>
+  <div class="card"><h3>Təhvil-təslim aktı</h3><label class="f"><span>Podratçının direktoru (aktda “Təsdiq edirəm” altında)</span><input id="actDir" value="${esc(LS.get("ups.actdir")||"")}" placeholder="məs. Balağa Ağazadə"></label><p class="note" style="margin:0">Müştəri tərəfində “İmza üçün müştəri nümayəndəsi” yazılır.</p></div>
   <div class="card"><h3>Servis şirkəti (bütün işçilər üçün ortaq)</h3>${f("co","Şirkət adı")}${f("coaddr","Ünvan")}${f("cotel","Telefon / e-poçt")}${f("notify","Planlı servis xəbərdarlığı üçün e-poçtlar (vergüllə)")}<p class="note" style="margin:0">Planlı servisə ${REMIND_DAYS} gün qalmış server bu ünvanlara e-poçt göndərir; işçilərin telefonunda isə bildiriş çıxır.</p>${f("interval","Servis intervalı, ay",{n:1})}</div>
   <div class="card"><h3>Akkumulyator hədləri (ortaq, yeni hesabatlar üçün)</h3><div class="grid2">${f("warn","R artımı — Diqqət, %",{n:1})}${f("fail","R artımı — Dəyişdirilməli, %",{n:1})}${f("vwarn","Blok V — Diqqət (aşağı)",{n:1})}${f("vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${f("vhigh","Blok V — Diqqət (yuxarı)",{n:1})}${f("life","İstismar müddəti, il",{n:1})}</div>
   <p class="note" style="margin:0">Gərginlik hədləri 12 V VRLA blokun float rejimi üçündür; 2 V element və ya Li-ion üçün dəyişin.</p></div>
@@ -897,6 +935,7 @@ function renderSettings(){
   $("#meOut").onclick=()=>{const b=$("#meOut");
     if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=state.pending.size?state.pending.size+" hesabat göndərilməyib — yenə də çıxılsın?":"Çıxılsın? Təsdiq üçün yenidən basın";return}
     logout()};
+  {const ad=$("#actDir");if(ad)ad.onchange=()=>{LS.set("ups.actdir",ad.value.trim());toast("Saxlanıldı")}}
   $("#mePing").onclick=async()=>{readMe();$("#pingMsg").textContent="yoxlanılır…";
     try{const pg=await api("ping");applyWho(pg);$("#pingMsg").textContent="Bağlantı işləyir ✓ · "+(pg.personal?"şəxsi açar: "+pg.name+" · ":"")+"rol: "+(pg.role==="admin"?"rəhbər":"işçi");sync()}catch(e){$("#pingMsg").textContent=e.message==="auth"?"API açarı yanlışdır":"Serverə qoşulmaq alınmadı"}};
   $("#sSave").onclick=async()=>{readMe();document.querySelectorAll("[data-s]").forEach(i=>{const k=i.dataset.s;state.settings[k]=["interval","warn","fail","vwarn","vfail","vhigh","life"].includes(k)?(num(i.value)??DEFAULT_SETTINGS[k]):i.value.trim()});
@@ -914,8 +953,24 @@ function fld(path,label,o={}){const v=getP(state.cur,path)??"";const id="f-"+pat
   if(o.sel)return `<label class="f"><span>${label}</span><select id="${id}" data-path="${path}"><option value=""></option>${o.sel.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</select></label>`;
   if(o.area)return `<label class="f"><span>${label}</span><textarea id="${id}" data-path="${path}" placeholder="${esc(o.ph||"")}">${esc(v)}</textarea></label>`;
   const t=o.date?'type="date"':o.n?'type="text" inputmode="decimal" class="num"':'type="text"';
-  return `<label class="f"><span>${label}</span><input ${t} id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}" autocomplete="off"></label>`}
-function tabsFor(){const T=TYPES[CUR_TYPE];return [["svc","Servis"],["ups",T.short],["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],...(T.hasBat?[["bat","Akkum."],["blk","Bloklar"]]:[]),["foto","Şəkillər"],["rep","Hesabat"]]}
+  const dl=o.list&&o.list.length?`<datalist id="${id}-dl">${o.list.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>`:"";
+  return `<label class="f"><span>${label}</span><input ${t} id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}" autocomplete="off"${dl?` list="${id}-dl"`:""}>${dl}${o.note?`<small class="note">${o.note}</small>`:""}</label>`}
+/* intermediaries used before — offered when the bill goes to a contractor instead of the client */
+function payerList(){const m={};Object.values(state.reports).forEach(r=>{const p=r&&r.cl&&String(r.cl.payer||"").trim();if(p)m[p]=1});return Object.keys(m).sort((a,b)=>a.localeCompare(b,"az"))}
+/* every kind of service has its own blank: its own sections in the editor and its own report title */
+const SVC_PROF=r=>{const R=realOf(r)||{},t=String(R.svc&&R.svc.type||"");return /Quraşdırma/i.test(t)?"inst":/Akkumulyator/i.test(t)?"bat":/Diaq/i.test(t)?"diag":/Qəza/i.test(t)?"call":/Təmir/i.test(t)?"rep":"prof"};
+const PROF_TITLE={inst:"QURAŞDIRMA VƏ İŞƏ SALMA HESABATI",bat:"AKKUMULYATOR TESTİ HESABATI",diag:"TEXNİKİ DİAQNOSTİKA HESABATI",call:"QƏZA ÇAĞIRIŞI HESABATI",rep:"TƏMİR HESABATI"};
+const INST_CHK=["Avadanlığın yerləşməsi və ventilyasiya (boş məsafə)","Giriş kabeli — kəsik və bərkidilmə","Çıxış kabeli — kəsik və bərkidilmə","Giriş avtomatı (nominal, tip)","Çıxış / bypass avtomatı","Torpaqlama (PE) qoşulması","Faza ardıcıllığı","Akkumulyatorların qoşulması və polyarlıq","Akkumulyator qoruyucusu / açarı","Rəf / kabinet montajı","Kabel kanalları və markalanma","Siqnal / SNMP / quru kontakt qoşulması"];
+const INST_TEST=["Şəbəkədən işə salma (normal rejim)","Bypass rejiminə keçid və geri","Akkumulyator rejimi (şəbəkə kəsilməsi)","Yük testi","Qəza siqnalları və ekran","Manual bypass (servis açarı)","Paralel iş / yük bölgüsü"];
+const TEST_OPTS=[["Uğurlu","s-ok"],["Qeyd var","s-warn"],["Uğursuz","s-bad"],["Tətbiq olunmur","s-idle"]];
+const CALL_RES=["Bərpa olundu","Müvəqqəti bərpa olundu","Bərpa olunmadı"];
+function tabsFor(){const T=TYPES[CUR_TYPE],P=SVC_PROF(state.rep),B=T.hasBat;
+  if(P==="inst")return [["svc","Servis"],["ups",T.short],...(B?[["bat","Akkum."]]:[]),["inst","Quraşdırma"],["meas","İlk ölçmələr"],["kit","Təhvil"],["foto","Şəkillər"],["rep","Hesabat"]];
+  if(P==="bat")return B?[["svc","Servis"],["ups",T.short],["bat","Akkum."],["blk","Bloklar"],["work","Detallar"],["foto","Şəkillər"],["rep","Hesabat"]]:[["svc","Servis"],["ups",T.short],["work","Detallar"],["foto","Şəkillər"],["rep","Hesabat"]];
+  if(P==="diag")return [["svc","Servis"],["ups",T.short],["diag","Diaqnostika"],["meas","Ölçmə"],["work","Hissələr"],["foto","Şəkillər"],["rep","Hesabat"]];
+  if(P==="call")return [["svc","Servis"],["ups",T.short],["call","Çağırış"],["meas","Ölçmə"],["work","İşlər"],["foto","Şəkillər"],["rep","Hesabat"]];
+  if(P==="rep")return [["svc","Servis"],["ups",T.short],["repair","Təmir"],["meas","Ölçmə"],["work","Hissələr"],["foto","Şəkillər"],["rep","Hesabat"]];
+  return [["svc","Servis"],["ups",T.short],...(B?[["bat","Akkum."]]:[]),["meas","Ölçmə"],["chk","Yoxlama"],["work","İşlər"],...(B?[["blk","Bloklar"]]:[]),["foto","Şəkillər"],["rep","Hesabat"]]}
 function devBar(){const R=state.rep;return `<div class="devbar" role="group" aria-label="Cihazlar">${R.devices.map((d,i)=>`<button class="dchip" data-dev="${i}" aria-pressed="${i===state.di}"><span class="k">${i+1}</span>${esc(TYPES[d.type].short)}${devName(d)?" · "+esc(devName(d)):""}</button>`).join("")}<button class="dchip" id="addDev">+ Cihaz</button></div>`}
 function renderEditor(){
   const TABS=tabsFor();if(!TABS.some(x=>x[0]===state.tab))state.tab="ups";
@@ -924,7 +979,8 @@ function renderEditor(){
   $("#tabs").innerHTML=TABS.map(([k,l],i)=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${k===state.tab}"><span class="n">${i+1}</span>${l}</button>`).join("");
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;renderEditor();window.scrollTo(0,0)});
   const sel=document.querySelector('.tab[aria-selected="true"]');if(sel)sel.scrollIntoView({inline:"center",block:"nearest"});
-  const body=SECTIONS[state.tab]();
+  if(state.tab==="meas"&&CUR_TYPE==="ups")autoLimits(state.cur);
+  const body=(XSECT[state.tab]||SECTIONS[state.tab])();
   const i=TABS.findIndex(t=>t[0]===state.tab);
   const nav=`<div class="nextbar">${i>0?`<button class="btn" data-go="${TABS[i-1][0]}">← ${TABS[i-1][1]}</button>`:"<span></span>"}${i<TABS.length-1?`<button class="btn pri" data-go="${TABS[i+1][0]}">${TABS[i+1][1]} →</button>`:""}</div>`;
   $("#main").innerHTML=(state.tab!=="rep"?devBar():"")+body+nav;
@@ -932,34 +988,104 @@ function renderEditor(){
   const ad=$("#addDev");if(ad)ad.onclick=()=>typePicker("Əlavə cihaz","Bu müştəridə servis etdiyiniz növbəti cihazı seçin. O, eyni hesabata əlavə olunacaq.",tp=>{state.rep.devices.push(blankDevice(state.settings,tp));setActive(state.rep.devices.length-1);state.tab="ups";markDirty();renderEditor()},()=>renderEditor());
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.go;renderEditor();window.scrollTo(0,0)});
   (AFTER[state.tab]||(()=>{}))();
-  live();
+  live();applyLock();
 }
-document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur)return;setP(state.cur,p,e.target.value);markDirty();live()});
-document.addEventListener("change",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur)return;setP(state.cur,p,e.target.value);markDirty();live()});
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-xl],[data-xset],[data-xall],[data-delkit],#addKit,#kitStd");if(!b||!state.cur||lockedRep(state.rep))return;
+  const X=state.cur.x||(state.cur.x={}),y=window.scrollY;
+  if(b.dataset.xl){const path=b.dataset.xl,i=+b.dataset.xi;let L=getP(X,path);if(!Array.isArray(L)){L=[];setP(X,path,L)}L[i]=Object.assign(L[i]||{},{s:L[i]&&L[i].s===b.dataset.v?"":b.dataset.v})}
+  else if(b.dataset.xset){setP(X,b.dataset.xset,getP(X,b.dataset.xset)===b.dataset.v?"":b.dataset.v)}
+  else if(b.dataset.xall){let L=getP(X,b.dataset.xall);if(!Array.isArray(L)){L=[];setP(X,b.dataset.xall,L)}for(let i=0;i<+b.dataset.n;i++)if(!(L[i]&&L[i].s))L[i]={s:b.dataset.v,n:""}}
+  else if(b.dataset.delkit!==undefined){(X.kit||[]).splice(+b.dataset.delkit,1)}
+  else if(b.id==="addKit"){(X.kit=X.kit||[]).push({name:"",sn:"",qty:"1"})}
+  else if(b.id==="kitStd"){const B=state.cur.bat||{},n=(num(B.per)||0)*(num(B.str)||1);(X.kit=X.kit||[]);
+    [[n?"Akkumulyator "+[B.brand,B.nom?B.nom+"V":"",B.ah?B.ah+"Ah":""].filter(Boolean).join(" "):"",n?String(n):""],["Akkumulyator rəfi / kabineti","1"],["Akkumulyator birləşdirici kabelləri (dəst)","1"],["İstifadəçi təlimatı və pasport","1"],["Zəmanət talonu","1"]].forEach(([nm,q])=>{if(nm&&!X.kit.some(k=>k.name===nm))X.kit.push({name:nm,sn:"",qty:q})})}
+  markDirty();renderEditor();window.scrollTo(0,y)});
+document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);markDirty();live()});
+document.addEventListener("change",e=>{if(e.target.id==="batMid"&&state.cur&&!lockedRep(state.rep)){state.cur.bat.mid=e.target.checked;autoLimits(state.cur);markDirty();live();return}
+  const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);
+  {const mm=/^meas\.(\d+)\.(min|max)$/.exec(p);if(mm)state.cur.meas[+mm[1]].man=1}
+  if(/^(ups\.(kva|kw|pf|phase)|bat\.(per|str|nom|ah))$/.test(p)){if(p==="ups.pf"||p==="ups.kva"){const u=state.cur.ups,k=num(u.kva),f=num(String(u.pf||"").replace(",","."));if(k&&f&&!num(u.kw)){u.kw=String(Math.round(k*f*10)/10);const el=document.getElementById("f-ups-kw");if(el)el.value=u.kw}}autoLimits(state.cur)}
+  if(p==="svc.repno"){const R=realOf(state.rep);R.svc.repnoAuto=!String(e.target.value).trim();if(R.svc.repnoAuto){applyRepNo(R);e.target.value=R.svc.repno}}
+  else if(p==="svc.type"||p==="svc.date"||p==="svc.interval"){const R=realOf(state.rep);applyRepNo(R);const f=document.getElementById("f-svc-repno");if(f)f.value=R.svc.repno||""}
+  markDirty();live()});
+/* norm limits worked out from the UPS power, power factor, phases and the battery string (limits typed by hand are kept) */
+function upsNominal(V){const u=V.ups||{},S=num(u.kva),pf=num(String(u.pf||"").replace(",","."))||(num(u.kw)&&S?num(u.kw)/S:null)||0.9,P=num(u.kw)||(S?S*pf:null),ph=devPhases(V);
+  const b=V.bat||{},per=Math.floor(num(b.per)||0),cells=Math.max(1,Math.round((num(b.nom)||12)/2)),half=b.mid?Math.floor(per/2):per;
+  return {S,P,pf,ph,iout:S?S*1000/(ph.pout===3?Math.sqrt(3)*400:230):null,iin:P?P*1000/(0.94*(ph.pin===3?Math.sqrt(3)*400:230))*1.1:null,
+    vb:half>0?[half*cells*2.23,half*cells*2.30]:null,ich:num(b.ah)>0?0.1*num(b.ah)*Math.max(1,Math.floor(num(b.str)||1)):null,half,per,mid:!!b.mid}}
+function autoLimits(V){if(!V||CUR_TYPE!=="ups"||!V.meas)return;const N=upsNominal(V),r1=x=>x==null?"":String(Math.round(x*10)/10),r0=x=>x==null?"":String(Math.round(x));
+  const set=(lab,mn,mx)=>{const j=MEAS.findIndex(m=>m[0]===lab);if(j<0||!V.meas[j]||V.meas[j].man)return;if(mn!==undefined)V.meas[j].min=mn;if(mx!==undefined)V.meas[j].max=mx;
+    const a=document.getElementById("mn-"+j),b=document.getElementById("mx-"+j);if(a)a.value=V.meas[j].min;if(b)b.value=V.meas[j].max};
+  set("Giriş cərəyanı","",r1(N.iin));set("Çıxış cərəyanı","",r1(N.iout));set("Çıxış aktiv gücü","",r1(N.P));
+  set("Akkumulyator ümumi gərginliyi",N.vb?r0(N.vb[0]):"",N.vb?r0(N.vb[1]):"");
+  set("DC şin gərginliyi (+)",N.vb?r0(N.vb[0]*0.95):"",N.vb?r0(N.vb[1]*1.05):"");set("DC şin gərginliyi (−)",N.vb?r0(N.vb[0]*0.95):"",N.vb?r0(N.vb[1]*1.05):"");
+  set("Akkumulyator şarj cərəyanı","",r1(N.ich))}
+/* automatic report number: KOD-YYYYMMDD-NN — the code from the kind of work, the date of the work, NN = which work of that day (01, 02, 03 …).
+   RSH rüblük · ASH aylıq · YSH yarımillik · İSH illik servis · TSH təmir / qəza · DSH diaqnostika / akkumulyator testi · QSH quraşdırma.
+   A number typed by hand is kept; clearing the field brings the automatic one back. */
+function repPrefix(r){const t=String(r.svc.type||""),iv=num(r.svc.interval);
+  if(/Diaq|testi/i.test(t))return "DSH";if(/Təmir|Qəza/i.test(t))return "TSH";if(/Quraşdırma/i.test(t))return "QSH";
+  return iv>0&&iv<=1?"ASH":iv>=12?"İSH":iv>=6?"YSH":"RSH"}
+function applyRepNo(r,fresh){if(!r||!r.svc)return;const cur=String(r.svc.repno||"").trim();if(cur&&r.svc.repnoAuto!==true)return;
+  const d=String(r.svc.date||todayISO()).replace(/-/g,"").slice(0,8),pre=repPrefix(r),re=/^[A-ZƏİ]{3}-(\d{8})-(\d{2,})$/,m0=cur.match(re);
+  if(m0&&m0[1]===d&&!fresh){r.svc.repno=pre+"-"+d+"-"+m0[2];r.svc.repnoAuto=true;return}
+  let mx=0;const seen=x=>{const m=String(x||"").match(re);if(m&&m[1]===d)mx=Math.max(mx,+m[2])};
+  Object.values(state.reports||{}).forEach(x=>{if(x&&x.id!==r.id&&x.svc)seen(x.svc.repno)});Object.values(state.remote||{}).forEach(x=>{if(x&&x.id!==r.id)seen(x.repno)});
+  r.svc.repno=pre+"-"+d+"-"+String(mx+1).padStart(2,"0");r.svc.repnoAuto=true}
 function live(){if(!state.cur)return;const a=analyze(state.cur);
   document.querySelectorAll("[data-live]").forEach(el=>{const k=el.dataset.live;let v="",c="";
     if(k.startsWith("m")){v=a.ms[+k.slice(1)];c=stCls(v)}
     else if(k==="next")v=a.next?fmtDate(a.next):"—";
     else if(k==="age")v=a.age!==null?a.age.toFixed(1)+" il":"—";
-    else if(k==="tot")v=a.tot+" blok";
+    else if(k==="tot")v=a.tot+" blok"+(state.cur.bat.mid&&num(state.cur.bat.per)>1?" · orta uc: "+Math.floor(num(state.cur.bat.per)/2)+" + "+(Math.floor(num(state.cur.bat.per))-Math.floor(num(state.cur.bat.per)/2)):"");
+    else if(k==="batnorm"){const N=upsNominal(state.cur);v=N.vb?Math.round(N.vb[0])+" … "+Math.round(N.vb[1])+" V ("+N.half+" blok"+(N.mid?", yarı qrup — UPS ekranındakı kimi":"")+")":"blok sayını yazın"}
     else if(k==="ref")v=a.ref?fmt(a.ref)+" mΩ"+(num(state.cur.bat.ref)>0?"":" (median)"):"—";
     el.textContent=v;if(el.classList.contains("chip"))el.className="chip "+c})}
+/* checklist with result buttons stored in the device's x part (path like "inst.chk") */
+function xList(path,items,opts){const L=getP(state.cur,"x."+path)||[];return items.map((c,i)=>{const s=(L[i]||{}).s||"";return `<div class="citem"><b style="font-weight:600">${i+1}. ${esc(c)}</b><div class="seg">${opts.map(([o,cl])=>`<button type="button" class="${cl}" data-xl="${path}" data-xi="${i}" data-v="${esc(o)}" aria-pressed="${s===o}">${o==="Tətbiq olunmur"?"T/O":esc(o)}</button>`).join("")}</div>
+  ${s&&s!=="Yaxşı"&&s!=="Uğurlu"&&s!=="Tətbiq olunmur"?`<input type="text" data-path="x.${path}.${i}.n" placeholder="Qeyd" value="${esc((L[i]||{}).n||"")}">`:""}</div>`}).join("")}
+const XSECT={
+ inst(){return `<h2 class="sec">Quraşdırma və işə salma</h2><p class="hint">Montaj yoxlaması, işə salma testləri və konfiqurasiya.</p>
+  <div class="card"><h3>Quraşdırma yeri</h3>${fld("x.inst.place","Otaq / yer",{ph:"məs. Server otağı, 2-ci mərtəbə"})}<div class="grid2">${fld("x.inst.cin","Giriş kabeli (kəsik, mm²)")}${fld("x.inst.cout","Çıxış kabeli (kəsik, mm²)")}</div>
+   <div class="grid2">${fld("x.inst.bin","Giriş avtomatı, A")}${fld("x.inst.bout","Çıxış / bypass avtomatı, A")}</div>${fld("x.inst.earth","Torpaqlama müqaviməti, Ω",{n:1})}</div>
+  <div class="card"><h3>Montaj yoxlaması</h3><div class="actions" style="margin:0 0 8px"><button class="btn sm" data-xall="inst.chk" data-n="${INST_CHK.length}" data-v="Yaxşı">Boşları “Yaxşı” et</button></div>${xList("inst.chk",INST_CHK,CHK_OPTS.filter(o=>o[0]!=="Yoxlanılmadı"))}</div>
+  <div class="card"><h3>İşə salma testləri</h3><div class="actions" style="margin:0 0 8px"><button class="btn sm" data-xall="inst.test" data-n="${INST_TEST.length}" data-v="Uğurlu">Boşları “Uğurlu” et</button></div>${xList("inst.test",INST_TEST,TEST_OPTS)}
+   <div class="grid2">${fld("x.inst.loadPct","Yük testi — yük, %",{n:1})}${fld("x.inst.loadMin","Yük testi — müddət, dəq",{n:1})}</div></div>
+  <div class="card"><h3>Konfiqurasiya</h3><div class="grid2">${fld("x.inst.vout","Çıxış gərginliyi, V",{n:1})}${fld("x.inst.fout","Çıxış tezliyi, Hz",{n:1})}</div>${fld("x.inst.cfg","Təyin edilən parametrlər (akkumulyator sayı, şarj cərəyanı, bypass hədləri, IP / SNMP…)",{area:1})}</div>`},
+ kit(){const K=getP(state.cur,"x.kit")||[];return `<h2 class="sec">Təhvil verilən avadanlıq</h2><p class="hint">Bu cihazla birlikdə təhvil verilənlər (akkumulyatorlar, rəf, kabellər, sənədlər, açarlar…). Təhvil-təslim aktının cədvəlinə düşür.</p>
+  <div class="card"><h3>Komplektasiya</h3>${K.map((k,i)=>`<div class="prow"><span class="wide">${fld(`x.kit.${i}.name`,"Ad")}</span>${fld(`x.kit.${i}.sn`,"Seriya №")}${fld(`x.kit.${i}.qty`,"Say",{n:1})}<button class="btn sm danger" data-delkit="${i}" aria-label="Sil">✕</button></div>`).join("")||'<p class="note" style="margin:0">Cihazın özü avtomatik yazılır. Əlavə olaraq təhvil verilənləri əlavə edin.</p>'}
+   <div class="actions"><button class="btn sm" id="addKit">+ Sətir</button><button class="btn sm" id="kitStd">Standart siyahı</button></div></div>
+  <div class="card"><h3>Qeyd</h3>${fld("x.kitNote","Təhvil zamanı qeyd (məs. istifadə qaydaları izah edildi)",{area:1})}</div>`},
+ diag(){return `<h2 class="sec">Diaqnostika</h2><p class="hint">Şikayət, aşkar edilən nasazlıq və tövsiyə olunan təmir.</p><div class="card">
+  ${fld("x.diag.compl","Müştərinin şikayəti / problem",{area:1})}${fld("x.diag.codes","Xəta kodları, jurnal qeydləri",{area:1})}${fld("x.diag.found","Aşkar edilən nasazlıq",{area:1})}${fld("x.diag.rec","Tövsiyə olunan təmir",{area:1})}
+  <p class="note" style="margin:0">Lazım olan hissələri “Hissələr” bölməsində “Yararsız / dəyişdirilməli detallar” siyahısına yazın — qiymət təklifi üçün istifadə olunur.</p></div>`},
+ call(){return `<h2 class="sec">Qəza çağırışı</h2><p class="hint">Problem, görülən işlər və nəticə.</p><div class="card">
+  ${fld("x.call.problem","Problem (müştərinin bildirdiyi)",{area:1})}${fld("x.call.found","Səbəb / aşkar edilən",{area:1})}
+  <div><span class="note" style="font-weight:600">Nəticə</span><div class="seg" style="margin-top:4px">${CALL_RES.map((o,i)=>`<button type="button" class="${["s-ok","s-warn","s-bad"][i]}" data-xset="call.res" data-v="${esc(o)}" aria-pressed="${getP(state.cur,"x.call.res")===o}">${esc(o)}</button>`).join("")}</div></div>
+  ${fld("x.call.next","Sonrakı addımlar",{area:1})}</div>`},
+ repair(){return `<h2 class="sec">Təmir</h2><p class="hint">Nasazlıq, görülən təmir və zəmanət. Dəyişdirilən hissələri “Hissələr” bölməsinə yazın.</p><div class="card">
+  ${fld("x.rep.fault","Nasazlıq",{area:1})}${fld("x.rep.done","Görülən təmir işləri",{area:1})}${fld("x.rep.warr","Təmirə zəmanət, ay",{n:1})}
+  <p class="note" style="margin:0">Təmirdən sonra “Ölçmə” bölməsində test ölçmələrini yazın.</p></div>`}};
 const SECTIONS={
  svc(){return `<h2 class="sec">Servis və müştəri</h2><p class="hint">Hesabat nömrəsi, tarix və müştəri məlumatları.</p>
-  <div class="card"><h3>Servis</h3><div class="grid2">${fld("svc.repno","Hesabat №",{ph:"SR-2026-0143"})}${fld("svc.date","Servis tarixi",{date:1})}</div>
+  <div class="card"><h3>Servis</h3><div class="grid2">${fld("svc.repno","Hesabat №",{ph:"avtomatik, məs. RSH-20261013-01"})}${fld("svc.date","Servis tarixi",{date:1})}</div>
   ${fld("svc.type","Servis növü",{sel:SVC_TYPES})}<div class="grid2">${fld("svc.eng","Servis mühəndisi")}${isDiag(state.rep)?"":fld("svc.interval","Növbəti servis intervalı, ay",{n:1})}</div>${isDiag(state.rep)?`<p class="note" style="margin:0">Diaqnostika: müştəri servis müqaviləsində deyil — növbəti servis planlanmır və servis cədvəlinə düşmür.</p>`:""}
-  <div class="note">Növbəti servis: <b data-live="next"></b></div></div>
-  <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
+  <div class="note">Növbəti servis: <b data-live="next"></b></div>
+  ${SVC_PROF(state.rep)==="inst"?`<div class="grid2">${fld("svc.conNo","Müqavilə № (akt üçün)")}${fld("svc.conDate","Müqavilə tarixi",{date:1})}</div><div class="grid2">${fld("svc.warr","Zəmanət müddəti, ay",{n:1,ph:"məs. 12"})}${fld("svc.train","Təlimat keçilən şəxs")}</div>`:""}
+  ${SVC_PROF(state.rep)==="call"?`<div class="grid2">${fld("svc.tCall","Çağırış vaxtı",{ph:"məs. 14.10.2026 09:40"})}${fld("svc.tArr","Gəliş vaxtı",{ph:"məs. 14.10.2026 11:15"})}</div>`:""}
+  <p class="note" style="margin:0">Servis növünü dəyişəndə hesabatın bölmələri və PDF başlığı həmin növə uyğun dəyişir.</p></div>
+  <div class="card"><h3>Müştəri</h3>${fld("cl.name","Müştəri / təşkilat")}${fld("cl.payer","Hesab kimə (vasitəçi / podratçı şirkət)",{list:payerList(),ph:"boş = müştərinin özü",note:"İş vasitəçi şirkət vasitəsilə görülürsə, onun adını yazın — Satış və Anbarda hesab ona yazılır. Hesabatda (PDF) görünmür."})}${fld("cl.obj","Obyekt / otaq")}${fld("cl.addr","Ünvan")}
   <div class="grid2">${fld("cl.person","Əlaqədar şəxs")}${fld("cl.tel","Telefon")}</div>${fld("cl.sign","İmza üçün müştəri nümayəndəsi")}</div>
   <div class="card"><h3>Müştərinin cihazları (${state.rep.devices.length})</h3>
-  <div class="dlist">${state.rep.devices.map((d,i)=>`<div class="drow"><span class="k">${i+1}</span><span class="dn"><b>${esc(TYPES[d.type].title)}</b>${devName(d)||d.info.sn||isPar(d)?`<small>${esc([devName(d),d.info.sn?"SN "+d.info.sn:"",isPar(d)?"paralel"+(parText(d)?": "+parText(d):""):""].filter(Boolean).join(" · "))}</small>`:""}</span>
+  <div class="dlist">${state.rep.devices.map((d,i)=>`<div class="drow"><span class="k">${i+1}</span><span class="dn"><b>${esc(TYPES[d.type].title)}</b>${devName(d)||d.info.sn||isPar(d)||d.loc?`<small>${esc([devName(d),d.info.sn?"SN "+d.info.sn:"",d.loc?"📍 "+d.loc:"",isPar(d)?"paralel"+(parText(d)?": "+parText(d):""):""].filter(Boolean).join(" · "))}</small>`:""}</span>
     <button class="btn sm" data-dedit="${i}">Düzəlt</button><button class="btn sm" data-ddup="${i}" title="Kopyala" aria-label="Kopyala">⧉</button>${state.rep.devices.length>1?`<button class="btn sm danger" data-ddel="${i}">Sil</button>`:""}</div>`).join("")}</div>
   <button class="btn" id="svcAddDev">+ Cihaz əlavə et</button></div>
   ${state.rep.devices.some(d=>devName(d)||d.info.sn)||state.rep.cl.name?`<div class="card"><h3>Növbəti servis</h3><p class="note" style="margin:0">Bu hesabatın müştəri və cihaz siyahısından yeni hesabat yaradılır. Ölçmələr, yoxlama, görülən işlər və şəkillər boş başlayır; bu hesabat dəyişmir.</p>
   <button class="btn" id="svcCopy">⧉ Növbəti servis üçün kopyala</button></div>`:""}`},
  upsUPS(){return `<h2 class="sec">UPS cihazı</h2><p class="hint">Cihazın pasport məlumatları.</p><div class="card">
   <div class="grid2">${fld("ups.brand","Marka")}${fld("ups.model","Model")}</div>${fld("ups.sn","Seriya №")}
-  <div class="grid2">${fld("ups.kva","Nominal güc, kVA",{n:1})}${fld("ups.kw","Nominal güc, kW",{n:1})}</div>
+  <div class="grid3">${fld("ups.kva","Nominal güc, kVA",{n:1})}${fld("ups.pf","Güc əmsalı (PF)",{sel:UPS_PF})}${fld("ups.kw","Nominal güc, kW",{n:1})}</div>
+  <p class="note" style="margin:0">Güc və PF yazılanda “Ölçmə” bölməsində cərəyan, güc və DC hədləri avtomatik təyin olunur.</p>
   <div class="grid2">${fld("ups.topo","Topologiya",{sel:TOPO})}${fld("ups.phase","Faza (giriş/çıxış)",{sel:PHASE})}</div>
   <div class="grid2">${fld("ups.fw","Firmware")}${fld("ups.inst","Quraşdırma tarixi",{date:1})}</div>${fld("ups.hours","İş saatı / sayğac")}</div>`},
  meas(){return `<h2 class="sec">Ölçmə nəticələri</h2><p class="hint">Üçfazalı parametrlərdə L1–L3, digərlərində bir qiymət. Faza sayı cihazın məlumatlarından götürülür (birfazalıda yalnız L1). Nəticə norma hədlərinə görə dərhal göstərilir.</p><div class="card">`+
@@ -970,9 +1096,9 @@ const SECTIONS={
   <div class="actions" style="margin-bottom:10px"><button class="btn sm" id="allOk">Boş bəndləri “Yaxşı” et</button></div><div class="card">`+
   CHK.map((c,i)=>{if(chkHidden(state.cur,i))return "";const s=state.cur.chk[i].s;return `<div class="citem"><b style="font-weight:600">${i+1}. ${esc(c)}</b><div class="seg">${CHK_OPTS.map(([o,cl])=>`<button type="button" class="${cl}" data-chk="${i}" data-v="${esc(o)}" aria-pressed="${s===o}">${o==="Tətbiq olunmur"?"T/O":o==="Yoxlanılmadı"?"Yoxl.":esc(o)}</button>`).join("")}</div>
    ${s&&s!=="Yaxşı"?`<input type="text" id="cn-${i}" data-path="chk.${i}.n" placeholder="Qeyd" value="${esc(state.cur.chk[i].n)}">`:""}</div>`}).join("")+`</div>`},
- work(){const r=state.cur;return `<h2 class="sec">Görülən işlər</h2><p class="hint">Hər iş üçün Bəli / Xeyr seçin.</p><div class="card">`+
+ work(){const r=state.cur,P=SVC_PROF(state.rep);return P!=="prof"?`<h2 class="sec">${P==="call"?"Görülən işlər və hissələr":"Hissələr və detallar"}</h2><p class="hint">Dəyişdirilən hissələr, yararsız detallar və qeydlər.</p>`+(P==="call"?`<div class="card">${fld("wExtra","Görülən işlər (sərbəst mətn)",{area:1})}</div>`:""):(`<h2 class="sec">Görülən işlər</h2><p class="hint">Hər iş üçün Bəli / Xeyr seçin.</p><div class="card">`+
   WORKS.map((w,i)=>`<div class="citem"><b style="font-weight:600">${esc(w)}</b><div class="seg">${["Bəli","Xeyr","—"].map(o=>`<button type="button" class="${o==="Bəli"?"s-ok":"s-idle"}" data-work="${i}" data-v="${o}" aria-pressed="${r.works[i]===o}">${o}</button>`).join("")}</div></div>`).join("")+
-  `${fld("wExtra","Əlavə iş (sərbəst mətn)",{area:1})}</div>
+  `${fld("wExtra","Əlavə iş (sərbəst mətn)",{area:1})}</div>`)+`
   <div class="card"><h3>Dəyişdirilən / quraşdırılan hissələr</h3>${r.parts.map((p,i)=>`<div class="prow"><span class="wide">${fld(`parts.${i}.name`,"Hissə")}</span>${fld(`parts.${i}.code`,"Kod / Part №")}${fld(`parts.${i}.qty`,"Say",{n:1})}<button class="btn sm danger" data-delpart="${i}" aria-label="Sil">✕</button><span class="wide" style="grid-column:1/-1">${fld(`parts.${i}.note`,"Qeyd")}</span></div>`).join("")||'<p class="note" style="margin:0">Hissə əlavə edilməyib.</p>'}
   <button class="btn sm" id="addPart">+ Hissə əlavə et</button></div>
   <div class="card"><h3>Yararsız / dəyişdirilməli detallar</h3><p class="note" style="margin:0">Yoxlamada “Nasaz” seçilən bəndlər və “Dəyişdirilməli” akkumulyator blokları siyahıya avtomatik düşür. Burada əlavə yararsız detalları yazın (məs. lövhə, modul, kondensator).</p>
@@ -981,7 +1107,9 @@ const SECTIONS={
   <div class="card"><h3>Mühəndisin qeydləri</h3>${fld("notes","Texniki qeydlər",{area:1})}${fld("recs","Əlavə tövsiyələr",{area:1})}</div>`},
  bat(){return `<h2 class="sec">Akkumulyatorlar</h2><p class="hint">Qrup və blok sayını yazın — “Bloklar” bölməsində nömrələr avtomatik yaranır (maks. ${MAXB} blok).</p>
   <div class="card"><h3>Dəst</h3>${fld("bat.brand","Marka / model")}<div class="grid2">${fld("bat.type","Tip",{sel:BTYPE})}${fld("bat.ah","Tutum, Ah",{n:1})}</div>
-  <div class="grid2">${fld("bat.per","Bir qrupdakı blok sayı",{n:1})}${fld("bat.str","Qrup sayı",{n:1})}</div><div class="note">Cəmi: <b data-live="tot"></b></div>
+  <div class="grid2">${fld("bat.per","Bir qrupdakı blok sayı",{n:1})}${fld("bat.str","Qrup (qol) sayı",{n:1})}</div><div class="note">Cəmi: <b data-live="tot"></b></div>
+  <label class="f" style="display:flex;gap:8px;align-items:center;grid-template-columns:none"><input type="checkbox" id="batMid" style="width:auto;min-height:0" ${state.cur.bat.mid?"checked":""}><span>Orta uc (neytral) var — qrup dövrəyə iki yarı (±) kimi qoşulur, məs. 60 = 30 + 30</span></label>
+  <div class="note">Akkumulyator gərginliyinin norması: <b data-live="batnorm"></b></div>
   <div class="grid2">${fld("bat.nom","Blokun nominal gərginliyi, V",{n:1})}${fld("bat.dev","Ölçü cihazı",{ph:"Hioki BT3554"})}</div>
   <div class="grid2">${fld("bat.inst","Quraşdırma tarixi",{date:1})}${fld("bat.life","İstismar müddəti, il",{n:1})}</div><div class="note">Yaşı: <b data-live="age"></b></div></div>
   <div class="card"><h3>Qiymətləndirmə hədləri</h3>${fld("bat.ref","Referans daxili müqavimət, mΩ",{n:1,ph:"boş = ölçmələrin medianı"})}<div class="note">İstifadə olunan referans: <b data-live="ref"></b></div>
@@ -1009,7 +1137,7 @@ const SECTIONS={
   <div class="verdict ${A.cls}">${A.overall}<small>${multi?A.devs.length+" cihaz · ":""}${A.tested?`${A.tested} blok · ${A.rep} dəyişdirilməli · ${A.att} diqqət · `:(A.devs.some(x=>TYPES[x.d.type].hasBat)?"Akkumulyator ölçmələri yoxdur · ":"")}${outN} parametr norma xaricində · ${nasN} nasaz bənd</small></div>
   <div class="card" style="margin-top:12px"><h3>Avtomatik nəticə</h3>${A.devs.map(x=>x.a.C.length?`${multi?`<b>${x.i+1}. ${esc(TYPES[x.d.type].title)}${devName(x.d)?" — "+esc(devName(x.d)):""}</b>`:""}<ul class="concl">${x.a.C.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>`:"").join("")||'<p class="note" style="margin:0">Məlumat daxil edildikcə nəticələr burada yaranır.</p>'}</div>
   ${sigCard()}
-  <div class="actions" style="margin:4px 0 12px"><button class="btn pri" id="bPdf">PDF hazırla</button><button class="btn" id="bPrint">Çap et</button><button class="btn" id="bXls">Excel (.xlsx)</button>
+  <div class="actions" style="margin:4px 0 12px"><button class="btn pri" id="bPdf">PDF hazırla</button><button class="btn" id="bPrint">Çap et</button><button class="btn" id="bXls">Excel (.xlsx)</button>${SVC_PROF(r)==="inst"?'<button class="btn pri" id="bAct">Təhvil-təslim aktı (PDF)</button><button class="btn" id="bActW">Akt (Word)</button>':""}
    <a class="btn" id="pdfLink" target="_blank" rel="noopener" href="${esc((state.remote[r.id]||{}).pdf||"")}" ${(state.remote[r.id]||{}).pdf?"":"hidden"} style="display:inline-flex;align-items:center;text-decoration:none">Drive-dakı PDF</a>
    ${canDelete(r)?`<button class="btn danger" id="bDel">${state.remote[r.id]?"Hesabatı sil (rəhbər)":"Qaralamanı sil"}</button>`:""}
    ${state.me.role==="admin"&&state.remote[r.id]?'<button class="btn" id="bHist">Versiyalar</button>':""}
@@ -1017,6 +1145,7 @@ const SECTIONS={
    <div class="seg langseg" role="group" aria-label="Hesabatın dili"><span class="note" style="align-self:center;margin-right:4px">Dil:</span>${LANGS.map(([k,l])=>`<button type="button" class="s-idle" data-lang="${k}" aria-pressed="${(state.plang||"az")===k}">${l}</button>`).join("")}</div></div>
   ${r.sample?'<div class="banner" style="margin:0 0 12px">Bu nümunədir: serverə göndərilmir.</div>':""}
   ${!canDelete(r)&&state.remote[r.id]?'<p class="note">Serverdəki hesabatı yalnız servis müdiri / rəhbər silə bilər. Dəyişikliklərin əvvəlki versiyaları serverdə saxlanılır.</p>':""}
+  ${apprCard()}
   ${state.me.role==="admin"&&!realOf(state.rep).sample?'<div class="card" id="rateBox"></div>':""}
   <div id="delConfirm" hidden class="card"><b>Bu hesabat ${state.remote[r.id]?"mərkəzi bazadan ":""}silinsin?</b>${state.remote[r.id]?'<p class="note" style="margin:0">Son versiya “_Versiyalar” qovluğunda qalır, lazım olsa bərpa etmək olar.</p>':""}<div class="actions"><button class="btn danger" id="bDelYes">Bəli, sil</button><button class="btn" id="bDelNo">Ləğv et</button></div></div>
   <div id="histBox"></div>
@@ -1035,7 +1164,9 @@ SECTIONS.ups=function(){const T=TYPES[CUR_TYPE],R=state.rep;
    ${fld("par.mode","Rejim",{sel:PAR_MODES})}<div class="grid2">${fld("par.grp","Paralel sistemin adı",{ph:"məs. Sistem A"})}${fld("par.pos","Sistemdə №",{ph:"məs. 1/2"})}</div></div>`:"";
   const dupCard=`<div class="card"><h3>Eyni cihazdan daha biri var?</h3><p class="note" style="margin:0">Bu cihazın bütün məlumatları (pasport, paralel iş, akkumulyator quruluşu, ölçmələr, yoxlama, işlər) yeni cihaza köçürülür. Seriya №, şəkillər və akkumulyator blok ölçmələri boş qalır — fərqli olanları düzəldin.</p>
    <button class="btn" id="dupDev">⧉ Bu cihazı kopyala</button></div>`;
-  return body+parCard+dupCard+(R.devices.length>1?`<div class="card"><button class="btn sm danger" id="rmDev">Bu cihazı hesabatdan çıxar</button><div id="rmConf" hidden><p style="margin:0 0 8px"><b>${state.di+1}-ci cihaz və onun bütün ölçmələri bu hesabatdan silinsin?</b></p><div class="actions"><button class="btn danger" id="rmYes">Bəli, çıxar</button><button class="btn" id="rmNo">Ləğv et</button></div></div></div>`:"")};
+  /* where the device stands: branch / building / floor / room (shown on the report and used by Satış for per-branch prices) */
+  const locCard=`<div class="card"><h3>Yerləşdiyi yer</h3>${fld("loc","Filial / bina / mərtəbə / otaq",{list:locList(),ph:"məs. Nərimanov filialı, 2-ci mərtəbə, server otağı",note:"Müştərinin hansı filialında və hansı otaqda yerləşir — hesabatda cihaz məlumatlarında göstərilir."})}</div>`;
+  return locCard+body+parCard+dupCard+(R.devices.length>1?`<div class="card"><button class="btn sm danger" id="rmDev">Bu cihazı hesabatdan çıxar</button><div id="rmConf" hidden><p style="margin:0 0 8px"><b>${state.di+1}-ci cihaz və onun bütün ölçmələri bu hesabatdan silinsin?</b></p><div class="actions"><button class="btn danger" id="rmYes">Bəli, çıxar</button><button class="btn" id="rmNo">Ləğv et</button></div></div></div>`:"")};
 const AFTER={
  svc(){const st=$("#f-svc-type");if(st)st.addEventListener("change",()=>setTimeout(()=>{const y=window.scrollY;renderEditor();window.scrollTo(0,y)},0));
   document.querySelectorAll("[data-ddup]").forEach(b=>b.onclick=()=>{const i=+b.dataset.ddup;dupDevice(i);state.tab="svc";toast("Cihaz "+(i+1)+" kopyalandı → Cihaz "+(i+2));const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
@@ -1065,9 +1196,10 @@ const AFTER={
      const [v,R]=ord==="vr"?[nums[0],nums[1]]:ord==="rv"?[nums[1],nums[0]]:[nums[1],nums[2]];
      r.bat.blocks[i]={...(r.bat.blocks[i]||{}),v,r:R};i++;n++});
    if(n){markDirty();$("#pasteBox").value="";renderProbe();renderGrid();toast(n+" blok dolduruldu")}else toast("Rəqəm tapılmadı: hər sətirdə ən azı iki qiymət olmalıdır")}},
- rep(){fitPaper();ensurePhotos(state.cur).then(n=>{if(n&&state.tab==="rep"){$("#ps").innerHTML=paperHTML(state.cur,null,state.plang||"az");fitPaper()}});
+ rep(){const ba=$("#bAct");if(ba)ba.onclick=exportAct;const bw=$("#bActW");if(bw)bw.onclick=exportActWord;AFTER.rep0()},
+ rep0(){fitPaper();ensurePhotos(state.cur).then(n=>{if(n&&state.tab==="rep"){$("#ps").innerHTML=paperHTML(state.cur,null,state.plang||"az");fitPaper()}});
   $("#bPdf").onclick=exportPdf;$("#bPrint").onclick=printReport;$("#bXls").onclick=exportXlsx;
-  ratingCard();
+  ratingCard();bindAppr();
   document.querySelectorAll("[data-sign]").forEach(b=>b.onclick=()=>openSignPad(b.dataset.sign));
   document.querySelectorAll("[data-signdel]").forEach(b=>b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Silinsin?";return}
     const r=realOf(state.rep);if(r.sig)delete r.sig[b.dataset.signdel];markDirty();const y=window.scrollY;renderEditor();window.scrollTo(0,y)});
@@ -1081,6 +1213,37 @@ const AFTER={
     if(L!=="az"&&freeTexts(state.cur).length){b.textContent="…";await ensureTranslations(state.cur,L);b.textContent=LANGS.find(x=>x[0]===L)[1]}
     $("#ps").innerHTML=paperHTML(state.cur,analyze(state.cur),L);fitPaper()})}
 };
+function apprBanner(all){const P=all.filter(needsAppr);if(state.me.role!=="admin"||(!P.length&&!state.af))return "";
+  const S=P.filter(s=>s.sub).length;
+  return `<div class="card remind" role="status"><h3>${state.af?"Yalnız təsdiq gözləyən hesabatlar göstərilir":"Təsdiq gözləyən hesabatlar: "+P.length}</h3><p class="note" style="margin:0">${S?S+" hesabatı işçi “iş bitdi” kimi göndərib. ":""}Hesabatı açın → “Hesabat” bölməsi → yoxlayın, lazım olsa düzəldin və “Təsdiq et” basın. Təsdiqdən sonra iş Satış və Anbar proqramına gedir.</p>
+   <div class="actions"><button class="btn sm${state.af?"":" pri"}" data-af="${state.af?"0":"1"}">${state.af?"Hamısını göstər":"Təsdiq gözləyənləri göstər"}</button></div></div>`}
+function apprParts(r){r=realOf(r);const L=[];(r.devices||[]).forEach(d=>(d.parts||[]).forEach(p=>{if(p&&String(p.name||p.code||"").trim())L.push(p)}));return L}
+function apprCard(){const r=realOf(state.rep);if(!r||r.sample)return "";const A=apprOf(r),adm=state.me.role==="admin",P=apprParts(r);
+  const parts=P.length?`<div class="maptbl"><table class="ltbl"><tr><th style="text-align:left">Dəyişdirilən hissə</th><th style="text-align:left">Kod</th><th>Say</th></tr>${P.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.code||"")}</td><td class="c">${esc(p.qty||"1")}</td></tr>`).join("")}</table></div>`:'<p class="note" style="margin:0">Dəyişdirilən hissə yazılmayıb — Satışa yalnız xidmət haqqı gedəcək.</p>';
+  if(A)return `<div class="card" id="apprBox" style="border-left:4px solid var(--ok)"><h3>✓ Təsdiqlənib</h3><p class="note" style="margin:0">${esc(A.by||"")} · ${esc(fmtDT(A.at))}. İş Satış və Anbar proqramına göndərilir (server 15 dəqiqədən bir yoxlayır). ${adm?"Təsdiqdən sonrakı düzəlişlər Satışdakı sənədə avtomatik keçmir — orada düzəldin.":"Hesabatı artıq yalnız rəhbər dəyişə bilər."}</p>
+   ${adm?'<div class="actions"><button class="btn sm ghost" id="apprUndo">Təsdiqi geri al</button></div>':""}</div>`;
+  const bill=`<p style="margin:6px 0"><b>Hesab:</b> ${esc(String(r.cl.payer||"").trim()||r.cl.name||"—")}${String(r.cl.payer||"").trim()?` <span class="note">(obyekt: ${esc(r.cl.name||"")})</span>`:""} · <b>Növ:</b> ${esc(r.svc.type||"—")}${r.svc.type&&!/planl/i.test(r.svc.type)?' <span class="note">— müqavilə səfəri sayılmır, Satışda qaralama kimi qiymətləndirilir</span>':""}</p>`;
+  if(adm)return `<div class="card" id="apprBox" style="border-left:4px solid var(--warn)"><h3>Rəhbər təsdiqi</h3>${bill}<p class="note" style="margin:0">${r.sub&&r.sub.at?`<b>${esc(r.sub.by||"İşçi")}</b> işi ${esc(fmtDT(r.sub.at))} bitmiş kimi göndərib. `:""}Hesabatı yoxlayın, lazım olsa istənilən bölmədə düzəliş edin (xüsusilə “Görülən işlər” → dəyişdirilən hissələr: anbardan bunlar çıxılacaq). Təsdiqdən sonra iş Satış və Anbar proqramına gedir, işçi hesabatı artıq dəyişə bilmir.</p>
+   ${parts}<div class="actions"><button class="btn pri" id="apprGo">✓ Yoxladım — təsdiq et</button></div></div>`;
+  if(r.sub&&r.sub.at)return `<div class="card" id="apprBox"><h3>Rəhbərin təsdiqini gözləyir</h3><p class="note" style="margin:0">${esc(fmtDT(r.sub.at))} göndərildi. Rəhbər / servis müdiri yoxlayıb təsdiq edəndən sonra iş Satış və Anbar proqramına gedir.</p><div class="actions"><button class="btn sm ghost" id="subUndo">Geri götür (düzəliş edəcəm)</button></div></div>`;
+  return `<div class="card" id="apprBox"><h3>İş bitdi?</h3><p class="note" style="margin:0">Hesabatı doldurub imzaladıqdan sonra rəhbərə / servis müdirinə yoxlamağa göndərin. Təsdiqdən sonra hesabatı yalnız rəhbər dəyişə bilər.</p>${parts}<div class="actions"><button class="btn pri" id="subGo">İş bitdi — rəhbərə yoxlamağa göndər</button></div></div>`}
+async function setAppr(kind,on){await flush();const r=realOf(state.rep);
+  if(kind==="appr"){if(on)r.appr={by:state.me.name||"Rəhbər",at:Date.now()};else delete r.appr}
+  else{if(on)r.sub={by:state.me.name||"",at:Date.now()};else delete r.sub}
+  try{await persist(r)}catch(e){toast("Cihaza yazmaq alınmadı");return}
+  state.dirty=false;toast(kind==="appr"?(on?"Təsdiqləndi — Satış və Anbara göndərilir":"Təsdiq geri alındı"):(on?"Rəhbərə göndərildi":"Geri götürüldü"));
+  sync({all:true});const y=window.scrollY;renderEditor();window.scrollTo(0,y)}
+function bindAppr(){const two=(id,fn,txt)=>{const b=$("#"+id);if(b)b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=txt;return}b.disabled=true;fn()}};
+  two("apprGo",()=>setAppr("appr",true),"Təsdiq edilsin? Yenidən basın");
+  two("apprUndo",()=>setAppr("appr",false),"Geri alınsın? Yenidən basın");
+  two("subGo",()=>setAppr("sub",true),"Göndərilsin? Yenidən basın");
+  const u=$("#subUndo");if(u)u.onclick=()=>setAppr("sub",false)}
+/* an approved report is read-only for workers: everything except navigation, PDF, print, Excel and language is disabled */
+function applyLock(){if(!lockedRep(state.rep))return;const m=$("#main");if(!m)return;const A=apprOf(state.rep);
+  m.insertAdjacentHTML("afterbegin",`<div class="banner" style="margin:0 0 12px">Bu hesabat ${esc(A.by||"rəhbər")} tərəfindən təsdiqlənib — yalnız baxmaq olar. Dəyişiklik lazımdırsa, rəhbərə / servis müdirinə deyin.</div>`);
+  m.querySelectorAll("input,textarea,select").forEach(e=>{e.disabled=true});
+  m.querySelectorAll("button").forEach(b=>{if(b.dataset.go||b.dataset.dev||b.dataset.lang||b.dataset.dedit||["bPdf","bPrint","bXls","bHist","svcCopy"].includes(b.id))return;b.disabled=true});
+  const ad=$("#addDev");if(ad)ad.disabled=true;const fk=$("#flukeCard");if(fk)fk.hidden=true;m.querySelectorAll(".drop").forEach(d=>{d.style.pointerEvents="none";d.ondrop=e=>e.preventDefault()})}
 function canDelete(r){if(r.sample)return true;if(state.remote[r.id])return state.me.role==="admin";return true}
 async function showHistory(){const box=$("#histBox"),id=state.cur.id;box.innerHTML='<div class="card"><p class="note" style="margin:0">Versiyalar yüklənir…</p></div>';
   try{const h=await api("history",{id});
@@ -1102,7 +1265,7 @@ function renderProbe(){const r=state.cur,tot=batTotal(r),i=state.bi,b=r.bat.bloc
   <label class="f"><span>Müqavimət, mΩ</span><input id="pR" inputmode="decimal" enterkeyhint="next" autocomplete="off" value="${esc(b.r||"")}"></label>
   <label class="f"><span>Temp., °C</span><input id="pT" inputmode="decimal" enterkeyhint="next" autocomplete="off" value="${esc(b.t||"")}"></label></div>
   <div class="row"><button class="btn" id="pPrev"${i===0?" disabled":""}>← Əvvəlki</button><button class="btn pri" id="pNext">${i<tot-1?"Növbəti →":"Bitir ✓"}</button></div>`;
-  const upd=(k,el)=>{const blk=ensureBlock(state.bi);blk[k]=el.value;markDirty();liveProbe()};
+  const upd=(k,el)=>{const blk=ensureBlock(state.bi);if(k==="v"&&/^\s*[-−–]/.test(el.value))el.value=el.value.replace(/^\s*[-−–]\s*/,"");blk[k]=el.value;markDirty();liveProbe()};
   $("#pV").oninput=e=>upd("v",e.target);$("#pR").oninput=e=>upd("r",e.target);$("#pT").oninput=e=>upd("t",e.target);
   $("#pV").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#pR").focus()}};
   $("#pR").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();go(1)}};
@@ -1170,9 +1333,30 @@ function rChartsHTML(r,a,hd){
     boxes.push(`<div class="rchart-box avoid"><div class="rchart-title"><b>${t("Qrup")} ${s+1}</b><span>${t("orta")} ${fmt(st.avgR)} mΩ · ${t("maks")} ${fmt(st.maxR)} mΩ${st.att?` · <span class="p-warn">&nbsp;${st.att} ${t("diqqət")}&nbsp;</span>`:""}${st.rep?` · <span class="p-bad">&nbsp;${st.rep} ${t("dəyişdirilməli")}&nbsp;</span>`:""}</span></div>${g}</div>`)}
   return `<div class="blk">${hd||`<h4>${t("Daxili müqavimət — qruplar üzrə diaqram")}</h4>`}`+h+(boxes[0]||"")+`</div>`+boxes.slice(1).join("")}
 let REPORT_TITLE="UPS TEXNİKİ SERVİS HESABATI";
+/* report blocks of the kind of service (installation checks, diagnostics, call-out, repair, hand-over list) */
+function xPaper(V,PF,head,kv,pc,tv,dash,W){const X=V.x||{},esc2=v=>esc(ft(v||"")),rowsOf=(L,items)=>items.map((c,j)=>[c,(L||[])[j]||{}]).filter(([,o])=>o.s&&o.s!=="Tətbiq olunmur");let h="";
+  const tbl=(title,L,items)=>{const R=rowsOf(L,items);return R.length?W(head(title)+`<table><tr><th>#</th><th style="text-align:left">${t("Yoxlanılan bənd")}</th><th>${t("Nəticə")}</th><th style="text-align:left">${t("Qeyd")}</th></tr>${R.map(([c,o],q)=>`<tr><td class="c">${q+1}</td><td>${esc(t(c))}</td><td class="c ${o.s==="Uğurlu"?"p-ok":o.s==="Uğursuz"?"p-bad":pc(o.s)}">${tv(o.s)}</td><td>${esc2(o.n)}</td></tr>`).join("")}</table>`):""};
+  const txt=(rows)=>{const R=rows.filter(([,v])=>String(v||"").trim());return R.length?kv(R.map(([k,v])=>[[k,esc2(v).replace(/\n/g,"<br>")]])):""};
+  if(PF==="inst"){const I=X.inst||{};const info=[["Quraşdırma yeri",I.place],["Giriş kabeli",I.cin&&I.cin+" mm²"],["Çıxış kabeli",I.cout&&I.cout+" mm²"],["Giriş avtomatı",I.bin&&I.bin+" A"],["Çıxış / bypass avtomatı",I.bout&&I.bout+" A"],["Torpaqlama müqaviməti",I.earth&&I.earth+" Ω"]].filter(x=>x[1]);
+    if(info.length){const rw=[];for(let q=0;q<info.length;q+=2)rw.push(info.slice(q,q+2).map(([k,v])=>[k,esc(v)]));h+=W(head("Quraşdırma məlumatları")+kv(rw))}
+    h+=tbl("Montaj yoxlaması",I.chk,INST_CHK)+tbl("İşə salma testləri",I.test,INST_TEST);
+    const cf=[["Yük testi",I.loadPct||I.loadMin?(I.loadPct?I.loadPct+" % "+t("yük"):"")+(I.loadMin?" · "+I.loadMin+" "+t("dəq"):""):""],["Çıxış gərginliyi / tezliyi",[I.vout&&I.vout+" V",I.fout&&I.fout+" Hz"].filter(Boolean).join(" · ")],["Konfiqurasiya",I.cfg]];if(cf.some(x=>String(x[1]||"").trim()))h+=W(head("Konfiqurasiya")+txt(cf));
+    const K=(X.kit||[]).filter(k=>k.name);if(K.length)h+=W(head("Təhvil verilən avadanlıq")+`<table><tr><th>#</th><th style="text-align:left">${t("Ad")}</th><th>${t("Seriya №")}</th><th>${t("Say")}</th></tr>${K.map((k,j)=>`<tr><td class="c">${j+1}</td><td>${esc2(k.name)}</td><td class="c">${esc(k.sn||"")}</td><td class="c">${esc(k.qty||"")}</td></tr>`).join("")}</table>`+(X.kitNote?`<p><i>${esc2(X.kitNote)}</i></p>`:""))}
+  if(PF==="diag"){const D=X.diag||{};const b=txt([["Müştərinin şikayəti",D.compl],["Xəta kodları / jurnal",D.codes],["Aşkar edilən nasazlıq",D.found],["Tövsiyə olunan təmir",D.rec]]);if(b)h+=W(head("Diaqnostika nəticəsi")+b)}
+  if(PF==="call"){const C=X.call||{};const b=txt([["Problem",C.problem],["Səbəb / aşkar edilən",C.found],["Nəticə",C.res],["Sonrakı addımlar",C.next]]);if(b)h+=W(head("Qəza çağırışı")+b)}
+  if(PF==="rep"){const R=X.rep||{};const b=txt([["Nasazlıq",R.fault],["Görülən təmir işləri",R.done],["Təmirə zəmanət",num(R.warr)?R.warr+" "+t("ay"):""]]);if(b)h+=W(head("Təmir")+b)}
+  return h}
+function xConcl(V,PF){const X=V.x||{},C=[];
+  if(PF==="inst"){const I=X.inst||{},bad=(I.test||[]).filter(o=>o&&o.s==="Uğursuz").length+(I.chk||[]).filter(o=>o&&o.s==="Nasaz").length,done=(I.test||[]).filter(o=>o&&o.s).length;
+    if(done)C.push(bad?"Quraşdırma zamanı "+bad+" bənddə problem qeyd olunub — aradan qaldırılmalıdır.":"Avadanlıq quraşdırılıb, işə salınıb və testlərdən uğurla keçib.")}
+  if(PF==="call"&&X.call&&X.call.res)C.push("Çağırışın nəticəsi: "+X.call.res+".");
+  if(PF==="diag"&&X.diag&&X.diag.found)C.push("Aşkar edilən nasazlıq: "+X.diag.found.split("\n")[0]);
+  if(PF==="rep"&&X.rep&&X.rep.done)C.push("Təmir işləri görülüb"+(num(X.rep.warr)?"; zəmanət "+X.rep.warr+" ay":"")+".");
+  return C}
 function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=CUR_TYPE,S=state.settings,dash=v=>v?esc(v):"—",T=CT[PL]||CT.az;
   const pc=s=>s==="Normal"||s==="Yaxşı"?"p-ok":s==="Diqqət"||s==="Qeyd var"?"p-warn":s==="Dəyişdirilməli"||s==="Nasaz"||s==="Norma xaricində"?"p-bad":"";
   const parRow=d=>isPar(d)?[[["Paralel iş",esc(t(d.par.mode))+(parText(d)?" — "+esc(parText(d)):"")]]]:[];
+  const locRow=d=>String(d.loc||"").trim()?[[["Yerləşdiyi yer",esc(d.loc)]]]:[];
   const parSummary=()=>{const G={};r.devices.forEach((d,i)=>{if(!isPar(d))return;const k=(d.par.grp||"").trim()||t(d.par.mode);(G[k]=G[k]||{mode:d.par.mode,ix:[]}).ix.push(i+1)});
     const ks=Object.keys(G);if(!ks.length)return [];
     return [[["Paralel sistemlər",ks.map(k=>`${esc(k)}: ${G[k].ix.map(n=>t("Cihaz")+" "+n).join(" + ")}${k===t(G[k].mode)?"":" ("+esc(t(G[k].mode))+")"}`).join("; ")]]]};
@@ -1182,21 +1366,24 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
   const A=analyzeReport(r),multi=r.devices.length>1,allUps=r.devices.every(d=>d.type==="ups");
   const W=x=>`<div class="blk">${x}</div>`;
   const tblChunks=(headRow,rows,max)=>{if(rows.length<=max)return [rows];const out=[];for(let i=0;i<rows.length;i+=max)out.push(rows.slice(i,i+max));return out};
-  REPORT_TITLE=isDiag(r)?(allUps?"UPS TEXNİKİ DİAQNOSTİKA HESABATI":"TEXNİKİ DİAQNOSTİKA HESABATI"):allUps?"UPS TEXNİKİ SERVİS HESABATI":"TEXNİKİ SERVİS HESABATI";
+  const PF=SVC_PROF(r);REPORT_TITLE=PF==="diag"?(allUps?"UPS TEXNİKİ DİAQNOSTİKA HESABATI":"TEXNİKİ DİAQNOSTİKA HESABATI"):PF!=="prof"?(allUps&&PF!=="bat"?"UPS "+PROF_TITLE[PF]:PROF_TITLE[PF]):allUps?"UPS TEXNİKİ SERVİS HESABATI":"TEXNİKİ SERVİS HESABATI";
   let h=`<div class="paper" id="paper" lang="${PL}"><div class="ph"><div>${LOGO?`<img class="logo" src="${LOGO}" alt="${esc(S.co||"")}">`:`<div class="co">${esc(S.co||t("[Şirkət adı]"))}</div>`}<div class="coi">${esc([S.coaddr,S.cotel].filter(Boolean).join("   "))}</div></div>
   <div class="meta"><b>${t("Hesabat №")} ${dash(r.svc.repno)}</b><br>${t("Tarix:")} ${dash(fmtDate(r.svc.date))}</div></div>
   <h1>${t(REPORT_TITLE)}</h1><div class="sub">${esc(t(r.svc.type||""))}</div>
   <div class="ov"><span style="font-weight:700">${t("ÜMUMİ QİYMƏTLƏNDİRMƏ:")}</span><b class="${ovc(A.cls)}">${t(A.overall)}</b></div>
-  ${W(`<h4>1. ${t("Müştəri və servis məlumatları")}</h4>${kv([[["Müştəri",dash(r.cl.name)],["Əlaqədar şəxs",dash(r.cl.person)]],[["Obyekt",dash(ft(r.cl.obj))],["Telefon",dash(r.cl.tel)]],[["Ünvan",dash(r.cl.addr)],["Servis mühəndisi",dash(r.svc.eng)]],(isDiag(r)?[["Servis tarixi",dash(fmtDate(r.svc.date))],["Servis növü",esc(t("Diaqnostika"))]]:[["Servis tarixi",dash(fmtDate(r.svc.date))],["Növbəti servis",dash(fmtDate(A.next))]])].concat(parSummary()))}`)}`;
+  ${W(`<h4>1. ${t("Müştəri və servis məlumatları")}</h4>${kv([[["Müştəri",dash(r.cl.name)],["Əlaqədar şəxs",dash(r.cl.person)]],[["Obyekt",dash(ft(r.cl.obj))],["Telefon",dash(r.cl.tel)]],[["Ünvan",dash(r.cl.addr)],["Servis mühəndisi",dash(r.svc.eng)]],(isDiag(r)?[["Servis tarixi",dash(fmtDate(r.svc.date))],["Servis növü",esc(t("Diaqnostika"))]]:[["Servis tarixi",dash(fmtDate(r.svc.date))],["Növbəti servis",dash(fmtDate(A.next))]])].concat(
+    PF==="inst"?[[["Müqavilə",r.svc.conNo?esc(r.svc.conNo)+(r.svc.conDate?" · "+fmtDate(r.svc.conDate):""):"—"],["Zəmanət",num(r.svc.warr)?esc(r.svc.warr)+" "+t("ay")+" ("+fmtDate(r.svc.date)+" — "+fmtDate(addMonths(r.svc.date,num(r.svc.warr)))+")":"—"]]].concat(r.svc.train?[[["Təlimat keçilən şəxs",esc(r.svc.train)]]]:[]):
+    PF==="call"?[[["Çağırış vaxtı",dash(r.svc.tCall)],["Gəliş vaxtı",dash(r.svc.tArr)]]]:[]).concat(parSummary()))}`)}`;
   let n=2,appx="";const Cs=[];
   A.devs.forEach(({d,i,V,a})=>{useType(d.type);const u=V.ups;let k=0;
     const head=title=>multi?`<h5>${n}.${++k}. ${t(title)}</h5>`:`<h4>${n++}. ${t(title)}</h4>`;
     const norm=j=>{const m=V.meas[j],mn=m.min,mx=m.max;return !mn&&!mx?"—":!mn?"≤ "+esc(mx):!mx?"≥ "+esc(mn):esc(mn)+" – "+esc(mx)};
-    let band="";if(multi){h+=i>0?'<div class="pb"></div>':"";band=`<h4 class="devh"><span>${n}. ${t("Cihaz")} ${i+1}: ${t(TYPES[d.type].title)}${devName(d)?" — "+esc(devName(d)):""}</span><b class="${ovc(a.cls)}">${t(a.overall)}</b></h4>`}
+    let band="";if(multi){h+=i>0?'<div class="pb"></div>':"";band=`<h4 class="devh"><span>${n}. ${t("Cihaz")} ${i+1}: ${t(TYPES[d.type].title)}${devName(d)?" — "+esc(devName(d)):""}${d.loc?" · "+esc(d.loc):""}</span><b class="${ovc(a.cls)}">${t(a.overall)}</b></h4>`}
     /* device data */
-    if(d.type==="ups")h+=W(band+head(multi?"Cihaz məlumatları":"UPS cihazı")+kv([[["Marka",dash(u.brand)],["Model",dash(u.model)]],[["Seriya №",dash(u.sn)],["Firmware",dash(u.fw)]],[["Güc",(u.kva?esc(u.kva)+" kVA":"")+(u.kw?" / "+esc(u.kw)+" kW":"")||"—"],["Faza (giriş/çıxış)",dash(u.phase)]],[["Topologiya",tv(u.topo)],["Quraşdırma tarixi",dash(fmtDate(u.inst))]]].concat(parRow(d))));
+    if(d.type==="ups")h+=W(band+head(multi?"Cihaz məlumatları":"UPS cihazı")+kv(locRow(d).concat([[["Marka",dash(u.brand)],["Model",dash(u.model)]],[["Seriya №",dash(u.sn)],["Firmware",dash(u.fw)]],[["Güc",(u.kva?esc(u.kva)+" kVA":"")+(u.kw?" / "+esc(u.kw)+" kW":"")||"—"],["Faza (giriş/çıxış)",dash(u.phase)]],[["Topologiya",tv(u.topo)],["Quraşdırma tarixi",dash(fmtDate(u.inst))]]]).concat(parRow(d))));
     else{const F=TYPES[d.type].info.map(([key,lab,o])=>[lab,o&&o.date?dash(fmtDate(u[key])):o&&o.sel?tv(u[key]):dash(u[key])]);const rows=[];for(let x=0;x<F.length;x+=2)rows.push(F.slice(x,x+2));
-      h+=W(band+head(multi?"Cihaz məlumatları":TYPES[d.type].title)+kv(rows.concat(parRow(d))))}
+      h+=W(band+head(multi?"Cihaz məlumatları":TYPES[d.type].title)+kv(locRow(d).concat(rows,parRow(d))))}
+    h+=xPaper(V,PF,head,kv,pc,tv,dash,W);
     const mIdx=MEAS.map((m,j)=>j).filter(j=>mPh(V,j)>0&&V.meas[j].v.slice(0,mPh(V,j)).some(x=>String(x??"").trim()!==""));
     const tri=mIdx.some(j=>mPh(V,j)===3);
     if(mIdx.length)h+=W(head("Ölçmə nəticələri")+`<table class="${tri?"m3":"m1"}"><tr><th style="text-align:left">${t("Parametr")}</th>${tri?"<th>L1</th><th>L2</th><th>L3</th>":"<th>L1</th>"}<th>${t("Vahid")}</th><th>${t("Norma")}</th><th>${t("Nəticə")}</th></tr>`+
@@ -1205,17 +1392,21 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
     if(cIdx.length)h+=W(head("Vizual və funksional yoxlama")+`<table><tr><th>#</th><th style="text-align:left">${t("Yoxlanılan bənd")}</th><th>${t("Nəticə")}</th><th style="text-align:left">${t("Qeyd")}</th></tr>`+
       cIdx.map((j,q)=>[CHK[j],j,q]).map(([c,j,q])=>`<tr><td class="c">${q+1}</td><td>${esc(t(c))}</td><td class="c ${pc(V.chk[j].s)}">${tv(V.chk[j].s)}</td><td>${esc(ft(V.chk[j].n))}</td></tr>`).join("")+`</table>`);
     const wIdx=WORKS.map((w,j)=>j).filter(j=>V.works[j]==="Bəli");
-    if(wIdx.length||V.wExtra)h+=W(head("Görülən işlər")+(wIdx.length?`<table>`+wIdx.map((j,q)=>[WORKS[j],j,q]).map(([w,j,q])=>`<tr><td class="c" style="width:4%">${q+1}</td><td>${esc(t(w))}</td><td class="c" style="width:14%">${tv(V.works[j])}</td></tr>`).join("")+`</table>`:"")+`${V.wExtra?`<p><i>${t("Əlavə:")} ${esc(ft(V.wExtra))}</i></p>`:""}`);
-    if(TYPES[d.type].hasBat){const B=V.bat,p=Math.floor(num(B.per))||0,ns=p?Math.ceil(a.tot/p):0;
-      h+=(multi?"":'<div class="pb"></div>')+W(head("Akkumulyatorlar")+kv([[["Marka / model",dash(B.brand)],["Tip",tv(B.type)]],[["Konfiqurasiya",a.tot?esc(T.cfg(B.str,B.per,a.tot)):"—"],["Tutum",B.ah?esc(B.ah)+" Ah":"—"]],[["Quraşdırma tarixi",dash(fmtDate(B.inst))],["Yaşı",a.age!==null?a.age.toFixed(1)+" "+t("il"):"—"]],[["Ölçü cihazı",dash(B.dev)],["Referans R",a.ref?fmt(a.ref)+" mΩ":"—"]]])+
+    if(wIdx.length||V.wExtra)h+=W(head(PF==="call"&&!wIdx.length?"Görülən işlər":"Görülən işlər")+(wIdx.length?`<table>`+wIdx.map((j,q)=>[WORKS[j],j,q]).map(([w,j,q])=>`<tr><td class="c" style="width:4%">${q+1}</td><td>${esc(t(w))}</td><td class="c" style="width:14%">${tv(V.works[j])}</td></tr>`).join("")+`</table>`:"")+`${V.wExtra?`<p><i>${t("Əlavə:")} ${esc(ft(V.wExtra))}</i></p>`:""}`);
+    if(TYPES[d.type].hasBat&&(PF==="prof"||PF==="bat"||PF==="inst")){const B=V.bat,p=Math.floor(num(B.per))||0,ns=p?Math.ceil(a.tot/p):0;
+      h+=(multi?"":'<div class="pb"></div>')+W(head("Akkumulyatorlar")+kv([[["Marka / model",dash(B.brand)],["Tip",tv(B.type)]],[["Konfiqurasiya",a.tot?esc(T.cfg(B.str,B.per,a.tot))+(B.mid&&num(B.per)>1?" · "+esc(t("orta uc"))+" ("+Math.floor(num(B.per)/2)+" + "+(Math.floor(num(B.per))-Math.floor(num(B.per)/2))+")":""):"—"],["Tutum",B.ah?esc(B.ah)+" Ah":"—"]],[["Quraşdırma tarixi",dash(fmtDate(B.inst))],["Yaşı",a.age!==null?a.age.toFixed(1)+" "+t("il"):"—"]],[["Ölçü cihazı",dash(B.dev)],["Referans R",a.ref?fmt(a.ref)+" mΩ":"—"]]])+
       `<table style="margin-top:6px"><tr><td class="k">${t("Ölçülmüş blok")}</td><td>${a.tested.length}</td><td class="k">${t("Orta R, mΩ")}</td><td>${a.rv.length?fmt(a.rv.reduce((x,y)=>x+y,0)/a.rv.length):"—"}</td><td class="k">${t("Min / maks R")}</td><td>${a.rv.length?fmt(Math.min(...a.rv))+" / "+fmt(Math.max(...a.rv)):"—"}</td></tr>
       <tr><td class="k">${t("Orta blok V")}</td><td>${a.vv.length?fmt(a.vv.reduce((x,y)=>x+y,0)/a.vv.length):"—"}</td><td class="k">${t("Min / maks V")}</td><td>${a.vv.length?fmt(Math.min(...a.vv))+" / "+fmt(Math.max(...a.vv)):"—"}</td><td class="k">${t("Normal / Diqqət / Dəyiş.")}</td><td><span class="p-ok">&nbsp;${a.tested.length-a.att.length-a.rep.length}&nbsp;</span> / <span class="p-warn">&nbsp;${a.att.length}&nbsp;</span> / <span class="p-bad">&nbsp;${a.rep.length}&nbsp;</span></td></tr></table>
       ${a.strings.length?`<table style="margin-top:6px"><tr><th style="text-align:left">${t("Qrup")}</th><th>${t("Blok sayı")}</th><th>${t("Cəmi V")}</th><th>${t("Orta R, mΩ")}</th><th>${t("Maks R")}</th><th>${t("Diqqət")}</th><th>${t("Dəyişdirilməli")}</th></tr>${a.strings.map(g=>`<tr><td>${t("Qrup")} ${g.s}</td><td class="c">${g.n}</td><td class="c num">${g.sumV?g.sumV.toFixed(1):"—"}</td><td class="c num">${fmt(g.avgR)}</td><td class="c num">${fmt(g.maxR)}</td><td class="c ${g.att?"p-warn":""}">${g.att}</td><td class="c ${g.rep?"p-bad":""}">${g.rep}</td></tr>`).join("")}</table>`:""}
       <table style="margin-top:6px"><tr><td class="k p-bad">${t("Dəyişdirilməli")}</td><td>${a.rep.length?a.rep.map(b=>b.lab).join(", "):t("yoxdur")}</td></tr><tr><td class="k p-warn">${t("Diqqət")}</td><td>${a.att.length?a.att.map(b=>b.lab).join(", "):t("yoxdur")}</td></tr>
       <tr><td class="k">${t("Boşalma testi")}</td><td>${V.dis.res?esc(t(V.dis.res))+(V.dis.time?": "+esc(V.dis.time)+" "+t("dəq"):"")+(V.dis.load?" / "+esc(V.dis.load)+" "+t("kW yük"):"")+(V.dis.v0&&V.dis.v1?"; DC "+esc(V.dis.v0)+" V → "+esc(V.dis.v1)+" V":""):"—"}</td></tr></table>
       <p class="small">${esc(T.rule(B.warn,B.fail,B.vwarn,B.vfail))}</p>`);
-      if(a.tested.length&&p){const hdr=`<tr><th>${t("Blok")}</th>${Array.from({length:ns},(_,g)=>`<th>${t("Qrup")} ${g+1}</th>`).join("")}</tr>`;
-        const rowsH=[];for(let q=0;q<p;q++){let rr=`<tr><td>${q+1}</td>`;for(let g=0;g<ns;g++){const b=a.blocks[g*p+q];rr+=b?`<td class="${pc(b.st)}">${b.v!==null?b.v.toFixed(2):"—"} / ${b.r!==null?b.r.toFixed(2):"—"}</td>`:"<td></td>"}rowsH.push(rr+"</tr>")}
+      if(a.tested.length&&p){
+        /* few groups: the long column is folded side by side (1–30 | 31–60) so the table is short and the heading appears once */
+        const fold=ns===1?Math.min(3,Math.ceil(p/30)):ns===2&&p>30?2:1,rpf=Math.ceil(p/fold);
+        const hdr=`<tr>${Array.from({length:fold},()=>`<th>${t("Blok")}</th>${Array.from({length:ns},(_,g)=>`<th>${t("Qrup")} ${g+1}</th>`).join("")}`).join("")}</tr>`;
+        const cell=(q)=>{if(q>=p)return `<td></td>`+Array.from({length:ns},()=>"<td></td>").join("");let rr=`<td>${q+1}</td>`;for(let g=0;g<ns;g++){const b=a.blocks[g*p+q];rr+=b?`<td class="${pc(b.st)}">${b.v!==null?b.v.toFixed(2):"—"} / ${b.r!==null?b.r.toFixed(2):"—"}</td>`:"<td></td>"}return rr};
+        const rowsH=[];for(let q=0;q<rpf;q++){let rr="<tr>";for(let f=0;f<fold;f++)rr+=cell(f*rpf+q);rowsH.push(rr+"</tr>")}
         const chunks=rowsH.length>45?tblChunks(hdr,rowsH,30):[rowsH];
         h+=chunks.map((c,ci)=>W((ci===0?head("Akkumulyator ölçmə cədvəli (V / mΩ)"):"")+`<table class="bt">${hdr}${c.join("")}</table>`)).join("")+rChartsHTML(V,a,head("Daxili müqavimət — qruplar üzrə diaqram"))}}
     const BD=(V.bad||[]).filter(x=>x.name);if(BD.length)h+=W(head("Yararsız / dəyişdirilməli detallar")+`<table><tr><th>#</th><th style="text-align:left">${t("Detal")}</th><th>${t("Kod / Part №")}</th><th>${t("Say")}</th><th style="text-align:left">${t("Səbəb / qeyd")}</th></tr>${BD.map((x,j)=>`<tr><td class="c">${j+1}</td><td>${esc(ft(x.name))}</td><td class="c">${esc(x.code)}</td><td class="c">${esc(x.qty)}</td><td>${esc(ft(x.note))}</td></tr>`).join("")}</table>`);
@@ -1223,7 +1414,7 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
     const PH=(V.photos||[]);if(PH.length){const cells=PH.map((p,q)=>`<figure class="pfig">${PHOTO_CACHE[p.id]?`<img src="${PHOTO_CACHE[p.id]}" alt="">`:`<div class="pmiss">${t("Şəkil yüklənmədi")}</div>`}<figcaption>${q+1}. ${esc(ft(p.cap))}</figcaption></figure>`);
       const rowsP=[];for(let q=0;q<cells.length;q+=2)rowsP.push(`<div class="prow2">${cells.slice(q,q+2).join("")}</div>`);
       h+=rowsP.map((rw,q)=>W((q===0?head("Şəkillər"):"")+rw)).join("")}
-    Cs.push({i,d,C:concl(V,a,PL)});
+    Cs.push({i,d,C:xConcl(V,PF).concat(concl(V,a,PL))});
     if(multi)n++});
   useType(keep);
   h+=`
@@ -1275,7 +1466,7 @@ function analyzeTable(name,rows){
   const data=rows.slice(hdr+1).filter(r=>r.filter(c=>pnum(c)!==null).length>=1);
   const map={v:-1,r:-1,t:-1,id:-1,s:-1};
   if(hdr>=0)heads.forEach((h,j)=>{if(map.r<0&&KW.r.test(h))map.r=j;else if(map.v<0&&KW.v.test(h)&&!KW.vx.test(h))map.v=j;else if(map.t<0&&KW.t.test(h))map.t=j;else if(map.s<0&&KW.s.test(h))map.s=j;else if(map.id<0&&KW.id.test(h))map.id=j});
-  const med=j=>median(data.map(r=>pnum(r[j])).filter(x=>x!==null));
+  const med=j=>median(data.map(r=>pnum(r[j])).filter(x=>x!==null).map(Math.abs));
   const used=()=>Object.values(map);
   if(map.v<0)for(let j=0;j<width;j++){if(used().includes(j))continue;const m=med(j);if(m!==null&&m>=1.6&&m<=17&&!Number.isInteger(m)){map.v=j;break}}
   if(map.r<0)for(let j=0;j<width;j++){if(used().includes(j))continue;const m=med(j);if(m!==null&&m>0.01&&m<60&&!Number.isInteger(m)){map.r=j;break}}
@@ -1289,7 +1480,7 @@ function rUnit(F){const m=median(F.data.map(r=>pnum(r[F.map.r])).filter(x=>x!==n
 function planFluke(F){const r=state.cur,tot=batTotal(r),per=Math.floor(num(r.bat.per))||1,M=F.map,k=M.r>=0?rUnit(F):1;
   const ids=M.id>=0?F.data.map(x=>pnum(x[M.id])).filter(x=>x!==null):[];const minId=ids.length?Math.min(...ids):1;
   const out=[];let seq=(F.start-1)*per,skipped=0;
-  F.data.forEach(row=>{const v=M.v>=0?pnum(row[M.v]):null,R=M.r>=0?pnum(row[M.r]):null,t=M.t>=0?pnum(row[M.t]):null;if(v===null&&R===null)return;
+  F.data.forEach(row=>{const v0=M.v>=0?pnum(row[M.v]):null,v=v0===null?null:Math.abs(v0),R=M.r>=0?pnum(row[M.r]):null,t=M.t>=0?pnum(row[M.t]):null;if(v===null&&R===null)return;
     let idx;if(F.place==="id"&&M.id>=0){const id=pnum(row[M.id]);if(id===null){skipped++;return}
       if(M.s>=0&&pnum(row[M.s])!==null)idx=(pnum(row[M.s])-1)*per+(id-1);else idx=(F.start-1)*per+(id-minId)}
     else idx=seq++;
@@ -1405,6 +1596,66 @@ async function printReport(){await flush();const btn=$("#bPrint");btn.disabled=t
       setTimeout(()=>{fr.remove();URL.revokeObjectURL(url)},120000)}}
   catch(e){if(!/cancel/i.test(String(e&&e.message||e)))toast("Çap üçün hazırlamaq alınmadı")}
   btn.disabled=false;btn.textContent="Çap et"}
+/* ================= Təhvil-təslim aktı (quraşdırma / işə salma) =================
+   The form of the company's act: approval of both sides, the text with the contract, the list of equipment, the hand-over signatures. */
+const AZ_AY=["yanvar","fevral","mart","aprel","may","iyun","iyul","avqust","sentyabr","oktyabr","noyabr","dekabr"];
+function azYearSuf(y){const n=+y,d=n%10,tn=Math.floor(n/10)%10,h=Math.floor(n/100)%10;if(d)return {1:"ci",2:"ci",3:"cü",4:"cü",5:"ci",6:"cı",7:"ci",8:"ci",9:"cu"}[d];if(tn)return {1:"cu",2:"ci",3:"cu",4:"cı",5:"ci",6:"cı",7:"ci",8:"ci",9:"cı"}[tn];return h?"cü":"ci"}
+function azDateLong(iso){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||"");return m?"“"+(+m[3])+"” "+AZ_AY[+m[2]-1]+" "+m[1]+"-"+azYearSuf(m[1])+" il":"“___” __________ 20__-ci il"}
+function actData(R){const r=realOf(R),S=state.settings,rows=[];
+  r.devices.forEach(d=>{const i=d.info||{},nm=(t(TYPES[d.type].title)+" "+[i.brand,i.model].filter(Boolean).join(" ")+(i.kva?" "+i.kva+" kVA":"")).replace(/\s+/g," ").trim();rows.push({name:nm,sn:i.sn||"",unit:"ədəd",qty:"1"});
+    (((d.x||{}).kit)||[]).filter(k=>k.name).forEach(k=>rows.push({name:k.name,sn:k.sn||"",unit:/akkumulyator|blok/i.test(k.name)?"ədəd":"dəst",qty:k.qty||"1"}))});
+  rows.push({name:"Avadanlığın quraşdırılması, işə salınması və sazlanması işləri",sn:"",unit:"xidmət",qty:"1"});
+  return {r,S,rows,client:r.cl.name||"",co:S.co||"ZUVAND Grand System",dir:LS.get("ups.actdir")||"",clDir:LS.get("ups.actcl."+String(r.cl.name||"").toLowerCase())||r.cl.sign||r.cl.person||"",
+    place:[r.cl.obj,r.cl.addr].filter(Boolean).join(", "),warr:num(r.svc.warr)||0}}
+function actHTML(R){const D=actData(R),r=D.r,sg=(r.sig||{}),e=x=>esc(x||"");
+  const con=r.svc.conNo?`${r.svc.conDate?fmtDate(r.svc.conDate)+"-cı il tarixli ":""}${e(r.svc.conNo)} №-li müqaviləyə əlavə olaraq `:"";
+  return `<div class="paper act" id="actPaper" lang="az"><div class="blk"><table class="actsig"><tr><td><b>Təsdiq edirəm</b><br>Sifarişçi<br><b>${e(D.client)}</b><br>Direktor<br>${e(D.clDir)}<br><br>_____________________<br><small>İmza</small></td>
+    <td style="text-align:right"><b>Təsdiq edirəm</b><br>Podratçı<br><b>“${e(D.co)}” MMC</b><br>Direktor<br>${e(D.dir)||"&nbsp;"}<br><br>_____________________<br><small>İmza</small></td></tr></table>
+    <table class="actsig"><tr><td>Bakı şəhəri</td><td style="text-align:right">${azDateLong(r.svc.date)}</td></tr></table></div>
+  <div class="blk"><h1 style="margin-top:18px">TƏHVİL-TƏSLİM AKTI</h1><div class="sub">№ ${e(r.svc.repno)}</div>
+    <p class="acttx">“${e(D.client)}” (bundan sonra “Sifarişçi” adlanacaq) və “${e(D.co)}” MMC (bundan sonra “Podratçı” adlanacaq), hər ikisi bundan sonra birlikdə “Tərəflər” adlanacaq, ${con}bu Təhvil-təslim aktını imzaladılar.</p>
+    <p class="acttx">Belə ki, Podratçı tərəfindən aşağıda göstərilən avadanlıq${D.place?" "+e(D.place)+" ünvanında":""} quraşdırılmış, işə salınmış, sazlanmış və işlək vəziyyətdə Sifarişçiyə təhvil verilmişdir:</p></div>
+  <div class="blk"><table class="acttb"><tr><th style="width:6%">S/s</th><th>Avadanlığın / işin adı</th><th style="width:20%">Seriya №</th><th style="width:11%">Ölçü vahidi</th><th style="width:9%">Miqdar</th></tr>
+    ${D.rows.map((x,i)=>`<tr><td class="c">${i+1}</td><td>${e(x.name)}</td><td class="c">${e(x.sn)}</td><td class="c">${e(x.unit)}</td><td class="c">${e(x.qty)}</td></tr>`).join("")}</table></div>
+  <div class="blk"><p class="acttx">Avadanlıq Sifarişçinin nümayəndəsinin iştirakı ilə yoxlanılmış, işə salma testləri aparılmışdır.${r.svc.train?" İstifadə qaydaları üzrə təlimat "+e(r.svc.train)+" tərəfindən keçilmişdir.":""}${D.warr?" Avadanlığa zəmanət müddəti — "+D.warr+" ay ("+fmtDate(r.svc.date)+" tarixindən).":""} Tərəflərin bir-birinə qarşı iddiası yoxdur.</p>
+    <p class="acttx">Akt iki nüsxədə tərtib edilmişdir və hər iki nüsxə eyni hüquqi qüvvəyə malikdir.</p></div>
+  <div class="blk"><table class="actsig" style="margin-top:22px"><tr><td><b>Təhvil aldım</b><br>${e(D.client)}<br>${e((sg.cl&&sg.cl.name)||r.cl.sign||r.cl.person)}<br>${sg.cl&&sg.cl.img?`<img src="${sg.cl.img}" alt="" style="height:44px">`:"<br>___________________________"}<br><small>imza</small></td>
+    <td style="text-align:right"><b>Təhvil verdim</b><br>“${e(D.co)}” MMC<br>${e((sg.eng&&sg.eng.name)||r.svc.eng)}<br>${sg.eng&&sg.eng.img?`<img src="${sg.eng.img}" alt="" style="height:44px">`:"<br>___________________________"}<br><small>imza</small></td></tr></table></div></div>`}
+async function exportAct(){const root=await prepareFolder();await flush();const btn=$("#bAct");btn.disabled=true;btn.textContent="Akt hazırlanır…";const r=state.cur;
+  try{if(!window.html2pdf)throw new Error("lib");const host=document.createElement("div");host.style.cssText="position:absolute;left:-12000px;top:0";host.innerHTML=actHTML(r);document.body.appendChild(host);
+    let pdf;try{pdf=await buildPdf(host.firstElementChild)}finally{host.remove()}const n=pdf.internal.getNumberOfPages();for(let i=1;i<=n;i++){pdf.setPage(i);pdf.addImage(pageFooterPNG(i,n,"az","TƏHVİL-TƏSLİM AKTI"),"PNG",8,284,194,5)}
+    await saveFile(fname(r,"pdf").replace(/\.pdf$/,"_Tehvil-teslim-akti.pdf"),pdf.output("blob"),r.cl.name||"",root)}
+  catch(e){toast("Aktı yaratmaq alınmadı")}btn.disabled=false;btn.textContent="Təhvil-təslim aktı (PDF)"}
+/* Word: a real .docx (Office Open XML) built here — a stored ZIP with document.xml */
+function crc32(u){let c,t=crc32.t;if(!t){t=crc32.t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=t[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function zipStore(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;const u16=n=>[n&255,(n>>8)&255],u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+  files.forEach(([name,txt])=>{const nb=enc.encode(name),db=enc.encode(txt),cr=crc32(db);const loc=[0x50,0x4b,3,4,...u16(20),...u16(0x800),...u16(0),...u16(0),...u16(0x21),...u32(cr),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0)];
+    parts.push(new Uint8Array(loc),nb,db);cen.push([0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0x800),...u16(0),...u16(0),...u16(0x21),...u32(cr),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off)],nb);off+=loc.length+nb.length+db.length});
+  let cs=0;const cp=[];cen.forEach(x=>{const a=x instanceof Uint8Array?x:new Uint8Array(x);cp.push(a);cs+=a.length});
+  const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cs),...u32(off),0,0]);return new Blob([...parts,...cp,end],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"})}
+function actDocx(R){const D=actData(R),r=D.r,H2="http:"+"/"+"/",x=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const run=(t,o={})=>`<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>${o.b?"<w:b/>":""}<w:sz w:val="${o.sz||24}"/></w:rPr><w:t xml:space="preserve">${x(t)}</w:t></w:r>`;
+  const par=(runs,o={})=>`<w:p><w:pPr>${o.jc?`<w:jc w:val="${o.jc}"/>`:""}<w:spacing w:after="${o.after==null?120:o.after}"/>${o.ind?'<w:ind w:firstLine="567"/>':""}</w:pPr>${runs}</w:p>`;
+  const lines=(arr,jc)=>arr.map(([t,b])=>par(run(t,{b}),{jc,after:0})).join("");
+  const cell=(content,w,o={})=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.nb?'<w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders>':""}</w:tcPr>${content||par("")}</w:tc>`;
+  const grid=ws=>`<w:tblGrid>${ws.map(w=>`<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>`;
+  const sigT=(L,Rr)=>`<w:tbl><w:tblPr><w:tblW w:w="9600" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders></w:tblPr>${grid([4800,4800])}<w:tr>${cell(lines(L,"left"),4800,{nb:1})}${cell(lines(Rr,"right"),4800,{nb:1})}</w:tr></w:tbl>`;
+  const bd='<w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders>',W5=[600,4700,1900,1300,1100];
+  const trow=(cells,b)=>`<w:tr>${cells.map((c,i)=>cell(par(run(c,{b,sz:22}),{jc:i===1?"left":"center",after:0}),W5[i])).join("")}</w:tr>`;
+  const con=r.svc.conNo?`${r.svc.conDate?fmtDate(r.svc.conDate)+"-cı il tarixli ":""}${r.svc.conNo} №-li müqaviləyə əlavə olaraq `:"";
+  const body=sigT([["Təsdiq edirəm",1],["Sifarişçi"],[D.client,1],["Direktor"],[D.clDir],[""],["_____________________"],["İmza"]],[["Təsdiq edirəm",1],["Podratçı"],["“"+D.co+"” MMC",1],["Direktor"],[D.dir],[""],["_____________________"],["İmza"]])+
+    sigT([["Bakı şəhəri"]],[[azDateLong(r.svc.date)]])+par("")+par(run("TƏHVİL-TƏSLİM AKTI",{b:1,sz:28}),{jc:"center",after:60})+par(run("№ "+(r.svc.repno||""),{sz:22}),{jc:"center"})+
+    par(run(`“${D.client}” (bundan sonra “Sifarişçi” adlanacaq) və “${D.co}” MMC (bundan sonra “Podratçı” adlanacaq), hər ikisi bundan sonra birlikdə “Tərəflər” adlanacaq, ${con}bu Təhvil-təslim aktını imzaladılar.`),{jc:"both",ind:1})+
+    par(run(`Belə ki, Podratçı tərəfindən aşağıda göstərilən avadanlıq${D.place?" "+D.place+" ünvanında":""} quraşdırılmış, işə salınmış, sazlanmış və işlək vəziyyətdə Sifarişçiyə təhvil verilmişdir:`),{jc:"both",ind:1})+
+    `<w:tbl><w:tblPr><w:tblW w:w="9600" w:type="dxa"/>${bd}</w:tblPr>${grid(W5)}${trow(["S/s","Avadanlığın / işin adı","Seriya №","Ölçü vahidi","Miqdar"],1)}${D.rows.map((rw,i)=>trow([String(i+1),rw.name,rw.sn,rw.unit,rw.qty])).join("")}</w:tbl>`+par("")+
+    par(run(`Avadanlıq Sifarişçinin nümayəndəsinin iştirakı ilə yoxlanılmış, işə salma testləri aparılmışdır.${r.svc.train?" İstifadə qaydaları üzrə təlimat "+r.svc.train+" tərəfindən keçilmişdir.":""}${D.warr?" Avadanlığa zəmanət müddəti — "+D.warr+" ay ("+fmtDate(r.svc.date)+" tarixindən).":""} Tərəflərin bir-birinə qarşı iddiası yoxdur.`),{jc:"both",ind:1})+
+    par(run("Akt iki nüsxədə tərtib edilmişdir və hər iki nüsxə eyni hüquqi qüvvəyə malikdir."),{jc:"both",ind:1})+par("")+
+    sigT([["Təhvil aldım",1],[D.client],[(r.sig&&r.sig.cl&&r.sig.cl.name)||r.cl.sign||r.cl.person||""],[""],["___________________________"],["imza"]],[["Təhvil verdim",1],["“"+D.co+"” MMC"],[(r.sig&&r.sig.eng&&r.sig.eng.name)||r.svc.eng||""],[""],["___________________________"],["imza"]]);
+  const W_NS=H2+"schemas.openxmlformats.org/wordprocessingml/2006/main",R_NS=H2+"schemas.openxmlformats.org/officeDocument/2006/relationships",P_NS=H2+"schemas.openxmlformats.org/package/2006/";
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${W_NS}" xmlns:r="${R_NS}"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return zipStore([["[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="${P_NS}content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`],
+    ["_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${P_NS}relationships"><Relationship Id="rId1" Type="${R_NS}/officeDocument" Target="word/document.xml"/></Relationships>`],["word/document.xml",doc]])}
+async function exportActWord(){const root=await prepareFolder();await flush();const r=state.cur;try{await saveFile(fname(r,"pdf").replace(/\.pdf$/,"_Tehvil-teslim-akti.docx"),actDocx(r),r.cl.name||"",root)}catch(e){toast("Word faylı yaradılmadı")}}
 async function exportPdf(){const root=await prepareFolder();await flush();const btn=$("#bPdf");btn.disabled=true;btn.textContent="PDF hazırlanır…";const r=state.cur;
   try{const L=state.plang||"az";
     const pdf=await makePdf(r,L,(i,n)=>{btn.textContent="PDF hazırlanır… "+i+"/"+n});
@@ -1552,7 +1803,7 @@ async function exportXlsx(){const root=await prepareFolder();await flush();const
 /* ================= detal siyahıları: yararsız və dəyişdirilmiş detallar (müştəri / il üzrə) ================= */
 Object.assign(DICT.en,{"Diaqnostika":"Diagnostics","Servis növü":"Service type","planlanmır (diaqnostika)":"not planned (diagnostics)","TEXNİKİ DİAQNOSTİKA HESABATI":"TECHNICAL DIAGNOSTICS REPORT","UPS TEXNİKİ DİAQNOSTİKA HESABATI":"UPS TECHNICAL DIAGNOSTICS REPORT","Yararsız / dəyişdirilməli detallar":"Defective parts (to be replaced)","Detal":"Part","Səbəb / qeyd":"Reason / note"});
 Object.assign(DICT.ru,{"Diaqnostika":"Диагностика","Servis növü":"Вид работ","planlanmır (diaqnostika)":"не планируется (диагностика)","TEXNİKİ DİAQNOSTİKA HESABATI":"ОТЧЁТ О ТЕХНИЧЕСКОЙ ДИАГНОСТИКЕ","UPS TEXNİKİ DİAQNOSTİKA HESABATI":"ОТЧЁТ О ТЕХНИЧЕСКОЙ ДИАГНОСТИКЕ ИБП","Yararsız / dəyişdirilməli detallar":"Неисправные детали (к замене)","Detal":"Деталь","Səbəb / qeyd":"Причина / примечание"});
-function devLabel(d,i){return (i+1)+". "+TYPES[d.type].title+(devName(d)?" — "+devName(d):"")}
+function devLabel(d,i){return (i+1)+". "+TYPES[d.type].title+(devName(d)?" — "+devName(d):"")+(d.loc?" ("+d.loc+")":"")}
 /* one row per item: [cihaz, seriya №, növ, detal, kod, say, qeyd]; "Yararsız" = checklist "Nasaz", battery blocks to replace,
    defective parts typed in "İşlər"; "Dəyişdirilib" = replaced / installed parts */
 function itemsOf(r){r=realOf(r);const keep=CUR_TYPE,out=[];
