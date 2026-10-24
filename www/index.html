@@ -437,7 +437,7 @@ en:{"[Şirkət adı]":"[Company name]","Hesabat №":"Report No.","Tarix:":"Date
  "7. Dəyişdirilən / quraşdırılan hissələr":"7. Replaced / installed parts","Hissə":"Part","Kod / Part №":"Code / Part No.","Say":"Qty","Hissə dəyişdirilməyib.":"No parts were replaced.",
  "8. Nəticə və tövsiyələr":"8. Conclusions and recommendations","Texniki qeydlər:":"Technical notes:","9. Təsdiq":"9. Approval","Servis mühəndisi:":"Service engineer:","Müştəri nümayəndəsi:":"Customer representative:","Ad, soyad:":"Name:","İmza:":"Signature:",
  "Əlavə: Akkumulyator ölçmə cədvəli (V / mΩ)":"Appendix: Battery measurement table (V / mΩ)","Blok":"Block",
- "Daxili müqavimət — qruplar üzrə diaqram":"Internal resistance by group","Hər sütun bir blokun daxili müqavimətidir, mΩ":"Each bar is the internal resistance of one block, mΩ","Referans":"Reference","diqqət":"attention","dəyiş.":"replace","orta":"avg","maks":"max","dəyişdirilməli":"to replace",
+ "Daxili müqavimət — qruplar üzrə diaqram":"Internal resistance by group","Blok gərginliyi — qruplar üzrə diaqram":"Block voltage by group","Hər sütun bir blokun gərginliyidir, V":"Each bar is the voltage of one block, V","cəmi":"total","min / maks":"min / max","Hər sütun bir blokun daxili müqavimətidir, mΩ":"Each bar is the internal resistance of one block, mΩ","Referans":"Reference","diqqət":"attention","dəyiş.":"replace","orta":"avg","maks":"max","dəyişdirilməli":"to replace",
  "Planlı profilaktik servis":"Scheduled preventive maintenance","Qəza çağırışı":"Emergency call-out","Quraşdırma / işə salma":"Installation / commissioning","Akkumulyator testi":"Battery test","Təmir":"Repair",
  "Online (ikiqat çevirmə)":"Online (double conversion)","Modul tipli online":"Modular online","Açıq tip (flooded)":"Flooded (vented)"},
 ru:{"[Şirkət adı]":"[Название компании]","Hesabat №":"Отчёт №","Tarix:":"Дата:","UPS TEXNİKİ SERVİS HESABATI":"ОТЧЁТ О ТЕХНИЧЕСКОМ ОБСЛУЖИВАНИИ ИБП","ÜMUMİ QİYMƏTLƏNDİRMƏ:":"ОБЩАЯ ОЦЕНКА:",
@@ -456,7 +456,7 @@ ru:{"[Şirkət adı]":"[Название компании]","Hesabat №":"От�
  "7. Dəyişdirilən / quraşdırılan hissələr":"7. Заменённые / установленные детали","Hissə":"Деталь","Kod / Part №":"Код / Арт. №","Say":"Кол-во","Hissə dəyişdirilməyib.":"Детали не заменялись.",
  "8. Nəticə və tövsiyələr":"8. Заключение и рекомендации","Texniki qeydlər:":"Технические примечания:","9. Təsdiq":"9. Подтверждение","Servis mühəndisi:":"Сервисный инженер:","Müştəri nümayəndəsi:":"Представитель клиента:","Ad, soyad:":"ФИО:","İmza:":"Подпись:",
  "Əlavə: Akkumulyator ölçmə cədvəli (V / mΩ)":"Приложение: Таблица измерений батарей (V / mΩ)","Blok":"Блок",
- "Daxili müqavimət — qruplar üzrə diaqram":"Внутреннее сопротивление по группам","Hər sütun bir blokun daxili müqavimətidir, mΩ":"Каждый столбец — внутреннее сопротивление одного блока, mΩ","Referans":"Опорное","diqqət":"внимание","dəyiş.":"замена","orta":"сред.","maks":"макс","dəyişdirilməli":"замена",
+ "Daxili müqavimət — qruplar üzrə diaqram":"Внутреннее сопротивление по группам","Blok gərginliyi — qruplar üzrə diaqram":"Напряжение блоков по группам","Hər sütun bir blokun gərginliyidir, V":"Каждый столбец — напряжение одного блока, V","cəmi":"всего","min / maks":"мин / макс","Hər sütun bir blokun daxili müqavimətidir, mΩ":"Каждый столбец — внутреннее сопротивление одного блока, mΩ","Referans":"Опорное","diqqət":"внимание","dəyiş.":"замена","orta":"сред.","maks":"макс","dəyişdirilməli":"замена",
  "Planlı profilaktik servis":"Плановое профилактическое обслуживание","Qəza çağırışı":"Аварийный вызов","Quraşdırma / işə salma":"Монтаж / пусконаладка","Akkumulyator testi":"Тестирование батарей","Təmir":"Ремонт",
  "Online (ikiqat çevirmə)":"Онлайн (двойное преобразование)","Line-interactive":"Линейно-интерактивный","Offline / Standby":"Офлайн / резервный","Modul tipli online":"Модульный онлайн","Açıq tip (flooded)":"Открытого типа (заливные)"}};
 /* translations for device types other than UPS + shared section titles */
@@ -1001,7 +1001,8 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
     [[n?"Akkumulyator "+[B.brand,B.nom?B.nom+"V":"",B.ah?B.ah+"Ah":""].filter(Boolean).join(" "):"",n?String(n):""],["Akkumulyator rəfi / kabineti","1"],["Akkumulyator birləşdirici kabelləri (dəst)","1"],["İstifadəçi təlimatı və pasport","1"],["Zəmanət talonu","1"]].forEach(([nm,q])=>{if(nm&&!X.kit.some(k=>k.name===nm))X.kit.push({name:nm,sn:"",qty:q})})}
   markDirty();renderEditor();window.scrollTo(0,y)});
 document.addEventListener("input",e=>{const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);markDirty();live()});
-document.addEventListener("change",e=>{if(e.target.id==="batMid"&&state.cur&&!lockedRep(state.rep)){state.cur.bat.mid=e.target.checked;autoLimits(state.cur);markDirty();live();return}
+document.addEventListener("change",e=>{if(e.target.dataset&&e.target.dataset.chart&&state.cur&&!lockedRep(state.rep)){state.cur.bat[e.target.dataset.chart]=e.target.checked?"1":"0";markDirty();return}
+  if(e.target.id==="batMid"&&state.cur&&!lockedRep(state.rep)){state.cur.bat.mid=e.target.checked;autoLimits(state.cur);markDirty();live();return}
   const p=e.target.dataset&&e.target.dataset.path;if(!p||!state.cur||lockedRep(state.rep))return;setP(state.cur,p,e.target.value);
   {const mm=/^meas\.(\d+)\.(min|max)$/.exec(p);if(mm)state.cur.meas[+mm[1]].man=1}
   if(/^(ups\.(kva|kw|pf|phase)|bat\.(per|str|nom|ah))$/.test(p)){if(p==="ups.pf"||p==="ups.kva"){const u=state.cur.ups,k=num(u.kva),f=num(String(u.pf||"").replace(",","."));if(k&&f&&!num(u.kw)){u.kw=String(Math.round(k*f*10)/10);const el=document.getElementById("f-ups-kw");if(el)el.value=u.kw}}autoLimits(state.cur)}
@@ -1114,7 +1115,10 @@ const SECTIONS={
   <div class="grid2">${fld("bat.inst","Quraşdırma tarixi",{date:1})}${fld("bat.life","İstismar müddəti, il",{n:1})}</div><div class="note">Yaşı: <b data-live="age"></b></div></div>
   <div class="card"><h3>Qiymətləndirmə hədləri</h3>${fld("bat.ref","Referans daxili müqavimət, mΩ",{n:1,ph:"boş = ölçmələrin medianı"})}<div class="note">İstifadə olunan referans: <b data-live="ref"></b></div>
   <div class="grid2">${fld("bat.warn","R artımı — Diqqət, %",{n:1})}${fld("bat.fail","R artımı — Dəyişdirilməli, %",{n:1})}${fld("bat.vwarn","Blok V — Diqqət (aşağı)",{n:1})}${fld("bat.vfail","Blok V — Dəyişdirilməli (aşağı)",{n:1})}${fld("bat.vhigh","Blok V — Diqqət (yuxarı)",{n:1})}</div></div>
-  <div class="card"><h3>Boşalma (avtonomluq) testi</h3>${fld("dis.res","Nəticə",{sel:DIS})}<div class="grid2">${fld("dis.load","Test yükü, kW",{n:1})}${fld("dis.time","Müddət, dəq",{n:1})}${fld("dis.v0","Başlanğıc DC, V",{n:1})}${fld("dis.v1","Son DC, V",{n:1})}</div></div>`},
+  <div class="card"><h3>Boşalma (avtonomluq) testi</h3>${fld("dis.res","Nəticə",{sel:DIS})}<div class="grid2">${fld("dis.load","Test yükü, kW",{n:1})}${fld("dis.time","Müddət, dəq",{n:1})}${fld("dis.v0","Başlanğıc DC, V",{n:1})}${fld("dis.v1","Son DC, V",{n:1})}</div></div>
+  <div class="card"><h3>Hesabatda diaqramlar</h3><p class="note" style="margin:0">Blok ölçmələrinə görə hesabata (PDF, Excel) əlavə olunacaq diaqramları seçin.</p>
+   <label class="f" style="display:flex;gap:8px;align-items:center;grid-template-columns:none"><input type="checkbox" data-chart="chartR" style="width:auto;min-height:0" ${state.cur.bat.chartR!=="0"?"checked":""}><span>Daxili müqavimət diaqramı (mΩ)</span></label>
+   <label class="f" style="display:flex;gap:8px;align-items:center;grid-template-columns:none"><input type="checkbox" data-chart="chartV" style="width:auto;min-height:0" ${state.cur.bat.chartV!=="0"?"checked":""}><span>Gərginlik diaqramı (V)</span></label></div>`},
  blk(){const r=state.cur,tot=batTotal(r);if(!tot)return `<h2 class="sec">Blok ölçmələri</h2><div class="empty"><h3>Əvvəlcə dəsti təyin edin</h3><p class="note" style="margin:0">“Akkum.” bölməsində bir qrupdakı blok sayını və qrup sayını yazın.</p><button class="btn pri" data-go="bat">Akkum. bölməsinə keç</button></div>`;
   if(state.bi>=tot)state.bi=tot-1;
   return `<h2 class="sec">Blok ölçmələri</h2><p class="hint">Fluke BT521 log faylını əlavə edin və ya qiymətləri əl ilə yazın. Telefonda daxil etdiyiniz digər məlumatlar toxunulmaz qalır.</p>
@@ -1332,6 +1336,29 @@ function rChartsHTML(r,a,hd){
     const st=a.strings[s]||{};
     boxes.push(`<div class="rchart-box avoid"><div class="rchart-title"><b>${t("Qrup")} ${s+1}</b><span>${t("orta")} ${fmt(st.avgR)} mΩ · ${t("maks")} ${fmt(st.maxR)} mΩ${st.att?` · <span class="p-warn">&nbsp;${st.att} ${t("diqqət")}&nbsp;</span>`:""}${st.rep?` · <span class="p-bad">&nbsp;${st.rep} ${t("dəyişdirilməli")}&nbsp;</span>`:""}</span></div>${g}</div>`)}
   return `<div class="blk">${hd||`<h4>${t("Daxili müqavimət — qruplar üzrə diaqram")}</h4>`}`+h+(boxes[0]||"")+`</div>`+boxes.slice(1).join("")}
+/* block voltages per group: the bars start near the lowest value so small differences show; lines = the limits of the battery settings */
+function vChartsHTML(r,a,hd){
+  const p=Math.floor(num(r.bat.per))||0;if(!p||!a.vv.length)return "";
+  const vw=num(r.bat.vwarn),vf=num(r.bat.vfail),vh=num(r.bat.vhigh),avg=a.vv.reduce((x,y)=>x+y,0)/a.vv.length;
+  const lines=[{v:avg,t:t("orta")+" "+fmt(avg),c:"#55605C",d:""}];if(vh!==null)lines.push({v:vh,t:t("diqqət")+" > "+vh,c:"#B7860B",d:"4 3"});if(vw!==null)lines.push({v:vw,t:t("diqqət")+" < "+vw,c:"#B7860B",d:"4 3"});if(vf!==null)lines.push({v:vf,t:t("dəyiş.")+" < "+vf,c:"#B42318",d:"4 3"});
+  const all=a.vv.concat(lines.map(l=>l.v)),mx=Math.max(...all),mn=Math.min(...all),span=Math.max(0.2,mx-mn),lo=Math.max(0,mn-span*0.25),top=mx+span*0.12;
+  const W=733,H=150,L=34,R=82,T=12,B=22,pw=W-L-R,ph=H-T-B,y=v=>T+ph-((v-lo)/(top-lo))*ph;
+  const raw=(top-lo)/5,st=[0.05,0.1,0.2,0.25,0.5,1,2,5,10].find(x=>x>=raw)||10,ticks=[];for(let k=Math.ceil(lo/st)*st;k<=top+1e-9;k+=st)ticks.push(+k.toFixed(3));
+  const cls=v=>vf!==null&&v<vf?"bad":(vw!==null&&v<vw)||(vh!==null&&v>vh)?"warn":"ok",col={ok:"#5AA982",warn:"#E0A82E",bad:"#C8372D"},lab={ok:"Normal",warn:"Diqqət",bad:"Dəyişdirilməli"};
+  let h=`<div class="rchart-legend"><span><i style="background:#5AA982"></i>${t("Normal")}</span><span><i style="background:#E0A82E"></i>${t("Diqqət")}</span><span><i style="background:#C8372D"></i>${t("Dəyişdirilməli")}</span><span class="small">${t("Hər sütun bir blokun gərginliyidir, V")}</span></div>`;
+  const ns=Math.ceil(a.tot/p),boxes=[];
+  for(let s=0;s<ns;s++){const bs=a.blocks.slice(s*p,s*p+p);if(!bs.some(b=>b.v!==null))continue;const bw=pw/bs.length,gap=Math.min(2,bw*0.25);
+    let g=`<svg class="rchart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Arial, sans-serif" font-size="9">`;
+    ticks.forEach(k=>{g+=`<line x1="${L}" x2="${L+pw}" y1="${y(k)}" y2="${y(k)}" stroke="#E3E8E6" stroke-width="1"/><text x="${L-5}" y="${y(k)+3}" text-anchor="end" fill="#6B7672">${st<0.1?k.toFixed(2):st<1?k.toFixed(1):k}</text>`});
+    const vs=[];bs.forEach((b,k)=>{if(b.v===null)return;vs.push(b.v);const c=cls(b.v),x=L+k*bw+gap/2,yy=y(b.v),hh=Math.max(1,T+ph-yy);
+      g+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${Math.max(1,bw-gap).toFixed(1)}" height="${hh.toFixed(1)}" rx="1.5" fill="${col[c]}"><title>${b.lab}: ${b.v.toFixed(2)} V, ${t(lab[c])}</title></rect>`;
+      if(c!=="ok")g+=`<text x="${(x+(bw-gap)/2).toFixed(1)}" y="${(yy-3).toFixed(1)}" text-anchor="middle" fill="#1B1F1E" font-weight="bold">${k+1}</text>`});
+    lines.forEach(l=>{g+=`<line x1="${L}" x2="${L+pw}" y1="${y(l.v)}" y2="${y(l.v)}" stroke="${l.c}" stroke-width="1.2" ${l.d?`stroke-dasharray="${l.d}"`:""}/><text x="${L+pw+4}" y="${y(l.v)+3}" fill="${l.c}">${esc(l.t)}</text>`});
+    g+=`<line x1="${L}" x2="${L+pw}" y1="${T+ph}" y2="${T+ph}" stroke="#9AA5A1" stroke-width="1"/>`;
+    bs.forEach((b,k)=>{const n=k+1;if(n===1||n%5===0||n===bs.length)g+=`<text x="${(L+k*bw+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="#6B7672">${n}</text>`});
+    g+=`</svg>`;const sm=vs.reduce((x,y)=>x+y,0),nW=vs.filter(v=>cls(v)==="warn").length,nB=vs.filter(v=>cls(v)==="bad").length;
+    boxes.push(`<div class="rchart-box avoid"><div class="rchart-title"><b>${t("Qrup")} ${s+1}</b><span>${t("cəmi")} ${sm.toFixed(1)} V · ${t("orta")} ${(sm/vs.length).toFixed(2)} V · ${t("min / maks")} ${Math.min(...vs).toFixed(2)} / ${Math.max(...vs).toFixed(2)} V${nW?` · <span class="p-warn">&nbsp;${nW} ${t("diqqət")}&nbsp;</span>`:""}${nB?` · <span class="p-bad">&nbsp;${nB} ${t("dəyişdirilməli")}&nbsp;</span>`:""}</span></div>${g}</div>`)}
+  return `<div class="blk">${hd||`<h4>${t("Blok gərginliyi — qruplar üzrə diaqram")}</h4>`}`+h+(boxes[0]||"")+`</div>`+boxes.slice(1).join("")}
 let REPORT_TITLE="UPS TEXNİKİ SERVİS HESABATI";
 /* report blocks of the kind of service (installation checks, diagnostics, call-out, repair, hand-over list) */
 function xPaper(V,PF,head,kv,pc,tv,dash,W){const X=V.x||{},esc2=v=>esc(ft(v||"")),rowsOf=(L,items)=>items.map((c,j)=>[c,(L||[])[j]||{}]).filter(([,o])=>o.s&&o.s!=="Tətbiq olunmur");let h="";
@@ -1408,7 +1435,7 @@ function paperHTML(R,_a,lang){PL=lang||state.plang||"az";const r=realOf(R),keep=
         const cell=(q)=>{if(q>=p)return `<td></td>`+Array.from({length:ns},()=>"<td></td>").join("");let rr=`<td>${q+1}</td>`;for(let g=0;g<ns;g++){const b=a.blocks[g*p+q];rr+=b?`<td class="${pc(b.st)}">${b.v!==null?b.v.toFixed(2):"—"} / ${b.r!==null?b.r.toFixed(2):"—"}</td>`:"<td></td>"}return rr};
         const rowsH=[];for(let q=0;q<rpf;q++){let rr="<tr>";for(let f=0;f<fold;f++)rr+=cell(f*rpf+q);rowsH.push(rr+"</tr>")}
         const chunks=rowsH.length>45?tblChunks(hdr,rowsH,30):[rowsH];
-        h+=chunks.map((c,ci)=>W((ci===0?head("Akkumulyator ölçmə cədvəli (V / mΩ)"):"")+`<table class="bt">${hdr}${c.join("")}</table>`)).join("")+rChartsHTML(V,a,head("Daxili müqavimət — qruplar üzrə diaqram"))}}
+        h+=chunks.map((c,ci)=>W((ci===0?head("Akkumulyator ölçmə cədvəli (V / mΩ)"):"")+`<table class="bt">${hdr}${c.join("")}</table>`)).join("")+(V.bat.chartR!=="0"?rChartsHTML(V,a,head("Daxili müqavimət — qruplar üzrə diaqram")):"")+(V.bat.chartV!=="0"?vChartsHTML(V,a,head("Blok gərginliyi — qruplar üzrə diaqram")):"")}}
     const BD=(V.bad||[]).filter(x=>x.name);if(BD.length)h+=W(head("Yararsız / dəyişdirilməli detallar")+`<table><tr><th>#</th><th style="text-align:left">${t("Detal")}</th><th>${t("Kod / Part №")}</th><th>${t("Say")}</th><th style="text-align:left">${t("Səbəb / qeyd")}</th></tr>${BD.map((x,j)=>`<tr><td class="c">${j+1}</td><td>${esc(ft(x.name))}</td><td class="c">${esc(x.code)}</td><td class="c">${esc(x.qty)}</td><td>${esc(ft(x.note))}</td></tr>`).join("")}</table>`);
     const PT=(V.parts||[]).filter(x=>x.name);if(PT.length)h+=W(head("Dəyişdirilən / quraşdırılan hissələr")+`<table><tr><th>#</th><th style="text-align:left">${t("Hissə")}</th><th>${t("Kod / Part №")}</th><th>${t("Say")}</th><th style="text-align:left">${t("Qeyd")}</th></tr>${PT.map((x,j)=>`<tr><td class="c">${j+1}</td><td>${esc(ft(x.name))}</td><td class="c">${esc(x.code)}</td><td class="c">${esc(x.qty)}</td><td>${esc(ft(x.note))}</td></tr>`).join("")}</table>`);
     const PH=(V.photos||[]);if(PH.length){const cells=PH.map((p,q)=>`<figure class="pfig">${PHOTO_CACHE[p.id]?`<img src="${PHOTO_CACHE[p.id]}" alt="">`:`<div class="pmiss">${t("Şəkil yüklənmədi")}</div>`}<figcaption>${q+1}. ${esc(ft(p.cap))}</figcaption></figure>`);
