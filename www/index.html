@@ -2879,7 +2879,7 @@ window.ZSLOOK=(function(){
       grid:"body{background-image:linear-gradient(color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px);background-size:24px 24px;background-attachment:fixed}",
       lines:"body{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 2px,transparent 2px 16px);background-attachment:fixed}",
       img:L.bgImg?`body::before{content:"";position:fixed;inset:0;background:url(${L.bgImg}) center/cover no-repeat;opacity:${+L.bgOp||0.22};z-index:-1;pointer-events:none}`:""}[L.bg]||"");
-    c.push({std:"",accent:"header.top{background:var(--accent)!important;color:var(--accent-ink)}header.top .brand,header.top .brand small,header.top .tab{color:var(--accent-ink)!important}header.top .brand small{opacity:.85}header.top .tab[aria-selected=\"true\"]{background:var(--accent-ink)!important;color:var(--accent)!important}header.top .btn{background:color-mix(in srgb,var(--accent-ink) 14%,transparent);color:var(--accent-ink);border-color:color-mix(in srgb,var(--accent-ink) 35%,transparent)}",
+    c.push({std:"",accent:"header.top{background:var(--accent)!important;color:var(--accent-ink)}header.top .brand,header.top .brand small,header.top .tab{color:var(--accent-ink)!important}header.top .brand small{opacity:.85}header.top .tab[aria-selected=\"true\"]{background:var(--accent-ink)!important;color:var(--accent)!important}header.top .btn{background:color-mix(in srgb,var(--accent-ink) 14%,transparent);color:var(--accent-ink);border-color:color-mix(in srgb,var(--accent-ink) 35%,transparent)}header.top .sync,header.top .save,header.top .sync *{color:var(--accent-ink)!important;opacity:.92}",
       glass:"header.top{background:color-mix(in srgb,var(--bg) 65%,transparent)!important;backdrop-filter:blur(12px)}"}[L.hdr]||"");
     c.push({s:"body{zoom:.92}",n:"",l:"body{zoom:1.08}",xl:"body{zoom:1.18}"}[L.fs]||"");
     c.push({c:".card{padding:10px!important;gap:8px!important}.btn{min-height:36px;padding:6px 11px}.rcard{padding:8px 10px!important}",n:"",w:".card{padding:18px!important;gap:14px!important}.btn{min-height:46px;padding:11px 18px}"}[L.dens]||"");
@@ -2999,6 +2999,8 @@ window.ZSBK=(function(){
       return ok+" hesabat"+(bad?" ("+bad+" alınmadı)":"")+", "+tk+" tapşırıq"+(ph?", "+ph+" şəkil":"")}});
   ZSLOOK.init("ups");
   const _rs=renderSettings;renderSettings=function(){const r=_rs.apply(this,arguments);try{ZSLOOK.card((t,ms)=>toast(t,ms),x=>esc(x))}catch(e){}try{ZSBK.card()}catch(e){}return r};
+  /* the "Ayarlar" button was bound to the old function at start-up */
+  const hs=document.getElementById("hSettings");if(hs)hs.onclick=()=>renderSettings();
 }catch(e){console.log("backup",e)}})();
 </script>
 </body>
