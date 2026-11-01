@@ -762,7 +762,7 @@ function knownWorkers(){const m={};const add=n=>{n=String(n||"").trim();if(n&&n!
   return Object.values(m).sort((a,b)=>a.localeCompare(b,"az"))}
 function summaryOf(r){r=realOf(r);const A=analyzeReport(r),d0=r.devices[0]||{info:{}},i0=d0.info||{},n=r.devices.length;
   return {id:r.id,repno:r.svc.repno,date:r.svc.date,client:r.cl.name,obj:r.cl.obj,brand:i0.brand||"",model:(i0.model||"")+(n>1?" (+"+(n-1)+" cihaz)":""),sn:i0.sn||"",kva:i0.kva||"",
-  types:r.devices.map(d=>d.type).join(","),type:r.svc.type||"",devn:n,fill:fillOf(r),photos:r.devices.reduce((x,d)=>x+((d.photos||[]).length),0),creator:r.creator||"",sns:snsOf(r),team:teamStr(r),eng:r.svc.eng,overall:A.overall,cls:A.cls,tested:A.tested,rep:A.rep,att:A.att,next:A.next,updatedAt:r.updatedAt,by:r.by||"",appr:r.appr&&r.appr.at?(r.appr.by||"✓"):"",sub:r.sub&&r.sub.at?(r.sub.by||"✓"):""}}
+  types:r.devices.map(d=>d.type).join(","),type:r.svc.type||"",devn:n,fill:fillOf(r),photos:r.devices.reduce((x,d)=>x+((d.photos||[]).length),0),creator:r.creator||"",sns:snsOf(r),team:teamStr(r),payer:String(r.cl.payer||"").trim(),eng:r.svc.eng,overall:A.overall,cls:A.cls,tested:A.tested,rep:A.rep,att:A.att,next:A.next,updatedAt:r.updatedAt,by:r.by||"",appr:r.appr&&r.appr.at?(r.appr.by||"✓"):"",sub:r.sub&&r.sub.at?(r.sub.by||"✓"):""}}
 function blocksOf(r){r=realOf(r);const keep=CUR_TYPE,out=[],ups=r.devices.map((d,i)=>i).filter(i=>TYPES[r.devices[i].type].hasBat);
   ups.forEach(i=>{useType(r.devices[i].type);const V=devProxy(r,i),a=analyze(V),p=Math.floor(num(V.bat.per))||1,pre=ups.length>1?"C"+(i+1)+"-":"";
     a.blocks.filter(b=>b.st).forEach(b=>out.push([pre+b.lab,b.s,b.i%p+1,b.v,b.r,b.t,b.st]))});
@@ -960,6 +960,38 @@ async function scheduleReminders(){if(!IS_APP)return;
       body:(u.client||"Müştəri")+(u.obj?" ("+u.obj+")":"")+" — "+[u.brand,u.model].filter(Boolean).join(" ")+(u.sn?", S/N "+u.sn:"")+". Tarix: "+fmtDate(u.next),
       schedule:{at:new Date(u.at),allowWhileIdle:true}}))});
     remindSig=sig;LS.set("ups.remindSig",sig)}catch(e){}}
+/* payments of the service work: written by Satış və Anbar, shown to the manager (workers — if allowed) */
+let PAY=(()=>{try{return JSON.parse(localStorage.getItem("ups.pay")||"null")}catch(e){return null}})(),PAY_AT=0;
+const payOn=()=>!!(PAY&&!PAY.hidden&&PAY.reps);
+const ckey=x=>String(x||"").trim().replace(/\s+/g," ").toLocaleLowerCase("az").replace(/["“”«»']/g,"");
+async function payRefresh(force){if(!hasServer()||state.online===false)return;if(!force&&Date.now()-PAY_AT<120000)return;PAY_AT=Date.now();
+  try{const r=await api("pay");const old=JSON.stringify(PAY);PAY=r&&r.hidden?{hidden:true,workers:false}:{reps:r.reps||{},items:r.items||[],at:r.at||"",workers:!!r.workers};
+    try{localStorage.setItem("ups.pay",JSON.stringify(PAY))}catch(e){}
+    if(JSON.stringify(PAY)!==old){if(state.view==="home")renderHome();else if(state.view==="debts")renderDebts();else if(state.view==="edit")payBanner()}}catch(e){}}
+const PAY_L={paid:["ok","Ödənilib"],inv:["warn","Hesab yazılıb, ödənilməyib"],none:["","Hesab yazılmayıb"],draft:["","Satışda qaralama — qiymət yazılmalı"]};
+const payChip=id=>{if(!payOn())return "";const r=PAY.reps[id];if(!r)return "";return r.st==="paid"?'<span class="chip ok">ödənilib</span>':r.st==="inv"?'<span class="chip warn">ödəniş gözlənilir</span>':r.st==="none"?'<span class="chip">hesab yazılmayıb</span>':""};
+function debtsBy(){const D={};(PAY&&PAY.items||[]).forEach(x=>{const k=ckey(x.client);const d=D[k]=D[k]||{client:x.client,inv:0,none:0,items:[]};d.items.push(x);if(x.st==="inv")d.inv+=x.total;else d.none+=x.total});
+  return Object.values(D).sort((a,b)=>(b.inv+b.none)-(a.inv+a.none))}
+const azn=n=>{const [a,b]=(Math.round((+n||0)*100)/100).toFixed(2).split(".");return a.replace(/\B(?=(\d{3})+(?!\d))/g," ")+","+b+" ₼"};
+function debtCard(){if(!payOn())return "";const D=debtsBy();if(!D.length)return "";const ti=D.reduce((a,d)=>a+d.inv,0),tn=D.reduce((a,d)=>a+d.none,0);
+  return `<div class="card" style="border-left:4px solid var(--warn,#b7791f);margin:0 0 12px"><div class="actions" style="justify-content:space-between;align-items:center;margin:0"><h3 style="margin:0">💰 Müştərilərin borcları</h3><button class="btn sm" id="bDebts">Ətraflı</button></div>
+    <p class="note" style="margin:6px 0 4px">Hesab yazılıb, ödənilməyib: <b>${azn(ti)}</b> · hesab yazılmalı (iş görülüb): <b>${azn(tn)}</b>${PAY.at?" · yeniləndi "+esc(PAY.at):""}</p>
+    ${D.slice(0,5).map(d=>`<div class="rrow" style="cursor:default;padding:4px 0"><span>${esc(d.client)}</span><span>${d.inv?`<span class="chip warn">${azn(d.inv)}</span>`:""}${d.none?` <span class="chip">${azn(d.none)} yazılmalı</span>`:""}</span></div>`).join("")}${D.length>5?`<p class="note" style="margin:4px 0 0">və daha ${D.length-5} müştəri…</p>`:""}</div>`}
+function renderDebts(){state.view="debts";$("#tabs").hidden=true;$("#hBack").hidden=false;$("#hSettings").hidden=true;$("#hTitle").innerHTML='Müştərilərin borcları<small>Satış və Anbardan</small>';
+  const adm=state.me.role==="admin",q=ckey(state.dq||""),D=debtsBy().filter(d=>!q||ckey([d.client,...d.items.map(x=>x.site+" "+x.no)].join(" ")).includes(q));
+  let h=`<h2 class="sec">Müştərilərin borcları</h2><p class="hint">Satış və Anbarda qəbul edilmiş, amma ödənişi qeyd olunmamış sənədlər. Vasitəçi şirkətlərdə obyektlər ayrıca göstərilir. Ödəniş Satış və Anbarda “Ödənilib” qeyd olunanda buradan çıxır və servis hesabatında “Ödənildi” görünür.${PAY&&PAY.at?" Yeniləndi: "+esc(PAY.at)+".":""}</p>`;
+  if(adm)h+=`<div class="card"><label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-weight:600"><input type="checkbox" id="payW" style="width:18px;height:18px;min-height:0;margin:0"${PAY&&PAY.workers?" checked":""}> İşçilər də borc və ödəniş məlumatını görsün</label><p class="note" style="margin:4px 0 0">İşarəsiz olanda bu məlumatı yalnız rəhbər görür.</p></div>`;
+  h+=`<div class="card"><input id="dq" type="search" placeholder="Axtar: müştəri, vasitəçi, obyekt, sənəd №" value="${esc(state.dq||"")}"></div>`;
+  h+=D.map(d=>{const G={};d.items.forEach(x=>{(G[x.site||""]=G[x.site||""]||[]).push(x)});
+    return `<div class="card"><div class="actions" style="justify-content:space-between;align-items:center;margin:0"><h3 style="margin:0">${esc(d.client)}</h3><span>${d.inv?`<span class="chip warn">borc ${azn(d.inv)}</span>`:""}${d.none?` <span class="chip">yazılmalı ${azn(d.none)}</span>`:""}</span></div>
+      ${Object.entries(G).map(([site,L])=>`${site?`<p style="margin:8px 0 2px"><b>Obyekt: ${esc(site)}</b></p>`:""}<div class="tw" style="overflow-x:auto"><table class="cut"><tr><th>Sənəd</th><th>Tarix</th><th>Növ</th><th>Qaimə</th><th>Məbləğ</th><th>Status</th></tr>${L.map(x=>`<tr><td>${esc(x.no)}</td><td class="c">${esc(fmtDate(x.date))}</td><td>${esc(({bill:"aylıq servis hesabı",svc:"servis",sale:"satış"})[x.kind]||x.kind||"")}</td><td>${esc(x.doc||"")}</td><td class="c"><b>${azn(x.total)}</b></td><td><span class="chip ${(PAY_L[x.st]||["",""])[0]}">${esc((PAY_L[x.st]||["",x.st])[1])}</span></td></tr>`).join("")}</table></div>`).join("")}</div>`}).join("")||'<div class="empty"><h3>Borc yoxdur</h3></div>';
+  h+=`<button class="btn ghost" id="dBack">← Geri</button>`;$("#main").innerHTML=h;$("#hBack").onclick=renderHome;$("#dBack").onclick=renderHome;
+  const dq=$("#dq");dq.oninput=e=>{state.dq=e.target.value;const p=e.target.selectionStart;renderDebts();const n=$("#dq");n.focus();n.setSelectionRange(p,p)};
+  const pw=$("#payW");if(pw)pw.onchange=async()=>{pw.disabled=true;try{await api("pay_cfg",{on:pw.checked});PAY.workers=pw.checked;try{localStorage.setItem("ups.pay",JSON.stringify(PAY))}catch(e){}toast(pw.checked?"İşçilər də borc məlumatını görəcək":"Borc məlumatını yalnız rəhbər görür")}catch(e){pw.checked=!pw.checked;toast("Saxlamaq alınmadı — internet / server")}pw.disabled=false};
+  payRefresh()}
+function payBanner(){const old=$("#payBox");if(old)old.remove();if(!payOn()||!state.cur)return;const r=PAY.reps[realOf(state.cur).id];if(!r)return;const m=$("#main");if(!m)return;
+  const L=PAY_L[r.st]||["",r.st],doc=[r.bill?"aylıq hesab "+r.bill:"",r.no&&!r.bill?"sənəd "+r.no:"",r.doc?"qaimə "+r.doc:""].filter(Boolean).join(" · ");
+  m.insertAdjacentHTML("afterbegin",`<div id="payBox" class="card" style="margin:0 0 12px;border-left:4px solid ${r.st==="paid"?"var(--ok,#1e8e5a)":r.st==="inv"?"var(--warn,#b7791f)":"var(--line,#ccc)"}"><div><b>${r.st==="paid"?"✓ Ödənildi":"💰 "+esc(L[1])}</b>${r.st==="paid"&&r.at?" · "+esc(fmtDate(r.at)):""} · ${azn(r.amount)}${doc?` <span class="note">· ${esc(doc)}</span>`:""}${r.client?` <span class="note">· hesab: ${esc(r.client)}${r.site?" ("+esc(r.site)+")":""}</span>`:""}</div></div>`)}
 function renderHome(){
   state.view="home";$("#tabs").hidden=true;$("#hBack").hidden=true;$("#hSettings").hidden=false;$("#saveState").textContent="";
   $("#hTitle").innerHTML='UPS Servis Jurnalı<small>'+esc(state.me.name?state.me.name:"Servis hesabatları")+'</small>';
@@ -985,6 +1017,7 @@ function renderHome(){
   h+=tasksBanner();
   h+=apprBanner(all);
   h+=upcomingBanner();
+  h+=debtCard();
   h+=snCard(snRes,q);
   if(q&&qn.length>=3&&!snRes.length&&!base.length)h+=`<p class="note" style="margin:0 0 10px">“${esc(state.q)}” üzrə heç nə tapılmadı${hasServer()&&state.online===false?" (server əlçatan deyil — yalnız bu cihazdakı hesabatlarda axtarıldı)":""}.</p>`;
   if(hasServer()&&state.me.role&&state.me.role!=="admin"&&all.some(x=>x.remote))h+=`<p class="note" style="margin:0 0 10px">Serverdəki hesabatları yalnız rəhbər silə bilər (🗑 düyməsi rəhbər açarı ilə görünür: Ayarlar → Açar).</p>`;
@@ -993,10 +1026,10 @@ function renderHome(){
   if(!all.length)h+=`<div class="empty"><h3>Hələ hesabat yoxdur</h3><p class="note" style="margin:0">“Yeni servis” ilə ilk hesabatı başladın. Tətbiqi tanımaq üçün doldurulmuş nümunə də aça bilərsiniz (bu nümunə serverə göndərilməz).</p><button class="btn" id="bSample">Nümunə hesabatı aç</button></div>`;
   else h+=`<div class="rlist">`+items.map(s=>`<div class="rwrap${canDelItem(s)?" hasdel":""}"><button class="rcard" data-open="${esc(s.id)}"><span class="t">${esc(s.client||"Adsız müştəri")}</span><span class="chip ${s.cls||""}">${s.cls==="ok"?"Qənaətbəxş":s.cls==="warn"?"Diqqət":s.cls==="bad"?"Təcili":""}</span>
     <span class="m"><span class="no">${esc(s.repno||"№ yoxdur")}</span><span>${esc(fmtDate(s.date))}</span><span>${esc([s.brand,s.model].filter(Boolean).join(" "))}${s.kva?" · "+esc(s.kva)+" kVA":""}</span>${s.eng?`<span>${esc(s.eng)}</span>`:""}
-    ${dupOf[s.id]?`<span class="chip warn">+${dupOf[s.id].length} təkrar</span>`:""}${s.isDup?'<span class="chip bad">təkrar</span>':""}${s.appr?'<span class="chip ok">təsdiqlənib</span>':s.sub?'<span class="chip warn">təsdiq gözləyir</span>':state.me.role==="admin"&&needsAppr(s)?'<span class="chip">təsdiqlənməyib</span>':""}${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}</span></button>${canDelItem(s)?`<button class="rdel" data-del="${esc(s.id)}" title="Hesabatı sil" aria-label="Hesabatı sil">🗑</button>`:""}</div>`).join("")+`</div>`;
+    ${dupOf[s.id]?`<span class="chip warn">+${dupOf[s.id].length} təkrar</span>`:""}${s.isDup?'<span class="chip bad">təkrar</span>':""}${s.appr?'<span class="chip ok">təsdiqlənib</span>':s.sub?'<span class="chip warn">təsdiq gözləyir</span>':state.me.role==="admin"&&needsAppr(s)?'<span class="chip">təsdiqlənməyib</span>':""}${s.pending?'<span class="chip warn">göndərilməyib</span>':""}${!s.local?'<span class="chip">serverdə</span>':""}${payChip(s.id)}</span></button>${canDelItem(s)?`<button class="rdel" data-del="${esc(s.id)}" title="Hesabatı sil" aria-label="Hesabatı sil">🗑</button>`:""}</div>`).join("")+`</div>`;
   $("#main").innerHTML=h;
   $("#bNew").onclick=()=>openNew();$("#bTasks").onclick=()=>renderTasks();document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>{state.tkF="open";renderTasks(b.dataset.topen)});$("#bPlan").onclick=renderPlan;$("#bLists").onclick=()=>renderLists();const bst=$("#bStaff");if(bst)bst.onclick=renderStaff;const bcu=$("#bCust");if(bcu)bcu.onclick=()=>{state.cuSel="";renderCustomers()};
-  const bsy=$("#bSync");if(bsy)bsy.onclick=()=>sync();
+  const bsy=$("#bSync");if(bsy)bsy.onclick=()=>{sync();payRefresh(true)};const bdb=$("#bDebts");if(bdb)bdb.onclick=renderDebts;payRefresh();
   document.querySelectorAll("[data-af]").forEach(b=>b.onclick=()=>{state.af=b.dataset.af==="1";renderHome()});
   document.querySelectorAll("[data-hf]").forEach(b=>b.onclick=()=>{state.hf=b.dataset.hf;renderHome()});const bd=$("#bDup");if(bd)bd.onclick=()=>{state.showDup=!state.showDup;renderHome()};
   const bs=$("#bSample");if(bs)bs.onclick=()=>{const r=sampleReport(state.settings);r.sample=true;openReport(r)};
@@ -1231,7 +1264,7 @@ function renderEditor(){
   const ad=$("#addDev");if(ad)ad.onclick=()=>typePicker("Əlavə cihaz","Bu müştəridə servis etdiyiniz növbəti cihazı seçin. O, eyni hesabata əlavə olunacaq.",tp=>{state.rep.devices.push(blankDevice(state.settings,tp));setActive(state.rep.devices.length-1);state.tab="ups";markDirty();renderEditor()},()=>renderEditor());
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.go;renderEditor();window.scrollTo(0,0)});
   (AFTER[state.tab]||(()=>{}))();
-  live();applyLock();
+  live();applyLock();payBanner();
 }
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-xl],[data-xset],[data-xall],[data-delkit],#addKit,#kitStd");if(!b||!state.cur||lockedRep(state.rep))return;
   const X=state.cur.x||(state.cur.x={}),y=window.scrollY;
@@ -1500,7 +1533,7 @@ async function setAppr(kind,on){await flush();const r=realOf(state.rep);
   if(kind==="appr"){if(on)r.appr={by:state.me.name||"Rəhbər",at:Date.now()};else delete r.appr}
   else{if(on)r.sub={by:state.me.name||"",at:Date.now()};else delete r.sub}
   try{await persist(r)}catch(e){toast("Cihaza yazmaq alınmadı");return}
-  state.dirty=false;toast(kind==="appr"?(on?"Təsdiqləndi — Satış və Anbara göndərilir":"Təsdiq geri alındı"):(on?"Rəhbərə göndərildi":"Geri götürüldü"));
+  state.dirty=false;toast(kind==="appr"?(on?"Təsdiqləndi — Satış və Anbara göndərilir":"Təsdiq geri alındı — Satış və Anbarda satış da geri alınır (hesab yazılıbsa orada xəbərdarlıq çıxır)"):(on?"Rəhbərə göndərildi":"Geri götürüldü"));
   sync({all:true});const y=window.scrollY;renderEditor();window.scrollTo(0,y)}
 function bindAppr(){const two=(id,fn,txt)=>{const b=$("#"+id);if(b)b.onclick=()=>{if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=txt;return}b.disabled=true;fn()}};
   two("apprGo",()=>setAppr("appr",true),"Təsdiq edilsin? Yenidən basın");
@@ -2528,7 +2561,8 @@ const cuKey=x=>String(x||"").trim().replace(/\s+/g," ").toLocaleLowerCase("az");
 function customerBook(){const C={};const tt=t=>t&&TYPES[t]?TYPES[t].title:"";
   listItems().forEach(it=>{if(it.local&&state.reports[it.id]&&state.reports[it.id].sample)return;if(!String(it.client||"").trim())return;
     const full=state.reports[it.id]?realOf(state.reports[it.id]):null,k=cuKey(it.client);
-    const c=C[k]=C[k]||{name:String(it.client).trim(),objs:new Set(),addr:"",person:"",tel:"",payer:"",reps:0,last:"",lastId:"",next:"",devs:{}};
+    const c=C[k]=C[k]||{name:String(it.client).trim(),objs:new Set(),addr:"",person:"",tel:"",payer:"",payers:new Set(),reps:0,last:"",lastId:"",next:"",devs:{}};
+    const py=String(it.payer||(full&&full.cl&&full.cl.payer)||"").trim();if(py&&cuKey(py)!==k){c.payers.add(py);if(!c.payer||(it.date||"")>=(c.last||""))c.payer=py}
     c.reps++;if(it.obj)c.objs.add(String(it.obj).trim());
     const newer=(it.date||"")>=(c.last||"");if(newer){c.last=it.date||"";c.lastId=it.id;if(it.next)c.next=it.next}
     if(full&&full.cl&&(newer||!c.person)){const L=full.cl;if(L.addr)c.addr=L.addr;if(L.person)c.person=L.person;if(L.tel)c.tel=L.tel;if(L.payer)c.payer=L.payer}
@@ -2537,35 +2571,43 @@ function customerBook(){const C={};const tt=t=>t&&TYPES[t]?TYPES[t].title:"";
       const o=c.devs[dk]=c.devs[dk]||{...d,first:it.date||"",last:"",lastId:"",next:"",n:0};o.n++;
       if((it.date||"")>=(o.last||"")){Object.assign(o,{type:d.type||o.type,brand:d.brand||o.brand,model:d.model||o.model,kva:d.kva||o.kva,loc:d.loc||o.loc,sn:d.sn||o.sn,last:it.date||"",lastId:it.id,next:it.next||""})}
       if((it.date||"")&&(!o.first||(it.date<o.first)))o.first=it.date;o.tt=tt(o.type)})});
-  return Object.values(C).map(c=>({...c,objs:[...c.objs],devs:Object.values(c.devs).sort((a,b)=>(a.tt||"").localeCompare(b.tt||"","az")||String(a.brand+a.model).localeCompare(b.brand+b.model,"az"))}))
+  return Object.values(C).map(c=>({...c,objs:[...c.objs],payers:[...c.payers],devs:Object.values(c.devs).sort((a,b)=>(a.tt||"").localeCompare(b.tt||"","az")||String(a.brand+a.model).localeCompare(b.brand+b.model,"az"))}))
     .sort((a,b)=>a.name.localeCompare(b.name,"az"))}
 function renderCustomers(){if(state.me.role!=="admin"){toast("Bu bölmə yalnız rəhbər üçündür");return}
   state.view="customers";$("#tabs").hidden=true;$("#hBack").hidden=false;$("#hSettings").hidden=true;$("#hTitle").innerHTML='Müştərilər və cihazlar<small>Bütün hesabatlardan toplanır</small>';
   const book=customerBook(),q=cuKey(state.cuQ||""),sel=state.cuSel||"";
-  const match=c=>!q||cuKey([c.name,c.objs.join(" "),c.payer,c.addr,...c.devs.map(d=>[d.brand,d.model,d.sn,d.loc].join(" "))].join(" ")).includes(q);
+  /* intermediary companies (who pays) and the end customers served through them */
+  const VIA={};book.forEach(c=>c.payers.forEach(p=>{const k=cuKey(p);(VIA[k]=VIA[k]||{name:p,n:0}).n++}));const vias=Object.entries(VIA).sort((a,b)=>a[1].name.localeCompare(b[1].name,"az"));
+  if(state.cuVia&&!VIA[state.cuVia])state.cuVia="";const via=state.cuVia||"",viaName=via?VIA[via].name:"";
+  const match=c=>(!via||c.payers.some(p=>cuKey(p)===via))&&(!q||cuKey([c.name,c.objs.join(" "),c.payers.join(" "),c.addr,...c.devs.map(d=>[d.brand,d.model,d.sn,d.loc].join(" "))].join(" ")).includes(q));
   const list=book.filter(match),nDev=list.reduce((x,c)=>x+c.devs.length,0),cur=sel?book.find(c=>cuKey(c.name)===sel):null;
   const devRow=(d,i)=>`<tr><td class="c">${i+1}</td><td>${esc(d.tt||"")}</td><td><b>${esc([d.brand,d.model].filter(Boolean).join(" ")||"—")}</b>${d.kva?" · "+esc(d.kva)+" kVA":""}</td><td class="mono">${esc(d.sn||"—")}</td><td>${esc(d.loc||"")}</td><td class="c">${esc(fmtDate(d.last)||"")}</td><td class="c">${d.n}</td><td class="c">${esc(fmtDate(d.next)||"")}</td><td>${d.lastId?`<button class="btn sm" data-cuopen="${esc(d.lastId)}">Son hesabat</button>`:""}</td></tr>`;
   const devTable=c=>c.devs.length?`<div class="tw" style="overflow-x:auto"><table class="cut"><tr><th>#</th><th>Növ</th><th>Marka / model</th><th>Seriya №</th><th>Yerləşmə</th><th>Son servis</th><th>Servis sayı</th><th>Növbəti</th><th></th></tr>${c.devs.map(devRow).join("")}</table></div>`:'<p class="note" style="margin:0">Cihaz məlumatı yoxdur.</p>';
   let h=`<h2 class="sec">Müştərilər və cihazlar</h2><p class="hint">Siyahı bütün servis hesabatlarından avtomatik toplanır: müştəri, obyektlər, əlaqə və hər cihaz (seriya № üzrə bir dəfə), son və növbəti servis. Müştəriyə basın — onun cihazları açılır.</p>
-   <div class="card"><div class="actions" style="align-items:center"><input id="cuQ" type="search" placeholder="Axtar: müştəri, obyekt, model, seriya №" value="${esc(state.cuQ||"")}" style="flex:1;min-width:200px">
+   <div class="card"><div class="actions" style="align-items:center"><input id="cuQ" type="search" placeholder="Axtar: müştəri, vasitəçi, obyekt, model, seriya №" value="${esc(state.cuQ||"")}" style="flex:1;min-width:200px">
+     ${vias.length?`<select id="cuVia" style="max-width:280px" title="Vasitəçi şirkət"><option value="">Vasitəçi şirkət: hamısı</option>${vias.map(([k,v])=>`<option value="${esc(k)}"${k===via?" selected":""}>${esc(v.name)} · ${v.n} müştəri</option>`).join("")}</select>`:""}
      <button class="btn pri" id="cuPdf">PDF</button><button class="btn" id="cuXls">Excel</button>${listFolderBtn("cust")}</div>
-     <p class="note" style="margin:6px 0 0">${list.length} müştəri · ${nDev} cihaz${q?" (axtarışa uyğun)":""} · PDF / Excel ${cur?"<b>seçilən müştərini</b>":"görünən siyahını"} çıxarır.</p></div>`;
+     <p class="note" style="margin:6px 0 0">${via?"Vasitəçi: <b>"+esc(viaName)+"</b> · ":""}${list.length} müştəri · ${nDev} cihaz${q?" (axtarışa uyğun)":""} · PDF / Excel ${cur?"<b>seçilən müştərini</b>":"görünən siyahını"} çıxarır.</p></div>`;
+  /* an intermediary chosen (or found by search): all devices of its customers in one table */
+  if(!cur&&(via||(q&&list.length&&list.every(c=>c.payers.some(p=>cuKey(p).includes(q)))))){const rows=[];list.forEach(c=>c.devs.forEach(d=>rows.push({c,d})));
+    h+=`<div class="card"><h3>${via?esc(viaName):"Vasitəçi şirkət üzrə"} — bütün cihazlar · ${rows.length}</h3>${rows.length?`<div class="tw" style="overflow-x:auto"><table class="cut"><tr><th>#</th><th>Müştəri / obyekt</th><th>Növ</th><th>Marka / model</th><th>Seriya №</th><th>Yerləşmə</th><th>Son servis</th><th>Növbəti</th><th></th></tr>${rows.map(({c,d},i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(c.name)}</b></td><td>${esc(d.tt||"")}</td><td>${esc([d.brand,d.model].filter(Boolean).join(" ")||"—")}${d.kva?" · "+esc(d.kva)+" kVA":""}</td><td class="mono">${esc(d.sn||"—")}</td><td>${esc(d.loc||"")}</td><td class="c">${esc(fmtDate(d.last)||"")}</td><td class="c">${esc(fmtDate(d.next)||"")}</td><td>${d.lastId?`<button class="btn sm" data-cuopen="${esc(d.lastId)}">Son hesabat</button>`:""}</td></tr>`).join("")}</table></div>`:'<p class="note" style="margin:0">Cihaz məlumatı yoxdur.</p>'}</div>`}
   if(cur){h+=`<div class="card"><div class="actions" style="justify-content:space-between;align-items:center"><h3 style="margin:0">${esc(cur.name)}</h3><button class="btn sm" id="cuAll">← Bütün müştərilər</button></div>
-     <p class="note" style="margin:4px 0 8px">${[cur.objs.length?"Obyekt: "+cur.objs.join(", "):"",cur.addr?"Ünvan: "+cur.addr:"",cur.person?"Əlaqə: "+cur.person+(cur.tel?" · "+cur.tel:""):"",cur.payer?"Hesab: "+cur.payer:"",cur.reps+" hesabat · son servis "+(fmtDate(cur.last)||"—")+(cur.next?" · növbəti "+fmtDate(cur.next):"")].filter(Boolean).map(esc).join("<br>")}</p>${devTable(cur)}</div>`}
-  else h+=`<div class="rlist">${list.map(c=>`<button class="rcard" data-cu="${esc(cuKey(c.name))}"><span class="t">${esc(c.name)}</span><span class="chip">${c.devs.length} cihaz</span><span class="m"><span>${c.reps} hesabat</span><span>son: ${esc(fmtDate(c.last)||"—")}</span>${c.next?`<span>növbəti: ${esc(fmtDate(c.next))}</span>`:""}${c.objs.length?`<span>${esc(c.objs.slice(0,3).join(", "))}${c.objs.length>3?"…":""}</span>`:""}${c.payer?`<span>hesab: ${esc(c.payer)}</span>`:""}</span></button>`).join("")||'<div class="empty"><h3>Müştəri tapılmadı</h3></div>'}</div>`;
+     <p class="note" style="margin:4px 0 8px">${[cur.objs.length?"Obyekt: "+cur.objs.join(", "):"",cur.addr?"Ünvan: "+cur.addr:"",cur.person?"Əlaqə: "+cur.person+(cur.tel?" · "+cur.tel:""):"",cur.payers.length?"Vasitəçi (hesab): "+cur.payers.join(", "):"",cur.reps+" hesabat · son servis "+(fmtDate(cur.last)||"—")+(cur.next?" · növbəti "+fmtDate(cur.next):"")].filter(Boolean).map(esc).join("<br>")}</p>${devTable(cur)}</div>`}
+  else h+=`<div class="rlist">${list.map(c=>`<button class="rcard" data-cu="${esc(cuKey(c.name))}"><span class="t">${esc(c.name)}</span><span class="chip">${c.devs.length} cihaz</span>${(()=>{if(!payOn())return "";const k=ckey(c.name),t=(PAY.items||[]).filter(x=>x.st==="inv"&&(ckey(x.client)===k||ckey(x.site)===k)).reduce((a,x)=>a+x.total,0);return t?`<span class="chip warn">borc ${azn(t)}</span>`:""})()}<span class="m"><span>${c.reps} hesabat</span><span>son: ${esc(fmtDate(c.last)||"—")}</span>${c.next?`<span>növbəti: ${esc(fmtDate(c.next))}</span>`:""}${c.objs.length?`<span>${esc(c.objs.slice(0,3).join(", "))}${c.objs.length>3?"…":""}</span>`:""}${c.payers.length?`<span class="chip">vasitəçi: ${esc(c.payers.join(", "))}</span>`:""}</span></button>`).join("")||'<div class="empty"><h3>Müştəri tapılmadı</h3></div>'}</div>`;
   h+=`<button class="btn ghost" id="cuBack">← Geri</button>`;
   $("#main").innerHTML=h;
   const qi=$("#cuQ");qi.oninput=e=>{state.cuQ=e.target.value;const p=e.target.selectionStart;renderCustomers();const n=$("#cuQ");n.focus();n.setSelectionRange(p,p)};
   document.querySelectorAll("[data-cu]").forEach(b=>b.onclick=()=>{state.cuSel=b.dataset.cu;renderCustomers();window.scrollTo(0,0)});
+  const cv=$("#cuVia");if(cv)cv.onchange=()=>{state.cuVia=cv.value;state.cuSel="";renderCustomers()};
   const ca=$("#cuAll");if(ca)ca.onclick=()=>{state.cuSel="";renderCustomers()};$("#cuBack").onclick=renderHome;
   document.querySelectorAll("[data-cuopen]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{openReport(normalize(clone(await getFull(b.dataset.cuopen))))}catch(e){b.disabled=false;toast("Hesabatı açmaq üçün internet lazımdır")}});
   const exp=kind=>{const L=cur?[cur]:list;if(!L.length){toast("Siyahı boşdur");return}
     const head=["Müştəri","Obyekt","Ünvan","Əlaqə","Telefon","Hesab kimə","Cihaz növü","Marka","Model","Güc, kVA","Seriya №","Yerləşmə","İlk servis","Son servis","Servis sayı","Növbəti servis"];
-    const data=[];L.forEach(c=>{const base=[c.name,c.objs.join(", "),c.addr,c.person,c.tel,c.payer];if(!c.devs.length)data.push([...base,"","","","","","","","",fmtDate(c.last),c.reps,fmtDate(c.next)]);
+    const data=[];L.forEach(c=>{const base=[c.name,c.objs.join(", "),c.addr,c.person,c.tel,c.payers.join(", ")];if(!c.devs.length)data.push([...base,"","","","","","","","",fmtDate(c.last),c.reps,fmtDate(c.next)]);
       c.devs.forEach(d=>data.push([...base,d.tt||"",d.brand,d.model,d.kva,d.sn,d.loc,fmtDate(d.first),fmtDate(d.last),d.n,fmtDate(d.next)]))});
-    const body=L.map(c=>`<div class="blk"><h4>${esc(c.name)}</h4><p style="margin:0 0 4px;font-size:9pt">${[c.objs.length?"Obyekt: "+c.objs.join(", "):"",c.addr?"Ünvan: "+c.addr:"",c.person?"Əlaqə: "+c.person+(c.tel?", "+c.tel:""):"",c.payer?"Hesab: "+c.payer:"",c.reps+" hesabat · son servis "+(fmtDate(c.last)||"—")].filter(Boolean).map(esc).join(" · ")}</p>${c.devs.length?`<table><tr><th>#</th><th style="text-align:left">Növ</th><th style="text-align:left">Marka / model</th><th>Güc, kVA</th><th>Seriya №</th><th style="text-align:left">Yerləşmə</th><th>Son servis</th><th>Növbəti</th></tr>${c.devs.map((d,i)=>`<tr><td class="c">${i+1}</td><td>${esc(d.tt||"")}</td><td>${esc([d.brand,d.model].filter(Boolean).join(" "))}</td><td class="c">${esc(d.kva||"")}</td><td class="c">${esc(d.sn||"")}</td><td>${esc(d.loc||"")}</td><td class="c">${esc(fmtDate(d.last))}</td><td class="c">${esc(fmtDate(d.next))}</td></tr>`).join("")}</table>`:""}</div>`).join("");
-    const nm=cur?safeName(cur.name).replace(/\s+/g,"_"):"hamisi";
-    prepareFolder().then(root=>exportDoc(kind,{title:cur?"MÜŞTƏRİNİN CİHAZLARI":"MÜŞTƏRİLƏR VƏ CİHAZLAR",sub:(cur?cur.name+" · ":"")+L.length+" müştəri · "+L.reduce((x,c)=>x+c.devs.length,0)+" cihaz",body,head,data,base:"Musteriler_ve_cihazlar_"+nm+"_"+todayISO(),root,client:"_Siyahılar",tag:"cust",widths:[28,22,26,18,15,20,18,14,20,9,18,18,11,11,9,12]}))};
+    const body=L.map(c=>`<div class="blk"><h4>${esc(c.name)}</h4><p style="margin:0 0 4px;font-size:9pt">${[c.objs.length?"Obyekt: "+c.objs.join(", "):"",c.addr?"Ünvan: "+c.addr:"",c.person?"Əlaqə: "+c.person+(c.tel?", "+c.tel:""):"",c.payers.length?"Vasitəçi: "+c.payers.join(", "):"",c.reps+" hesabat · son servis "+(fmtDate(c.last)||"—")].filter(Boolean).map(esc).join(" · ")}</p>${c.devs.length?`<table><tr><th>#</th><th style="text-align:left">Növ</th><th style="text-align:left">Marka / model</th><th>Güc, kVA</th><th>Seriya №</th><th style="text-align:left">Yerləşmə</th><th>Son servis</th><th>Növbəti</th></tr>${c.devs.map((d,i)=>`<tr><td class="c">${i+1}</td><td>${esc(d.tt||"")}</td><td>${esc([d.brand,d.model].filter(Boolean).join(" "))}</td><td class="c">${esc(d.kva||"")}</td><td class="c">${esc(d.sn||"")}</td><td>${esc(d.loc||"")}</td><td class="c">${esc(fmtDate(d.last))}</td><td class="c">${esc(fmtDate(d.next))}</td></tr>`).join("")}</table>`:""}</div>`).join("");
+    const nm=cur?safeName(cur.name).replace(/\s+/g,"_"):via?"vasiteci_"+safeName(viaName).replace(/\s+/g,"_"):"hamisi";
+    prepareFolder().then(root=>exportDoc(kind,{title:cur?"MÜŞTƏRİNİN CİHAZLARI":via?"VASİTƏÇİ ŞİRKƏTİN MÜŞTƏRİLƏRİ VƏ CİHAZLARI":"MÜŞTƏRİLƏR VƏ CİHAZLAR",sub:(cur?cur.name+" · ":via?"Vasitəçi: "+viaName+" · ":"")+L.length+" müştəri · "+L.reduce((x,c)=>x+c.devs.length,0)+" cihaz",body,head,data,base:"Musteriler_ve_cihazlar_"+nm+"_"+todayISO(),root,client:"_Siyahılar",tag:"cust",widths:[28,22,26,18,15,20,18,14,20,9,18,18,11,11,9,12]}))};
   $("#cuPdf").onclick=()=>exp("pdf");$("#cuXls").onclick=()=>exp("xlsx")}
 /* bonus rules: kept on the manager's device */
 const bnMoney=n=>{n=Math.round((+n||0)*100)/100;const [i,f]=Math.abs(n).toFixed(2).split(".");return (n<0?"−":"")+i.replace(/\B(?=(\d{3})+(?!\d))/g," ")+","+f};
@@ -2788,6 +2830,176 @@ if(IS_APP){try{const AP=(Capacitor.Plugins&&Capacitor.Plugins.App)||Capacitor.re
   AP.addListener("backButton",async()=>{if(state.sigOpen){state.sigOpen();return}if(["edit","settings","lists","plan","staff","tasks"].includes(state.view)){await flush();state.cur=null;state.rep=null;renderHome();sync()}else AP.exitApp()})}catch(e){}}
 loadLocal();
 (async()=>{await loadReportsDB();if(!state.me.name)renderWelcome();else{renderHome();sync();autoBackup()}})();
+</script>
+<script>/* one window only (Windows app): a second window hands over to the first one and closes */
+(function(){try{if(!(location.protocol==="file:"||(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&location.port)))return;
+  var K="oneapp."+location.pathname.replace(/[^\w]+/g,"_"),me=Math.random().toString(36).slice(2),dup=false,t0=Date.now();
+  var put=function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  addEventListener("storage",function(e){if(!e.newValue)return;var v;try{v=JSON.parse(e.newValue)}catch(x){return}
+    if(e.key===K+".ping"&&v.id!==me&&!dup){put(K+".pong",{to:v.id,t:Date.now()});try{window.focus()}catch(x){}
+      var o=document.title,n=0,iv=setInterval(function(){document.title=(n%2?o:"● Proqram artıq açıqdır");if(++n>7){clearInterval(iv);document.title=o}},500);
+      try{if(typeof toast==="function")toast("Proqram artıq açıqdır — bu pəncərədən istifadə edin")}catch(x){}}
+    if(e.key===K+".pong"&&v.to===me&&Date.now()-t0<15000){dup=true;
+      document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#0f1514;color:#fff;font:16px system-ui,sans-serif;text-align:center;padding:20px"><div><div style="font-size:20px;font-weight:700;margin-bottom:8px">Proqram artıq açıqdır</div><div style="opacity:.8;margin-bottom:16px">Açıq olan pəncərədən istifadə edin (aşağıdakı tapşırıqlar panelində).</div><button onclick="window.close()" style="font-size:15px;padding:10px 18px;border-radius:8px;border:0;cursor:pointer">Bağla</button></div></div>';
+      setTimeout(function(){try{window.close()}catch(x){}},1200)}});
+  put(K+".ping",{id:me,t:Date.now()})}catch(e){}})();</script>
+<script>/* ZUVAND — görünüş: rəng, düymə forması və effekti, kartlar, arxa fon, loqo, şrift, sıxlıq (hər cihazda ayrıca) */
+window.ZSLOOK=(function(){
+  let KEY="zs.look";
+  const D={acc:"",accC:"",btn:"std",fx:"flat",anim:"1",card:"std",bg:"plain",bgImg:"",bgOp:"0.22",hdr:"std",fs:"n",dens:"n",logo:"",logoM:"both"};
+  const get=()=>{try{return Object.assign({},D,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},D)}};
+  const put=L=>{try{localStorage.setItem(KEY,JSON.stringify(L));return true}catch(e){return false}};
+  const ACC=[["","Standart (yaşıl)","#0E6A5B"],["blue","Göy","#1D5FBF"],["indigo","İndiqo","#4338CA"],["violet","Bənövşəyi","#7C3AED"],["teal","Firuzəyi","#0F766E"],["orange","Narıncı","#C2410C"],["red","Qırmızı","#B91C1C"],["pink","Çəhrayı","#BE185D"],["gold","Qızılı","#A16207"],["slate","Qrafit","#334155"],["custom","Öz rəngim…",""]];
+  const OPT={
+    btn:[["std","Standart"],["round","Yumru (kapsul)"],["soft","Yumşaq künc"],["sharp","Kəskin künc"]],
+    fx:[["flat","Düz"],["shadow","Kölgəli"],["raised","Qabarıq (3D)"],["gloss","Parlaq (qradiyent)"],["glass","Şüşə"],["glow","İşıldayan"],["outline","Kontur"]],
+    anim:[["1","Var (üstünə gələndə qalxır)"],["0","Yoxdur"]],
+    card:[["std","Standart"],["shadow","Kölgəli"],["float","Havada (dərin kölgə)"],["edge","Rəngli kənar"],["outline","Qalın haşiyə"],["glass","Şüşə"]],
+    bg:[["plain","Sadə"],["grad","Yumşaq qradiyent"],["dots","Nöqtəli"],["grid","Dama"],["lines","Çəp xətlər"],["img","Öz şəklim…"]],
+    hdr:[["std","Standart"],["accent","Rəngli"],["glass","Şüşə"]],
+    fs:[["s","Kiçik"],["n","Normal"],["l","Böyük"],["xl","Çox böyük"]],
+    dens:[["c","Yığcam"],["n","Normal"],["w","Geniş"]],
+    logoM:[["both","Loqo + ad"],["logo","Yalnız loqo"]]};
+  function accOf(L){if(L.acc==="custom")return L.accC||"";const a=ACC.find(x=>x[0]===L.acc);return a&&a[0]?a[2]:""}
+  function css(L){const A=accOf(L),c=[];
+    if(A)c.push(`:root,:root[data-theme]{--accent:${A};--accent-soft:color-mix(in srgb,${A} 18%,var(--surface));--paper-head:color-mix(in srgb,${A} 70%,#000)}`);
+    c.push({std:"",round:".btn,.seg button,.chip{border-radius:999px!important}",soft:".btn{border-radius:14px!important}",sharp:".btn,.card,.rcard,input,select,textarea{border-radius:3px!important}"}[L.btn]||"");
+    c.push({flat:"",
+      shadow:".btn{box-shadow:0 2px 6px rgba(0,0,0,.12)}.btn.pri{box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 45%,transparent)}",
+      raised:".btn{box-shadow:0 3px 0 rgba(0,0,0,.18)}.btn.pri{box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 55%,#000)}.btn:active{transform:translateY(2px)!important;box-shadow:0 1px 0 rgba(0,0,0,.2)!important}",
+      gloss:".btn{background:linear-gradient(180deg,var(--surface),var(--surface2))}.btn.pri{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 72%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 85%,#000));text-shadow:0 1px 0 rgba(0,0,0,.25)}",
+      glass:".btn{background:color-mix(in srgb,var(--surface) 55%,transparent);backdrop-filter:blur(8px);border-color:color-mix(in srgb,var(--line) 70%,transparent)}.btn.pri{background:color-mix(in srgb,var(--accent) 80%,transparent);backdrop-filter:blur(8px)}",
+      glow:".btn.pri{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent),0 0 18px color-mix(in srgb,var(--accent) 65%,transparent)}.btn:hover{box-shadow:0 0 12px color-mix(in srgb,var(--accent) 40%,transparent)}",
+      outline:".btn{background:transparent;border-width:2px}.btn.pri{background:transparent;color:var(--accent);border:2px solid var(--accent)}.btn.pri:hover{background:var(--accent);color:var(--accent-ink)}"}[L.fx]||"");
+    if(L.anim==="1")c.push(".btn,.rcard,.tab{transition:transform .12s ease,box-shadow .15s ease,filter .12s ease,background .15s}.btn:hover:not(:disabled),.rcard:hover{transform:translateY(-1px);filter:brightness(1.04)}");
+    c.push({std:"",shadow:".card,.rcard{box-shadow:0 2px 10px rgba(0,0,0,.08);border-color:transparent}",float:".card,.rcard{box-shadow:0 12px 30px rgba(0,0,0,.13);border-color:transparent}",
+      edge:".card{border-left:4px solid var(--accent)!important}",outline:".card,.rcard{border-width:2px!important}",glass:".card,.rcard{background:color-mix(in srgb,var(--surface) 68%,transparent)!important;backdrop-filter:blur(10px)}"}[L.card]||"");
+    c.push({plain:"",grad:"body{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 14%,var(--bg)),var(--bg) 55%,color-mix(in srgb,var(--accent) 6%,var(--bg))) fixed}",
+      dots:"body{background-image:radial-gradient(color-mix(in srgb,var(--ink) 14%,transparent) 1px,transparent 1.4px);background-size:18px 18px;background-attachment:fixed}",
+      grid:"body{background-image:linear-gradient(color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px);background-size:24px 24px;background-attachment:fixed}",
+      lines:"body{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--accent) 7%,transparent) 0 2px,transparent 2px 16px);background-attachment:fixed}",
+      img:L.bgImg?`body::before{content:"";position:fixed;inset:0;background:url(${L.bgImg}) center/cover no-repeat;opacity:${+L.bgOp||0.22};z-index:-1;pointer-events:none}`:""}[L.bg]||"");
+    c.push({std:"",accent:"header.top{background:var(--accent)!important;color:var(--accent-ink)}header.top .brand,header.top .brand small,header.top .tab{color:var(--accent-ink)!important}header.top .brand small{opacity:.85}header.top .tab[aria-selected=\"true\"]{background:var(--accent-ink)!important;color:var(--accent)!important}header.top .btn{background:color-mix(in srgb,var(--accent-ink) 14%,transparent);color:var(--accent-ink);border-color:color-mix(in srgb,var(--accent-ink) 35%,transparent)}",
+      glass:"header.top{background:color-mix(in srgb,var(--bg) 65%,transparent)!important;backdrop-filter:blur(12px)}"}[L.hdr]||"");
+    c.push({s:"body{zoom:.92}",n:"",l:"body{zoom:1.08}",xl:"body{zoom:1.18}"}[L.fs]||"");
+    c.push({c:".card{padding:10px!important;gap:8px!important}.btn{min-height:36px;padding:6px 11px}.rcard{padding:8px 10px!important}",n:"",w:".card{padding:18px!important;gap:14px!important}.btn{min-height:46px;padding:11px 18px}"}[L.dens]||"");
+    if(L.logo)c.push(`#zsLogo{height:36px;max-width:140px;object-fit:contain;margin-right:10px;border-radius:6px;flex:none}${L.logoM==="logo"?"#hTitle{font-size:0!important}#hTitle small{font-size:12px!important}":""}`);
+    return c.filter(Boolean).join("\n")}
+  function apply(){const L=get();let st=document.getElementById("zsLook");if(!st){st=document.createElement("style");st.id="zsLook";document.head.appendChild(st)}st.textContent=css(L);
+    let im=document.getElementById("zsLogo");const t=document.getElementById("hTitle");
+    if(L.logo&&t){if(!im){im=document.createElement("img");im.id="zsLogo";im.alt="Loqo";t.parentNode.insertBefore(im,t)}if(im.src!==L.logo)im.src=L.logo}else if(im)im.remove()}
+  function shrink(file,max,type,q){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);res(c.toDataURL(type,q))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(file)})}
+  function card(toast,esc){const m=document.getElementById("main");if(!m)return;const L=get(),old=document.getElementById("lookCard");
+    const sel=(k,l)=>`<label class="f"><span>${l}</span><select data-lk="${k}">${OPT[k].map(([v,t])=>`<option value="${v}"${L[k]===v?" selected":""}>${t}</option>`).join("")}</select></label>`;
+    const h=`<div class="card" id="lookCard" style="margin-top:12px"><h3>Görünüş</h3><p class="note" style="margin:0 0 4px">Proqramın rəngi, düymələri, kartları, arxa fonu və loqosu. Dəyişiklik dərhal görünür və bu cihazda yadda qalır.</p>
+      <div class="f"><span>Əsas rəng</span><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">${ACC.map(([k,t,c])=>k==="custom"?`<label class="btn sm" style="display:inline-flex;gap:6px;align-items:center;cursor:pointer${L.acc==="custom"?";outline:2px solid var(--accent)":""}">${t}<input type="color" id="lkColor" value="${esc(L.accC||"#0E6A5B")}" style="width:28px;height:22px;min-height:0;padding:0;border:0;background:none"></label>`
+        :`<button type="button" class="btn sm" data-acc="${k}" title="${t}" style="display:inline-flex;gap:6px;align-items:center${L.acc===k?";outline:2px solid var(--accent);outline-offset:1px":""}"><span style="width:16px;height:16px;border-radius:50%;background:${c};display:inline-block"></span>${t}</button>`).join("")}</div></div>
+      <div class="grid2">${sel("btn","Düymə forması")}${sel("fx","Düymə effekti")}</div>
+      <div class="grid2">${sel("anim","Hərəkət effekti")}${sel("card","Kartların görünüşü")}</div>
+      <div class="grid2">${sel("hdr","Yuxarı panel")}${sel("bg","Arxa fon")}</div>
+      ${L.bg==="img"?`<div class="grid2"><label class="f"><span>Arxa fon şəkli</span><input type="file" id="lkBg" accept="image/*"></label><label class="f"><span>Şəklin görünmə dərəcəsi: ${Math.round((+L.bgOp||.22)*100)}%</span><input type="range" id="lkOp" min="0.05" max="0.8" step="0.05" value="${esc(L.bgOp)}"></label></div>`:""}
+      <div class="grid2">${sel("fs","Yazı və elementlərin ölçüsü")}${sel("dens","Sıxlıq")}</div>
+      <div class="grid2"><label class="f"><span>Loqo (şəkil faylı)</span><input type="file" id="lkLogo" accept="image/*"></label>${L.logo?sel("logoM","Başlıqda"):""}</div>
+      ${L.logo?`<div style="display:flex;gap:10px;align-items:center"><img src="${L.logo}" alt="" style="height:40px;max-width:160px;object-fit:contain;border:1px solid var(--line);border-radius:6px;padding:2px;background:#fff"><button type="button" class="btn sm" id="lkLogoDel">Loqonu sil</button></div>`:""}
+      <div class="actions" style="margin-top:4px"><button type="button" class="btn" id="lkReset">Standart görünüşə qaytar</button></div></div>`;
+    if(old)old.outerHTML=h;else m.insertAdjacentHTML("beforeend",h);
+    const save=(L2,redraw)=>{if(!put(L2)){toast("Yadda saxlamaq alınmadı — şəkil çox böyükdür");return}apply();if(redraw)card(toast,esc)};
+    document.querySelectorAll("[data-lk]").forEach(x=>x.onchange=()=>{const L2=get();L2[x.dataset.lk]=x.value;save(L2,["bg","logoM"].includes(x.dataset.lk))});
+    document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{const L2=get();L2.acc=b.dataset.acc;save(L2,true)});
+    const co=document.getElementById("lkColor");if(co)co.oninput=()=>{const L2=get();L2.acc="custom";L2.accC=co.value;save(L2,false)},co&&(co.onchange=()=>card(toast,esc));
+    const bg=document.getElementById("lkBg");if(bg)bg.onchange=async()=>{const f=bg.files[0];if(!f)return;try{const L2=get();L2.bgImg=await shrink(f,1600,"image/jpeg",0.72);save(L2,true);toast("Arxa fon şəkli qoyuldu")}catch(e){toast("Şəkil oxunmadı")}};
+    const op=document.getElementById("lkOp");if(op){op.oninput=()=>{const L2=get();L2.bgOp=op.value;put(L2);apply()};op.onchange=()=>card(toast,esc)}
+    const lg=document.getElementById("lkLogo");if(lg)lg.onchange=async()=>{const f=lg.files[0];if(!f)return;try{const L2=get();L2.logo=await shrink(f,320,"image/png");save(L2,true);toast("Loqo qoyuldu")}catch(e){toast("Şəkil oxunmadı")}};
+    const ld=document.getElementById("lkLogoDel");if(ld)ld.onclick=()=>{const L2=get();L2.logo="";save(L2,true)};
+    document.getElementById("lkReset").onclick=()=>{put({});apply();card(toast,esc);toast("Standart görünüş qaytarıldı")}}
+  function init(prefix){KEY=prefix+".look";apply();const t=document.getElementById("hTitle");if(t&&window.MutationObserver)new MutationObserver(()=>{if(get().logo&&!document.getElementById("zsLogo"))apply()}).observe(t.parentNode,{childList:true})}
+  return {init,apply,card,get}})();
+</script>
+<script>/* ZUVAND — ehtiyat nüsxə (backup): əl ilə və ya avtomatik (hər gün / həftə / ay); ZUVAND Servis-də bərpa */
+window.ZSBK=(function(){
+  let O=null,busy=false;
+  const LSg=k=>{try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},LSs=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  const K=s=>O.ls+".bk."+s;
+  const pad=n=>String(n).padStart(2,"0"),stamp=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes());
+  const fmt=iso=>{if(!iso)return "—";const d=new Date(iso);return pad(d.getDate())+"."+pad(d.getMonth()+1)+"."+d.getFullYear()+" "+pad(d.getHours())+":"+pad(d.getMinutes())};
+  const FREQ=[["","Söndürülüb"],["d","Hər gün"],["w","Hər həftə"],["m","Hər ay"]];
+  function due(){const f=LSg(K("freq"));if(!f)return false;const l=LSg(K("last"));if(!l)return true;const a=new Date(l),n=new Date(),days=(n-a)/864e5;
+    if(f==="d")return a.toDateString()!==n.toDateString();if(f==="w")return days>=7-0.01;return a.getFullYear()!==n.getFullYear()||a.getMonth()!==n.getMonth()}
+  async function dirH(){try{return O.canDir()?await O.fidb("readonly",st=>st.get("bkroot"))||null:null}catch(e){return null}}
+  async function pickDir(){const h=await showDirectoryPicker({id:O.ls+"-bk",mode:"readwrite"});await O.fidb("readwrite",st=>st.put(h,"bkroot"));LSs(K("dir"),h.name);return h}
+  async function write(blob,name,silent){
+    const h=await dirH();
+    if(h){let p=await h.queryPermission({mode:"readwrite"});if(p!=="granted"&&!silent){try{p=await h.requestPermission({mode:"readwrite"})}catch(e){}}
+      if(p==="granted"){const fh=await h.getFileHandle(name,{create:true}),w=await fh.createWritable();await w.write(blob);await w.close();return h.name+"\\"+name}}
+    if(silent)return null;await O.saveFile(name,blob);return "Yükləmələr / paylaşım: "+name}
+  async function run(silent){if(busy)return;busy=true;const msg=t=>{const e=document.getElementById("bkMsg");if(e)e.textContent=t};
+    try{msg("Məlumatlar toplanır…");const data=await O.collect(!!LSg(K("ph"))&&!silent,(i,n)=>msg("Toplanır: "+i+" / "+n));
+      const B=Object.assign({kind:"zuvand-backup",app:O.app,v:1,at:new Date().toISOString(),by:O.who(),from:O.hub?"hub":"server"},data);
+      const name=O.file+"-ehtiyat-"+stamp(new Date())+".json",blob=new Blob([JSON.stringify(B)],{type:"application/json"});
+      const where=await write(blob,name,silent);
+      if(!where){busy=false;return false}
+      LSs(K("last"),B.at);O.toast("Ehtiyat nüsxə saxlanıldı: "+where+" ("+Math.round(blob.size/1024)+" KB)");msg("Saxlanıldı: "+where);busy=false;if(document.getElementById("bkCard"))card();return true}
+    catch(e){busy=false;msg("Alınmadı: "+(e&&e.message||e));if(!silent)O.toast("Ehtiyat nüsxə alınmadı: "+(O.err?O.err(e):(e&&e.message||e)));return false}}
+  /* automatic: when the time has come — silently into the chosen folder; otherwise a reminder (or a download on a computer) */
+  async function tick(){try{if(!O||!O.isAdmin()||!O.ready()||!due())return;const ok=await run(true);if(ok)return;
+      const t=new Date().toDateString();if(LSg(K("nag"))===t)return;LSs(K("nag"),t);
+      if(!O.mobile&&!O.canDir()){await run(false);return}
+      O.toast("Ehtiyat nüsxə vaxtıdır — Ayarlar → “Ehtiyat nüsxə” → “İndi çıxar”"+(O.canDir()?" (qovluq seçsəniz, sonra avtomatik yazılacaq)":""),9000)}catch(e){}}
+  async function restore(file){const msg=t=>{const e=document.getElementById("bkMsg");if(e)e.innerHTML=t};
+    let B;try{B=JSON.parse(await file.text())}catch(e){O.toast("Fayl oxunmadı — JSON ehtiyat nüsxəsi deyil");return}
+    const ok=O.accept(B);if(!ok){O.toast("Bu fayl "+O.title+" ehtiyat nüsxəsi deyil");return}
+    const box=document.getElementById("bkAsk");if(!box)return;
+    box.hidden=false;box.innerHTML=`<p style="margin:0 0 6px"><b>${O.esc(file.name)}</b> · ${fmt(B.at)}${B.by?" · "+O.esc(B.by):""}<br>${O.esc(ok)}</p><p class="note" style="margin:0 0 8px">${O.esc(O.restoreNote)}</p>
+      <div class="actions"><button class="btn pri" id="bkGo">Bəli, bərpa et</button><button class="btn" id="bkNo">Ləğv et</button></div>`;
+    document.getElementById("bkNo").onclick=()=>{box.hidden=true};
+    document.getElementById("bkGo").onclick=async()=>{box.hidden=true;busy=true;
+      try{const r=await O.restore(B,(i,n,t)=>msg((t||"Bərpa olunur")+": "+i+" / "+n));msg("Bərpa olundu: "+O.esc(r||""));O.toast("Ehtiyat nüsxə bərpa olundu"+(r?": "+r:""),8000)}
+      catch(e){msg("Bərpa alınmadı: "+O.esc(O.err?O.err(e):(e&&e.message||e)))}busy=false}}
+  function card(){const m=document.getElementById("main");if(!m)return;const old=document.getElementById("bkCard");
+    const adm=O.isAdmin(),f=LSg(K("freq"))||"",dn=LSg(K("dir")),last=LSg(K("last"));
+    const h=`<div class="card" id="bkCard" style="margin-top:12px"><h3>Ehtiyat nüsxə (backup)</h3>
+      ${adm?`<p class="note" style="margin:0 0 8px">${O.esc(O.what)} bir JSON faylına yazılır. Avtomatik rejimdə proqram açıq olanda vaxtı gələndə özü çıxarır${O.canDir()?" — seçilmiş qovluğa":""}. Fayl ZUVAND Servis-də “Ehtiyat nüsxədən bərpa et” ilə geri yüklənir.</p>
+      <div class="actions"><button class="btn pri" id="bkNow">İndi ehtiyat nüsxə çıxar</button>${O.canDir()?`<button class="btn" id="bkDir">${dn?"Qovluğu dəyiş":"Qovluq seç"}</button>`:""}</div>
+      <label class="f" style="max-width:320px"><span>Avtomatik ehtiyat nüsxə</span><select id="bkFreq">${FREQ.map(([k,l])=>`<option value="${k}"${k===f?" selected":""}>${l}</option>`).join("")}</select></label>
+      ${O.photos?`<label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:4px 0"><input type="checkbox" id="bkPh" style="width:16px;height:16px;min-height:0;margin:0"${LSg(K("ph"))?" checked":""}> Şəkilləri də daxil et (əl ilə çıxaranda; fayl xeyli böyük olur)</label>`:""}
+      <p class="note" style="margin:4px 0 0">Son ehtiyat nüsxə: <b>${fmt(last)}</b>${f?" · növbəti: "+(due()?"<b>indi</b>":({d:"sabah",w:"1 həftəyə",m:"gələn ay"})[f]):""}${O.canDir()?" · qovluq: <b>"+O.esc(dn||"seçilməyib (Yükləmələr qovluğu)")+"</b>":""}</p>`
+      :`<p class="note" style="margin:0">Ehtiyat nüsxəni yalnız rəhbər çıxara bilər.</p>`}
+      ${adm&&O.hub&&O.restore?`<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:10px"><b>Ehtiyat nüsxədən bərpa et</b><p class="note" style="margin:2px 0 6px">${O.esc(O.restoreHelp)}</p>
+        <label class="btn" style="display:inline-flex;align-items:center;cursor:pointer">Fayl seç (.json)<input type="file" id="bkFile" accept=".json,application/json" hidden></label><div id="bkAsk" class="banner" hidden style="margin-top:8px"></div></div>`:""}
+      <p class="note" id="bkMsg" style="margin:6px 0 0"></p></div>`;
+    if(old)old.outerHTML=h;else m.insertAdjacentHTML("beforeend",h);
+    const g=id=>document.getElementById(id);
+    if(g("bkNow"))g("bkNow").onclick=()=>run(false);
+    if(g("bkDir"))g("bkDir").onclick=async()=>{try{await pickDir();card();O.toast("Ehtiyat nüsxələr bu qovluğa yazılacaq")}catch(e){}};
+    if(g("bkFreq"))g("bkFreq").onchange=e=>{LSs(K("freq"),e.target.value);card();O.toast(e.target.value?"Avtomatik ehtiyat nüsxə: "+FREQ.find(x=>x[0]===e.target.value)[1].toLowerCase():"Avtomatik ehtiyat nüsxə söndürüldü");setTimeout(tick,1500)};
+    if(g("bkPh"))g("bkPh").onchange=e=>LSs(K("ph"),e.target.checked);
+    if(g("bkFile"))g("bkFile").onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(f)restore(f)}}
+  function init(o){O=o;setTimeout(tick,25000);setInterval(tick,30*60000)}
+  return {init,card,run,tick,due}})();
+</script>
+<script>/* UPS Servis: ehtiyat nüsxə — Ayarlarda kart, avtomatik rejim, ZUVAND Servis-də bərpa */
+(function(){try{
+  ZSBK.init({app:"ups-servis",ls:"ups",file:"UPS-Servis",title:"UPS Servis Jurnalı",hub:!!CFG.hub,photos:true,
+    what:"Bütün servis hesabatları (cihazlar, ölçmələr, işlər, imzalar), tapşırıqlar və ayarlar",
+    mobile:IS_APP||IS_MOBILE_WEB,isAdmin:()=>state.me.role==="admin"||!hasServer(),ready:()=>!!state.me.name,who:()=>state.me.name||"",
+    canDir:()=>canDir(),fidb:(m,f)=>fidb(m,f),saveFile:(n,b)=>saveFile(n,b),toast:(t,ms)=>toast(t,ms),esc:x=>esc(x),err:e=>(e&&(e.data&&e.data.error||e.message))||String(e),
+    collect:async(ph,prog)=>{const ids=[...new Set(listItems().map(s=>s.id))],out=[],photos={};let i=0;
+      for(const id of ids){i++;prog(i,ids.length);let r=state.reports[id];if(r&&r.sample)continue;try{if(!r||!realOf(r).devices)r=await getFull(id)}catch(e){r=null}if(!r)continue;r=clone(realOf(r));if(r.sample)continue;out.push(r);
+        if(ph)for(const d of (r.devices||[]))for(const p of (d.photos||[])){try{const x=await photoData(p);if(x)photos[p.id]=x}catch(e){}}}
+      return {reports:out,tasks:state.tasks||[],settings:state.settings||{},photos:ph?photos:undefined}},
+    accept:B=>B&&B.app==="ups-servis"&&Array.isArray(B.reports)?B.reports.length+" hesabat, "+(B.tasks||[]).length+" tapşırıq"+(B.photos?", "+Object.keys(B.photos).length+" şəkil":"")+".":"",
+    restoreHelp:"Google serverdəki və ya başqa kompüterdəki UPS Servis Jurnalından çıxarılmış ehtiyat nüsxəni bu ZUVAND Servis-ə yükləyir.",
+    restoreNote:"Hesabatlar bu serverə yazılır: eyni hesabat burada varsa, ehtiyat nüsxədəki ilə əvəz olunur (köhnə variant Versiyalarda qalır). Bərpadan əvvəl hazırkı məlumatların surəti serverin backup qovluğuna saxlanılır. Satış sənədləri yaradılmır — Satış və Anbarı ayrıca bərpa edin.",
+    restore:async(B,prog)=>{const R=B.reports||[],P=B.photos||{};let ok=0,bad=0,ph=0,tk=0;try{await api("bk_snapshot")}catch(e){}
+      for(let i=0;i<R.length;i++){prog(i+1,R.length,"Hesabatlar");let r;try{r=normalize(clone(R[i]))}catch(e){bad++;continue}
+        for(const d of (r.devices||[]))for(const p of (d.photos||[])){if(P[p.id]){PHOTO_CACHE[p.id]=P[p.id];try{await idbPut(p.id,P[p.id])}catch(e){}p.fid="";ph++}}
+        try{await uploadPhotos(r);await api("save",{report:r,summary:summaryOf(r),blocks:blocksOf(r),items:itemsOf(r),force:true,restore:true});state.reports[r.id]=r;state.remote[r.id]=summaryOf(r);state.pending.delete(r.id);saveLocalReports([r]);ok++}catch(e){bad++}}
+      savePending();const T=B.tasks||[];for(let i=0;i<T.length;i++){prog(i+1,T.length,"Tapşırıqlar");try{await api("task_save",{task:T[i]});tk++}catch(e){}}
+      try{await sync({all:true})}catch(e){}
+      return ok+" hesabat"+(bad?" ("+bad+" alınmadı)":"")+", "+tk+" tapşırıq"+(ph?", "+ph+" şəkil":"")}});
+  ZSLOOK.init("ups");
+  const _rs=renderSettings;renderSettings=function(){const r=_rs.apply(this,arguments);try{ZSLOOK.card((t,ms)=>toast(t,ms),x=>esc(x))}catch(e){}try{ZSBK.card()}catch(e){}return r};
+}catch(e){console.log("backup",e)}})();
 </script>
 </body>
 </html>
