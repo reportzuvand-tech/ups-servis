@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="az">
 <head>
-<script>/*ZSUPD-BOOT*/window.ZS_BUILD=2026110704;window.ZS_APP="ups";(function(){
+<script>/*ZSUPD-BOOT*/window.ZS_BUILD=2026110705;window.ZS_APP="ups";(function(){
 /* installed app (phone APK / Windows): if a newer version was downloaded with "Yenilə", run that one instead of the built-in file */
 var K="zsupd."+ZS_APP;try{var L=location;if(!(L.protocol==="file:"||window.Capacitor||(L.hostname==="localhost"&&!L.port)))return;
 if(/[?&]zsorig=1/.test(L.search)||sessionStorage.getItem(K+".off"))return;var v=+localStorage.getItem(K+".v")||0;
@@ -321,6 +321,45 @@ window.ZSTPL=(function(){
     draw()}
   function init(o){O=o;setTimeout(fetchTpl,4000);setInterval(fetchTpl,10*60000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")fetchTpl()})}
   return {apply,lists,stamp,reg,isCustom,init,card,fetchTpl,_def:()=>DEF}})();
+</script>
+<script>/* ZUVAND — Ayarlar: QR oxumaların statistikası (yalnız rəhbər / statistika icazəsi; məlumat "QR oxumalar" vərəqindən) */
+window.ZSQRST=(function(){let O=null,R=null,busy=false;
+  const g=id=>document.getElementById(id),esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const fmt=t=>{const m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(t||""));return m?m[3]+"."+m[2]+"."+m[1]+" "+m[4]+":"+m[5]:esc(t)};
+  const MON=["Yan","Fev","Mar","Apr","May","İyn","İyl","Avq","Sen","Okt","Noy","Dek"];
+  function init(o){O=o}
+  const top=(L,f,n)=>{const m={};L.forEach(x=>{const k=f(x);if(k)m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n)};
+  const bars=(T,lab)=>{const mx=Math.max(1,...T.map(x=>x[1]));return T.length?T.map(([k,v])=>`<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;margin:4px 0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(lab?lab(k):k)}</span><b style="font-variant-numeric:tabular-nums">${v}</b><span style="grid-column:1/-1;height:5px;border-radius:3px;background:var(--surface2,#E8EEEC)"><i style="display:block;height:5px;border-radius:3px;width:${Math.round(v/mx*100)}%;background:var(--accent,#16362E)"></i></span></div>`).join(""):`<p class="note">—</p>`};
+  function body(){const box=g("qrsBody");if(!box)return;if(!R){box.innerHTML="";return}
+    const L=R.rows||[],q=(g("qrsQ")&&g("qrsQ").value||"").trim().toLowerCase(),days=+(g("qrsP")&&g("qrsP").value||0);
+    const since=days?(d=>{const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())})(new Date(Date.now()-days*864e5)):"";
+    const F=L.filter(x=>(!since||String(x[0])>=since)&&(!q||x.join(" ").toLowerCase().includes(q)));
+    const scans=F.filter(x=>x[1]!=="Ad yazıldı"),named=F.filter(x=>x[8]),vis=new Set(scans.map(x=>x[5]).filter(Boolean));
+    const nv=new Set(named.map(x=>x[5]||x[8]));
+    const mon=top(scans,x=>String(x[0]).slice(0,7),24).sort((a,b)=>a[0]<b[0]?-1:1);
+    const who={};named.forEach(x=>{const k=x[5]||x[8];who[k]=x});
+    box.innerHTML=`<div class="stats" style="margin:8px 0"><div class="stat"><b>${scans.length}</b><span>Oxuma</span></div><div class="stat"><b>${vis.size}</b><span>Fərqli telefon</span></div><div class="stat ok"><b>${nv.size}</b><span>Adını yazan</span></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:14px;margin-top:6px">
+        <div><b>Aylar üzrə</b>${bars(mon,k=>MON[+k.slice(5,7)-1]+" "+k.slice(0,4))}</div>
+        <div><b>Ən çox baxan müştərilər</b>${bars(top(scans,x=>x[3],8))}</div>
+        <div><b>Ən çox baxılan cihaz / hesabat</b>${bars(top(scans,x=>x[2],8))}</div>
+        <div><b>Telefonlar</b>${bars(top(scans,x=>[x[6],x[7]].filter(Boolean).join(" · ")||"naməlum",8))}</div></div>
+      ${Object.keys(who).length?`<p style="margin:14px 0 4px"><b>Adını yazanlar</b></p><div class="tw" style="overflow:auto;max-width:100%;max-height:40vh"><table><thead><tr><th>Vaxt</th><th>Ad</th><th>Şirkət</th><th>Əlaqə</th><th>Müştəri</th><th>Cihaz / hesabat</th></tr></thead><tbody>${Object.values(who).reverse().map(x=>`<tr><td style="white-space:nowrap">${fmt(x[0])}</td><td><b>${esc(x[8])}</b></td><td>${esc(x[9])}</td><td>${esc(x[10])}</td><td>${esc(x[3])}</td><td>${esc(x[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
+      <p style="margin:14px 0 4px"><b>Son oxumalar</b></p><div class="tw" style="overflow:auto;max-width:100%;max-height:50vh"><table><thead><tr><th>Vaxt</th><th>Növ</th><th>Cihaz / hesabat</th><th>Müştəri</th><th>Telefon</th><th>Ziyarətçi</th></tr></thead><tbody>${F.slice(-200).reverse().map(x=>`<tr${x[1]==="Ad yazıldı"?' style="color:var(--ok,#1E7B4F)"':""}><td style="white-space:nowrap">${fmt(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])}</td><td>${esc(x[3])}${x[4]?" — "+esc(x[4]):""}</td><td>${esc([x[6],x[7]].filter(Boolean).join(" · "))}</td><td>${x[8]?"<b>"+esc(x[8])+"</b>"+(x[9]?" ("+esc(x[9])+")":""):`<span class="note">#${esc(String(x[5]).slice(0,6))}</span>`}</td></tr>`).join("")||`<tr><td colspan="6">Qeyd yoxdur</td></tr>`}</tbody></table></div>
+      <p class="note">Cəmi qeyd: ${R.total||0}${(R.total||0)>L.length?` (son ${L.length} göstərilir)`:""}. Tam siyahı Google Sheets-də “QR oxumalar” vərəqindədir.</p>`}
+  async function load(){if(busy)return;busy=true;const b=g("qrsGo"),box=g("qrsBody");if(b)b.disabled=true;if(box)box.innerHTML=`<p class="note">Yüklənir…</p>`;
+    try{R=await O.api("qr_stats",{});body()}catch(e){if(box)box.innerHTML=`<p class="note">Alınmadı: ${esc(e&&e.message||e)}</p>`}finally{busy=false;if(b)b.disabled=false}}
+  function card(){const main=g("main");if(!main||!O||!O.ok()||g("qrsCard"))return;
+    const anchor=g("tplCard")||[...main.querySelectorAll(".card")].pop();
+    const h=`<div class="card" id="qrsCard" style="margin-top:12px;min-width:0;max-width:100%;overflow:hidden"><h3>QR oxumalar — kim, nə vaxt baxıb</h3>
+      <p class="note" style="margin:0 0 8px">Müştəri cihazın QR etiketini və ya hesabat PDF-inin QR kodunu oxudanda vaxt, cihaz, telefonun növü və anonim ziyarətçi nömrəsi qeydə alınır. Səhifədə “Kim olduğunuzu qeyd edin” formu var — istəyən adını, şirkətini və əlaqə nömrəsini yazır (könüllü, razılıq ilə).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="qrsGo">Statistikanı göstər</button>
+        <select id="qrsP" aria-label="Dövr"><option value="0">Hamısı</option><option value="7">Son 7 gün</option><option value="30" selected>Son 30 gün</option><option value="90">Son 3 ay</option><option value="365">Son 1 il</option></select>
+        <input type="text" id="qrsQ" placeholder="Axtar: müştəri, S/N, ad…" style="flex:1;min-width:140px" aria-label="Axtar"></div>
+      <div id="qrsBody" style="min-width:0"></div></div>`;
+    if(anchor)anchor.insertAdjacentHTML("afterend",h);else main.insertAdjacentHTML("beforeend",h);
+    g("qrsGo").onclick=load;g("qrsP").onchange=body;g("qrsQ").oninput=body;if(R)body()}
+  return {init,card}})();
 </script>
 <script>/* ZUVAND — Ayarlar: hər bölmənin başlığına toxunanda açılır / bağlanır (vəziyyət cihazda yadda qalır) */
 (function(){try{
@@ -3595,8 +3634,8 @@ window.ZSBK=(function(){
       savePending();const T=B.tasks||[];for(let i=0;i<T.length;i++){prog(i+1,T.length,"Tapşırıqlar");try{await api("task_save",{task:T[i]});tk++}catch(e){}}
       try{await sync({all:true})}catch(e){}
       return ok+" hesabat"+(bad?" ("+bad+" alınmadı)":"")+", "+tk+" tapşırıq"+(ph?", "+ph+" şəkil":"")}});
-  const _rs=renderSettings;renderSettings=function(){const r=_rs.apply(this,arguments);try{ZSLOOK.card((t,ms)=>toast(t,ms),x=>esc(x))}catch(e){}try{renCard()}catch(e){}try{ZSBK.card()}catch(e){}try{ZSUPD.card()}catch(e){}try{ZSSEC.card()}catch(e){}try{ZSTPL.card()}catch(e){}try{ZSCOL.on()}catch(e){}return r};
-  try{ZSUPD.init({toast:(t,ms)=>toast(t,ms),isAdmin:()=>!!state.me.boss||(!(typeof CFG!=="undefined"&&CFG.hub)&&state.me.role==="admin"),hub:()=>typeof CFG!=="undefined"&&!!CFG.hub,gas:()=>IS_GAS,key:()=>state.me.key})}catch(e){}try{API_TIMEOUT.factory_reset=330000;API_TIMEOUT.activity=60000;API_TIMEOUT.sec_info=15000;ZSSEC.init({app:"ups",api:(a,p)=>api(a,p),toast:(t,ms)=>toast(t,ms),logged:()=>!!state.me.key&&hasServer(),hub:()=>typeof CFG!=="undefined"&&!!CFG.hub})}catch(e){}try{ZSTPL.init({api:(a,p)=>api(a,p),toast:(t,ms)=>toast(t,ms),logged:()=>!!state.me.key&&hasServer(),isAdmin:()=>!hasServer()||state.me.role==="admin",me:()=>state.me.name||""})}catch(e){}
+  const _rs=renderSettings;renderSettings=function(){const r=_rs.apply(this,arguments);try{ZSLOOK.card((t,ms)=>toast(t,ms),x=>esc(x))}catch(e){}try{renCard()}catch(e){}try{ZSBK.card()}catch(e){}try{ZSUPD.card()}catch(e){}try{ZSSEC.card()}catch(e){}try{ZSTPL.card()}catch(e){}try{ZSQRST.card()}catch(e){}try{ZSCOL.on()}catch(e){}return r};
+  try{ZSUPD.init({toast:(t,ms)=>toast(t,ms),isAdmin:()=>!!state.me.boss||(!(typeof CFG!=="undefined"&&CFG.hub)&&state.me.role==="admin"),hub:()=>typeof CFG!=="undefined"&&!!CFG.hub,gas:()=>IS_GAS,key:()=>state.me.key})}catch(e){}try{API_TIMEOUT.factory_reset=330000;API_TIMEOUT.activity=60000;API_TIMEOUT.sec_info=15000;ZSSEC.init({app:"ups",api:(a,p)=>api(a,p),toast:(t,ms)=>toast(t,ms),logged:()=>!!state.me.key&&hasServer(),hub:()=>typeof CFG!=="undefined"&&!!CFG.hub})}catch(e){}try{ZSTPL.init({api:(a,p)=>api(a,p),toast:(t,ms)=>toast(t,ms),logged:()=>!!state.me.key&&hasServer(),isAdmin:()=>!hasServer()||state.me.role==="admin",me:()=>state.me.name||""})}catch(e){}try{ZSQRST.init({api:(a,p)=>api(a,p),ok:()=>!!state.me.key&&hasServer()&&!(typeof CFG!=="undefined"&&CFG.hub)&&(!!state.me.boss||state.me.role==="admin"||svCan("stats"))})}catch(e){}
   /* the "Ayarlar" button was bound to the old function at start-up */
   const hs=document.getElementById("hSettings");if(hs)hs.onclick=()=>renderSettings();
 }catch(e){console.log("backup",e)}})();
