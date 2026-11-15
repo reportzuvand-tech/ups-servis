@@ -27,6 +27,12 @@ jobs:
         run: |
           npx cap add android
           npm run sync
+          M=android/app/src/main/AndroidManifest.xml
+          # işçinin yeri (proqram bağlı olanda da): GPS icazələri və ön plan xidməti
+          grep -q ACCESS_FINE_LOCATION "$M" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n</manifest>#' "$M"
+          grep -q ACCESS_FINE_LOCATION "$M"
+          S=android/app/src/main/res/values/strings.xml
+          grep -q capacitor_background_geolocation_notification_channel_name "$S" || sed -i 's#</resources>#    <string name="capacitor_background_geolocation_notification_channel_name">Yerin izlənməsi</string>\n</resources>#' "$S"
 
       - name: APK yığ
         working-directory: android
