@@ -18,7 +18,8 @@
     "@capacitor/share": "^6.0.2",
     "html2pdf.js": "0.10.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "exceljs": "4.4.0"
+    "exceljs": "4.4.0",
+    "@capacitor-community/background-geolocation": "^1.2.19"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2"
