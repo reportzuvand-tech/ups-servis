@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="az">
 <head>
-<script>/*ZSUPD-BOOT*/window.ZS_BUILD=2026111513;window.ZS_APP="ups";(function(){
+<script>/*ZSUPD-BOOT*/window.ZS_BUILD=2026111514;window.ZS_APP="ups";(function(){
 /* installed app (phone APK / Windows): if a newer version was downloaded with "Yenilə", run that one instead of the built-in file */
 var K="zsupd."+ZS_APP;try{var L=location;if(!(L.protocol==="file:"||window.Capacitor||(L.hostname==="localhost"&&!L.port)))return;
 if(/[?&]zsorig=1/.test(L.search)||sessionStorage.getItem(K+".off"))return;var v=+localStorage.getItem(K+".v")||0;
@@ -5484,7 +5484,7 @@ window.ZSSCAN=(function(){
   function render(){const o=ST.ov;if(!o)return;const L=o.querySelector("#zqL"),ok=ST.items.filter(i=>i.id).length;
     L.innerHTML=ST.items.length?ST.items.map((i,n)=>`<div class="it${i.err?" bad":""}"><span class="t"><b>${i.err?"Tapılmadı":esc(S(i.dev)||"Cihaz")}${i.sn?" · "+esc(i.devSn||i.sn):""}</b><small>${i.err?esc(i.err):i.wait?"axtarılır…":esc((i.client||"")+" · son hesabat "+fmtDate(i.date)+(i.repno?" · "+i.repno:""))} · skan: ${esc(nowTxt(i.at).slice(11))}</small></span><button class="x" data-zx="${n}" aria-label="Sil">✕</button></div>`).join(""):'<p class="note" style="margin:0">Hələ cihaz skan edilməyib.</p>';
     L.querySelectorAll("[data-zx]").forEach(b=>b.onclick=()=>{ST.items.splice(+b.dataset.zx,1);render()});
-    const go=o.querySelector("#zqGo");go.disabled=!ok||ST.items.some(i=>i.wait);go.textContent=ok?"Hesabatı başlat ("+ok+" cihaz)":"Hesabatı başlat"}
+    const go=o.querySelector("#zqGo");go.disabled=!ok||ST.items.some(i=>i.wait);go.textContent=ST.add?(ok?"Hesabata əlavə et ("+ok+" cihaz)":"Hesabata əlavə et"):(ok?"Hesabatı başlat ("+ok+" cihaz)":"Hesabatı başlat")}
   const msg=(t,bad)=>{const m=ST&&ST.ov&&ST.ov.querySelector("#zqMsg");if(m){m.textContent=t;m.style.color=bad?"#c0392b":""}};
   async function onCode(text){if(!ST)return;const tok=tokOf(text);
     if(!tok){const now=Date.now();if(now-(ST.lastBad||0)>2500){ST.lastBad=now;msg(/[?&]r=/.test(text)?"Bu hesabatın QR-ıdır. Cihazın üzərindəki etiketi skan edin.":"Bu ZUVAND cihaz etiketi deyil.",true)}return}
@@ -5497,27 +5497,30 @@ window.ZSSCAN=(function(){
   function loop(){if(!ST||ST.dead)return;const v=ST.ov.querySelector("#zqV");
     if(v&&v.readyState>=2&&v.videoWidth){try{ST.n=(ST.n||0)+1;const t=decodeSrc(v,v.videoWidth,v.videoHeight,ST.n%3===0?960:ST.n%3===1?640:480);if(t)onCode(t)}catch(e){console.log("zsscan",e)}}
     ST.tm=setTimeout(loop,120)}
-  async function open(){if(!can()){toast("Hesabat hazırlamaq icazəniz yoxdur");return}
+  async function open(opt){if(!can()){toast("Hesabat hazırlamaq icazəniz yoxdur");return}
     if(ST)stop();if(typeof ZSQRD==="undefined"){toast("QR oxuyucu yüklənməyib");return}
-    ST={items:[],ov:null};const o=document.createElement("div");o.className="zsq";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");
-    o.innerHTML=`<div class="in"><div class="hd"><b style="font-size:17px">QR skan — yeni servis</b><button class="btn ghost sm" id="zqX">Bağla</button></div>
+    const add=!!(opt&&opt.add&&state.rep);ST={items:[],ov:null,add};const o=document.createElement("div");o.className="zsq";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");
+    o.innerHTML=`<div class="in"><div class="hd"><b style="font-size:17px">${add?"QR skan — cihaz əlavə et":"QR skan — yeni servis"}</b><button class="btn ghost sm" id="zqX">Bağla</button></div>
       <div class="vw"><video id="zqV" playsinline muted autoplay></video><div class="fr"></div></div>
       <p class="note" id="zqMsg" style="margin:0">Cihazın üzərindəki QR kodu çərçivəyə salın. Bir neçə cihaz üçün ardıcıl skan edin.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" id="zqFL" style="cursor:pointer">📷 Foto ilə skan<input type="file" id="zqF" accept="image/*" capture="environment" class="ph"></label></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" id="zqFL" style="cursor:pointer">📷 Foto ilə skan<input type="file" id="zqF" accept="image/*" capture="environment" class="ph"></label><button class="btn ghost sm" id="zqLive" style="display:none">Canlı kameranı yoxla</button></div>
       <div class="li" id="zqL"></div>
-      <div class="actions" style="margin:0"><button class="btn pri" id="zqGo" disabled>Hesabatı başlat</button></div>
+      <div class="actions" style="margin:0"><button class="btn pri" id="zqGo" disabled>${add?"Hesabata əlavə et":"Hesabatı başlat"}</button></div>
       <p class="note" style="margin:0">Hər cihazın skan edildiyi saat həmin cihazın “İşə başlama vaxtı” kimi yazılır. Cihazın məlumatları son servis hesabatından köçürülür.</p></div>`;
     document.body.appendChild(o);ST.ov=o;render();
     o.querySelector("#zqX").onclick=stop;o.querySelector("#zqGo").onclick=()=>start();
+    o.querySelector("#zqLive").onclick=()=>{try{localStorage.removeItem("zsqNoCam")}catch(e){}open(ST&&ST.add?{add:1}:null)};
     o.querySelector("#zqF").onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;msg("Foto oxunur…");
       try{const bm=await createImageBitmap(f);let t=null;for(const mx of [1400,1000,700,500]){t=decodeSrc(bm,bm.width,bm.height,mx);if(t)break}if(t)onCode(t);else msg("QR kod tapılmadı. Kodu yaxından və aydın çəkin.",true)}catch(er){msg("Foto oxunmadı.",true)}};
-    try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("nocam");
+    let noCam=!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia;try{if(localStorage.getItem("zsqNoCam")==="1")noCam=true}catch(e){}
+    if(noCam){const vw=o.querySelector(".vw");if(vw)vw.style.display="none";const fl=o.querySelector("#zqFL");if(fl){fl.classList.add("pri");fl.style.padding="14px 18px";fl.style.fontSize="16px"}o.querySelector("#zqLive").style.display="";msg("Cihazdakı QR kodu yaxından şəkilə çəkin — proqram oxuyacaq. Başqa cihaz üçün “Foto ilə skan” düyməsini yenidən basın.");try{o.querySelector("#zqF").click()}catch(e){}return}
+    try{
       ST.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
       if(!ST||ST.dead){return}const v=o.querySelector("#zqV");v.srcObject=ST.stream;try{await v.play()}catch(e){}loop()}
-    catch(e){const vw=o.querySelector(".vw");if(vw)vw.style.display="none";const fl=o.querySelector("#zqFL");if(fl){fl.classList.add("pri");fl.style.padding="14px 18px";fl.style.fontSize="16px"}msg("Bu cihazda canlı kamera açılmır. “Foto ilə skan” düyməsini basın, cihazdakı QR kodu yaxından şəkilə çəkin — proqram oxuyacaq.",true)}}
+    catch(e){try{localStorage.setItem("zsqNoCam","1")}catch(_){}const lv=o.querySelector("#zqLive");if(lv)lv.style.display="";const vw=o.querySelector(".vw");if(vw)vw.style.display="none";const fl=o.querySelector("#zqFL");if(fl){fl.classList.add("pri");fl.style.padding="14px 18px";fl.style.fontSize="16px"}msg("Bu cihazda canlı kamera açılmır. “Foto ilə skan” düyməsini basın, cihazdakı QR kodu yaxından şəkilə çəkin — proqram oxuyacaq.",true)}}
   /* ---- build the new report ---- */
   const clean=o=>{if(!o||typeof o!=="object")return;for(const k of Object.keys(o)){if(k==="sig")delete o[k];else if(k==="sign"&&typeof o[k]==="string")o[k]="";else clean(o[k])}};
-  async function start(){if(!ST)return;const ok=ST.items.filter(i=>i.id);if(!ok.length)return;
+  async function start(){if(!ST)return;const ok=ST.items.filter(i=>i.id);if(!ok.length)return;if(ST.add)return addStart(ok);
     const cl=new Set(ok.map(i=>nk(i.client)));if(cl.size>1){msg("Cihazlar müxtəlif müştərilərə aiddir ("+[...new Set(ok.map(i=>i.client))].join(", ")+"). Bir hesabata eyni müştərinin cihazlarını yığın.",true);return}
     const go=ST.ov.querySelector("#zqGo");go.disabled=true;go.textContent="Hesabat hazırlanır…";
     try{const ids=[...new Set(ok.map(i=>i.id))],src={};for(const id of ids)src[id]=normalize(clone(await getFull(id)));
@@ -5532,18 +5535,35 @@ window.ZSSCAN=(function(){
       r.devices=devs;const n=devs.length,tx=nowTxt(ok[0].at);stop();startReport(r);state.tab="svc";renderEditor();window.scrollTo(0,0);
       toast("Skan: "+n+" cihaz köçürüldü, iş saatı yazıldı ("+tx.slice(11)+"). Bu səfərdə dəyişən məlumatı düzəldin."+(miss.length?" Tapılmadı: "+miss.join(", "):""),8000)}
     catch(e){console.log("zsscan start",e);msg("Hesabatı hazırlamaq olmadı — internet və ya sənəd xətası.",true);go.disabled=false;go.textContent="Hesabatı başlat"}}
+  async function addStart(ok){const R=state.rep&&realOf(state.rep);if(!R)return;
+    if(lockedRep(state.rep)){msg("Hesabat kilidlidir — cihaz əlavə etmək olmur.",true);return}
+    const bad=ok.filter(i=>nk(i.client)!==nk(R.cl&&R.cl.name));
+    if(bad.length){msg("Bu cihaz başqa müştərinin cihazıdır ("+[...new Set(bad.map(i=>i.client))].join(", ")+"). Bu hesabat: "+S(R.cl&&R.cl.name)+".",true);return}
+    const go=ST.ov.querySelector("#zqGo");go.disabled=true;go.textContent="Əlavə olunur…";
+    try{const cache={},added=[],dup=[],miss=[];
+      for(const it of ok){if(R.devices.some(d=>d&&d.info&&snNorm(d.info.sn)===snNorm(it.sn))){dup.push(S(it.devSn||it.sn));continue}
+        if(!cache[it.id])cache[it.id]=forkReport(normalize(clone(await getFull(it.id))));
+        const o=realOf(cache[it.id]).devices.find(d=>d&&d.info&&snNorm(d.info.sn)===snNorm(it.sn));
+        if(!o){miss.push(S(it.devSn||it.sn));continue}
+        const d=clone(o);clean(d);d.did="d"+Math.random().toString(36).slice(2,8);d.photos=[];d.x=d.x||{};d.x.tStart=nowTxt(it.at);added.push(d)}
+      if(!added.length){msg(dup.length?"Bu cihaz(lar) hesabatda artıq var: "+dup.join(", "):"Cihaz tapılmadı: "+miss.join(", "),true);go.disabled=false;go.textContent="Hesabata əlavə et";return}
+      added.forEach(d=>state.rep.devices.push(d));const tx=nowTxt(ok[0].at);stop();setActive(state.rep.devices.length-added.length);state.tab="ups";markDirty();renderEditor();window.scrollTo(0,0);
+      toast("Əlavə olundu: "+added.length+" cihaz, iş saatı yazıldı ("+tx.slice(11)+")."+(dup.length?" Artıq var idi: "+dup.join(", "):"")+(miss.length?" Tapılmadı: "+miss.join(", "):""),7000)}
+    catch(e){console.log("zsscan add",e);msg("Cihaz əlavə etmək olmadı — internet və ya sənəd xətası.",true);go.disabled=false;go.textContent="Hesabata əlavə et"}}
   /* ---- buttons and the "İşə başlama vaxtı" field ---- */
   function addButtons(){if(!can())return;
-    if(state.view==="home"){const b=document.getElementById("bNew");if(b&&!document.getElementById("bScan")){b.insertAdjacentHTML("afterend",'<button class="btn pri" id="bScan">📷 Skan</button>');document.getElementById("bScan").onclick=open}}
-    if(state.view==="new"){const b=document.getElementById("nBlank");if(b&&!document.getElementById("bScan2")){b.insertAdjacentHTML("afterend",' <button class="btn pri" id="bScan2">📷 QR skan — cihazı skan et</button>');document.getElementById("bScan2").onclick=open}}}
+    if(state.view==="home"){const b=document.getElementById("bNew");if(b&&!document.getElementById("bScan")){b.insertAdjacentHTML("afterend",'<button class="btn pri" id="bScan">📷 Skan</button>');document.getElementById("bScan").onclick=()=>open()}}
+    if(state.view==="new"){const b=document.getElementById("nBlank");if(b&&!document.getElementById("bScan2")){b.insertAdjacentHTML("afterend",' <button class="btn pri" id="bScan2">📷 QR skan — cihazı skan et</button>');document.getElementById("bScan2").onclick=()=>open()}}}
   function timeCard(){if(state.tab!=="ups"||!state.cur||!state.rep)return;const m=document.getElementById("main");if(!m||m.querySelector("#zsTs"))return;
     const X=state.cur.x||(state.cur.x={}),h=`<div class="card" id="zsTs"><h3>İş vaxtı</h3>${fld("x.tStart","İşə başlama vaxtı",{ph:"məs. "+nowTxt()})}<div class="actions" style="margin:0"><button class="btn sm" id="tsNow">İndi</button></div><p class="note" style="margin:6px 0 0">QR skan edəndə avtomatik yazılır; PDF-də cihazın məlumatlarında görünür.</p></div>`;
     const nb=m.querySelector(".nextbar");if(nb)nb.insertAdjacentHTML("beforebegin",h);else m.insertAdjacentHTML("beforeend",h);
     const t=document.getElementById("tsNow");if(t)t.onclick=()=>{if(lockedRep(state.rep))return;state.cur.x=state.cur.x||{};state.cur.x.tStart=nowTxt();markDirty();renderEditor()}}
+  function addQrBtn(){if(!can()||!state.rep||state.tab==="rep")return;const a=document.getElementById("addDev");if(!a||document.getElementById("qrAdd"))return;try{if(lockedRep(state.rep))return}catch(e){}
+    a.insertAdjacentHTML("afterend",' <button class="dchip" id="qrAdd" type="button">📷 QR ilə əlavə et</button>');document.getElementById("qrAdd").onclick=()=>open({add:1})}
   function init(){
     try{const _rh=renderHome;renderHome=function(){const r=_rh.apply(this,arguments);try{addButtons()}catch(e){}return r}}catch(e){console.log("zsscan home",e)}
     try{const _on=openNew;openNew=function(){const r=_on.apply(this,arguments);try{addButtons()}catch(e){}return r}}catch(e){console.log("zsscan new",e)}
-    try{const _re=renderEditor;renderEditor=function(){const r=_re.apply(this,arguments);try{timeCard()}catch(e){console.log("zsscan time",e)}return r}}catch(e){console.log("zsscan ed",e)}
+    try{const _re=renderEditor;renderEditor=function(){const r=_re.apply(this,arguments);try{timeCard()}catch(e){console.log("zsscan time",e)}try{addQrBtn()}catch(e){console.log("zsscan qradd",e)}return r}}catch(e){console.log("zsscan ed",e)}
     try{Object.assign(DICT.en,{"İşə başlama vaxtı":"Work start time"});Object.assign(DICT.ru,{"İşə başlama vaxtı":"Время начала работ"})}catch(e){}
     try{addButtons()}catch(e){}}
   return {init,open,_t:{tokOf,nowTxt}}})();
