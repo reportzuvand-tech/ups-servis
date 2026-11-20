@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="az">
 <head>
-<script>/*ZSUPD-BOOT*/window.ZS_BUILD=2026111512;window.ZS_APP="ups";(function(){
+<script>/*ZSUPD-BOOT*/window.ZS_BUILD=2026111513;window.ZS_APP="ups";(function(){
 /* installed app (phone APK / Windows): if a newer version was downloaded with "Yenilə", run that one instead of the built-in file */
 var K="zsupd."+ZS_APP;try{var L=location;if(!(L.protocol==="file:"||window.Capacitor||(L.hostname==="localhost"&&!L.port)))return;
 if(/[?&]zsorig=1/.test(L.search)||sessionStorage.getItem(K+".off"))return;var v=+localStorage.getItem(K+".v")||0;
@@ -5468,12 +5468,12 @@ window.ZSSCAN=(function(){
   const tokOf=t=>{const m=/[?&#]d=([\w-]{8,24})/.exec(S(t));return m?m[1]:""};
   let ST=null;
   document.head.insertAdjacentHTML("beforeend",`<style>.zsq{position:fixed;inset:0;z-index:100001;background:rgba(10,20,18,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:10px}
-   .zsq .in{background:var(--card,#fff);color:var(--ink,#13201d);border-radius:14px;max-width:560px;width:100%;padding:14px;display:grid;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+   .zsq .in{background:var(--surface,#fff);color:var(--ink,#13201d);border-radius:14px;max-width:560px;width:100%;padding:14px;display:grid;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
    .zsq .hd{display:flex;align-items:center;justify-content:space-between;gap:8px}.zsq .vw{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3}
    .zsq video{width:100%;height:100%;object-fit:cover;display:block}.zsq .fr{position:absolute;inset:18% 18%;border:3px solid rgba(255,255,255,.85);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.25);pointer-events:none}
    .zsq .vw.ok .fr{border-color:#2ecc71}.zsq .li{display:grid;gap:6px}.zsq .it{display:flex;gap:8px;align-items:center;border:1px solid var(--line,#C9D3D0);border-radius:10px;padding:8px 10px}
    .zsq .it .t{flex:1;min-width:0}.zsq .it b{display:block}.zsq .it small{color:var(--muted,#5B6B67)}.zsq .it.bad{border-color:#c0392b}.zsq .it.bad small{color:#c0392b}
-   .zsq .it .x{border:0;background:none;font-size:18px;cursor:pointer;padding:4px 8px;color:inherit}.zsq .ph{display:none}</style>`);
+   .zsq .it .x{border:0;background:none;font-size:18px;cursor:pointer;padding:4px 8px;color:inherit}.zsq .note{color:var(--muted,#5A6964)}.zsq .it.bad{border-color:var(--bad,#c0392b)}.zsq .ph{display:none}</style>`);
   /* ---- beep / vibrate ---- */
   function beep(){try{navigator.vibrate&&navigator.vibrate(70)}catch(e){}try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const c=new A(),o=c.createOscillator(),g=c.createGain();o.frequency.value=880;g.gain.value=.08;o.connect(g);g.connect(c.destination);o.start();setTimeout(()=>{o.stop();c.close()},110)}catch(e){}}
   /* ---- decode a canvas / frame ---- */
@@ -5503,7 +5503,7 @@ window.ZSSCAN=(function(){
     o.innerHTML=`<div class="in"><div class="hd"><b style="font-size:17px">QR skan — yeni servis</b><button class="btn ghost sm" id="zqX">Bağla</button></div>
       <div class="vw"><video id="zqV" playsinline muted autoplay></video><div class="fr"></div></div>
       <p class="note" id="zqMsg" style="margin:0">Cihazın üzərindəki QR kodu çərçivəyə salın. Bir neçə cihaz üçün ardıcıl skan edin.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" style="cursor:pointer">📷 Foto ilə skan<input type="file" id="zqF" accept="image/*" capture="environment" class="ph"></label></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" id="zqFL" style="cursor:pointer">📷 Foto ilə skan<input type="file" id="zqF" accept="image/*" capture="environment" class="ph"></label></div>
       <div class="li" id="zqL"></div>
       <div class="actions" style="margin:0"><button class="btn pri" id="zqGo" disabled>Hesabatı başlat</button></div>
       <p class="note" style="margin:0">Hər cihazın skan edildiyi saat həmin cihazın “İşə başlama vaxtı” kimi yazılır. Cihazın məlumatları son servis hesabatından köçürülür.</p></div>`;
@@ -5514,7 +5514,7 @@ window.ZSSCAN=(function(){
     try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("nocam");
       ST.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
       if(!ST||ST.dead){return}const v=o.querySelector("#zqV");v.srcObject=ST.stream;try{await v.play()}catch(e){}loop()}
-    catch(e){msg("Kameranı açmaq olmadı — “Foto ilə skan” düyməsindən istifadə edin.",true)}}
+    catch(e){const vw=o.querySelector(".vw");if(vw)vw.style.display="none";const fl=o.querySelector("#zqFL");if(fl){fl.classList.add("pri");fl.style.padding="14px 18px";fl.style.fontSize="16px"}msg("Bu cihazda canlı kamera açılmır. “Foto ilə skan” düyməsini basın, cihazdakı QR kodu yaxından şəkilə çəkin — proqram oxuyacaq.",true)}}
   /* ---- build the new report ---- */
   const clean=o=>{if(!o||typeof o!=="object")return;for(const k of Object.keys(o)){if(k==="sig")delete o[k];else if(k==="sign"&&typeof o[k]==="string")o[k]="";else clean(o[k])}};
   async function start(){if(!ST)return;const ok=ST.items.filter(i=>i.id);if(!ok.length)return;
